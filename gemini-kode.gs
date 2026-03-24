@@ -55,7 +55,7 @@ function setupDatabase() {
   // Buat semua sheet yang diperlukan
   setupSheet(ss, CONFIG.SHEETS.USERS, ['id', 'username', 'password', 'nama', 'role', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KAS_GUDANG, ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'departemen', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.PEMBAYARAN_TB, ['id', 'karyawanId', 'karyawanNama', 'periode', 'nominal', 'status', 'tanggalBayar', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
@@ -69,7 +69,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
   setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan']);
-
+  
   // Tambah user admin default jika belum ada
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -230,7 +230,10 @@ function getSaldoTeamBuilding() {
   try {
     const result = getTeamBuilding();
     if (!result.success) return { success: false, message: result.message };
-    const total = result.data.reduce((s, d) => s + d.nominal, 0);
+    const total = result.data.reduce((s, d) => {
+      if (d.tipe === 'Pemasukan') return s + d.nominal;
+      return s - d.nominal;
+    }, 0);
     return { success: true, saldo: total };
   } catch (e) {
     return { success: false, message: e.message };
@@ -436,6 +439,7 @@ function getPembayaranTB() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
       result.push({
         id: data[i][0], karyawanId: data[i][1], karyawanNama: data[i][2],
         periode: data[i][3], nominal: data[i][4], status: data[i][5],
@@ -488,6 +492,7 @@ function getSOP() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
       result.push({
         id: data[i][0], judul: data[i][1], konten: data[i][2],
         kategori: data[i][3], createdBy: data[i][4], updatedAt: data[i][5]
@@ -539,6 +544,7 @@ function getOrganisasi() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
       result.push({
         id: data[i][0], nama: data[i][1], jabatan: data[i][2],
         atasan: data[i][3], departemen: data[i][4], foto: data[i][5], urutan: data[i][6]
@@ -625,6 +631,7 @@ function getDashboardData() {
     const kasData = kasGudang.data || [];
     const totalKasIn  = kasData.filter(k => k.tipe === 'IN').reduce((s, k) => s + k.nominal, 0);
     const totalKasOut = kasData.filter(k => k.tipe === 'OUT').reduce((s, k) => s + k.nominal, 0);
+    
     return {
       success: true,
       saldoGudang: saldoGudang.saldo || 0,
@@ -649,6 +656,7 @@ function getUsers() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
       result.push({ id: data[i][0], username: data[i][1], nama: data[i][3], role: data[i][4], createdAt: data[i][5] });
     }
     return { success: true, data: result };
@@ -977,8 +985,6 @@ function getOrderDetail(orderId) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     const data = sheet.getDataRange().getValues();
-
-    // Mengambil data dari Stock untuk mencocokkan Batch & Exp Date
     const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
     const stockData = stockSheet.getDataRange().getValues();
     const stockMap = {};
@@ -995,13 +1001,13 @@ function getOrderDetail(orderId) {
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0] || data[i][1] !== orderId) continue;
       const sId = data[i][3];
-      const st = stockMap[sId] || { batch: '-', expDate: '-' }; // Map data
+      const st = stockMap[sId] || { batch: '-', expDate: '-' };
       
       result.push({ 
         id:data[i][0], orderId:data[i][1], noOrder:data[i][2], 
         stockId:sId, sku:data[i][4], nama:data[i][5], 
         qty:parseFloat(data[i][6])||0, satuan:data[i][7],
-        batch: st.batch, expDate: st.expDate // Tambahan data
+        batch: st.batch, expDate: st.expDate
       });
     }
     return { success: true, data: result };
@@ -1108,4 +1114,49 @@ function getAnalisisStock() {
 
     return { success: true, data: rows };
   } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// FITUR BARU: IMPORT ORDER BULK
+// ============================================================
+function importOrdersBulk(ordersData, createdBy) {
+  try {
+    const parsedOrders = typeof ordersData === 'string' ? JSON.parse(ordersData) : ordersData;
+    const sheetOrd = getSheet(CONFIG.SHEETS.ORDER);
+    const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
+    const stockData = stockSheet.getDataRange().getValues();
+    
+    const stockMap = {};
+    for(let i = 1; i < stockData.length; i++) {
+       if(stockData[i][0]) stockMap[stockData[i][1]] = { id: stockData[i][0], nama: stockData[i][2], satuan: stockData[i][6] };
+    }
+
+    let importedCount = 0;
+    parsedOrders.forEach(ord => {
+       const noOrder = generateNoSJ('WHFCL');
+       const id = generateId();
+       let totalQty = 0;
+       const validItems = [];
+       
+       ord.items.forEach(it => {
+          const st = stockMap[it.sku];
+          if(st) {
+             validItems.push({ stockId: st.id, sku: it.sku, nama: st.nama, qty: parseFloat(it.qty)||0, satuan: st.satuan });
+             totalQty += (parseFloat(it.qty)||0);
+          }
+       });
+       
+       if(validItems.length > 0) {
+          sheetOrd.appendRow([id, noOrder, ord.tanggal, ord.pelanggan, ord.alamat, 'Pending', totalQty, ord.keterangan, createdBy, new Date().toISOString(), '']);
+          validItems.forEach(item => {
+             detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, item.qty, item.satuan]);
+          });
+          importedCount++;
+       }
+    });
+    return { success: true, count: importedCount };
+  } catch(e) { 
+    return { success: false, message: e.message }; 
+  }
 }
