@@ -69,7 +69,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
   setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan']);
-  
+
   // Tambah user admin default jika belum ada
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -301,8 +301,6 @@ function deleteKaryawan(id) {
 // ============================================================
 // UPLOAD FILE KE GOOGLE DRIVE (Single + Chunked)
 // ============================================================
-
-// Single upload — untuk file kecil (sudah dikompres di browser)
 function uploadFileToDrive(base64Data, fileName, mimeType, folderName) {
   try {
     const folder = getOrCreateBuktiFolder(folderName);
@@ -316,7 +314,6 @@ function uploadFileToDrive(base64Data, fileName, mimeType, folderName) {
   }
 }
 
-// Chunked upload — terima satu chunk base64 dan simpan di CacheService
 function uploadChunk(chunkData, chunkIndex, uploadId) {
   try {
     const cache = CacheService.getScriptCache();
@@ -338,7 +335,6 @@ function uploadChunk(chunkData, chunkIndex, uploadId) {
   }
 }
 
-// Finalize — gabungkan semua chunk dan buat file di Drive
 function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
   try {
     const cache = CacheService.getScriptCache();
@@ -370,7 +366,6 @@ function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
   }
 }
 
-// Helper: dapatkan atau buat folder bukti
 function getOrCreateBuktiFolder(subFolderName) {
   const props = PropertiesService.getScriptProperties();
   let folderId = props.getProperty('BUKTI_FOLDER_ID');
@@ -398,17 +393,14 @@ function exportSOP() {
     const data = sheet.getDataRange().getValues();
 
     if (data.length <= 1) return { success: false, message: 'Tidak ada data SOP untuk diekspor' };
-    
     const doc = DocumentApp.create('SOP Gudang - Gudang FCL - ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy'));
     const body = doc.getBody();
-
     const title = body.appendParagraph('SOP GUDANG — GUDANG FCL');
     title.setHeading(DocumentApp.ParagraphHeading.TITLE);
     title.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     body.appendParagraph('Diekspor pada: ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMMM yyyy HH:mm'))
       .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     body.appendHorizontalRule();
-
     const grouped = {};
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0]) continue;
@@ -426,7 +418,6 @@ function exportSOP() {
         body.appendParagraph('');
       });
     });
-
     const docFile = DriveApp.getFileById(doc.getId());
     docFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     const url = 'https://docs.google.com/document/d/' + doc.getId() + '/edit';
@@ -634,7 +625,6 @@ function getDashboardData() {
     const kasData = kasGudang.data || [];
     const totalKasIn  = kasData.filter(k => k.tipe === 'IN').reduce((s, k) => s + k.nominal, 0);
     const totalKasOut = kasData.filter(k => k.tipe === 'OUT').reduce((s, k) => s + k.nominal, 0);
-    
     return {
       success: true,
       saldoGudang: saldoGudang.saldo || 0,
@@ -888,6 +878,20 @@ function getSJMasukDetail(sjId) {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
+function getSJDetailData(sjId, tipe) {
+  try {
+    const sheetName = tipe === 'masuk' ? CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL : CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL;
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0] || data[i][1] !== sjId) continue;
+      result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
 // ============================================================
 // SURAT JALAN KELUAR
 // ============================================================
@@ -954,7 +958,7 @@ function getOrders() {
 
 function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy) {
   try {
-    const noOrder = generateNoSJ('ORD');
+    const noOrder = generateNoSJ('WHFCL');
     const id = generateId();
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     const totalItem = parsedItems.reduce((s,x) => s + (parseFloat(x.qty)||0), 0);
@@ -973,10 +977,32 @@ function getOrderDetail(orderId) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     const data = sheet.getDataRange().getValues();
+
+    // Mengambil data dari Stock untuk mencocokkan Batch & Exp Date
+    const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
+    const stockData = stockSheet.getDataRange().getValues();
+    const stockMap = {};
+    for (let j = 1; j < stockData.length; j++) {
+      if (stockData[j][0]) {
+         stockMap[stockData[j][0]] = {
+           batch: stockData[j][4] || '-',
+           expDate: stockData[j][5] instanceof Date ? Utilities.formatDate(stockData[j][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(stockData[j][5]||'-')
+         };
+      }
+    }
+
     const result = [];
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0] || data[i][1] !== orderId) continue;
-      result.push({ id:data[i][0], orderId:data[i][1], noOrder:data[i][2], stockId:data[i][3], sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7] });
+      const sId = data[i][3];
+      const st = stockMap[sId] || { batch: '-', expDate: '-' }; // Map data
+      
+      result.push({ 
+        id:data[i][0], orderId:data[i][1], noOrder:data[i][2], 
+        stockId:sId, sku:data[i][4], nama:data[i][5], 
+        qty:parseFloat(data[i][6])||0, satuan:data[i][7],
+        batch: st.batch, expDate: st.expDate // Tambahan data
+      });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1063,7 +1089,6 @@ function getAnalisisStock() {
     const stockRes = getStock();
     const stockMap = {};
     (stockRes.data||[]).forEach(s => { stockMap[s.sku] = s; });
-
     const allKeys = new Set([...Object.keys(weekly), ...Object.keys(monthly)]);
     const rows = [];
     allKeys.forEach(key => {
