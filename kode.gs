@@ -5,7 +5,7 @@
 
 // ---- KONFIGURASI ----
 const CONFIG = {
-  SPREADSHEET_ID: '', // Akan diisi otomatis saat setup
+  SPREADSHEET_ID: '',
   SHEETS: {
     USERS: 'Users',
     KAS_GUDANG: 'KasGudang',
@@ -14,9 +14,16 @@ const CONFIG = {
     PEMBAYARAN_TB: 'PembayaranTB',
     SOP: 'SOP',
     ORGANISASI: 'Organisasi',
-    SETTINGS: 'Settings'
+    SETTINGS: 'Settings',
+    STOCK: 'Stock',
+    SURAT_JALAN_MASUK: 'SuratJalanMasuk',
+    SURAT_JALAN_MASUK_DETAIL: 'SuratJalanMasukDetail',
+    SURAT_JALAN_KELUAR: 'SuratJalanKeluar',
+    SURAT_JALAN_KELUAR_DETAIL: 'SuratJalanKeluarDetail',
+    ORDER: 'Order',
+    ORDER_DETAIL: 'OrderDetail'
   },
-  VERSION: '1.0.0'
+  VERSION: '1.1.0'
 };
 
 // ============================================================
@@ -55,6 +62,14 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value']);
+  // Inventory
+  setupSheet(ss, CONFIG.SHEETS.STOCK, ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt']);
+  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK, ['id','noSJ','tanggal','supplier','keterangan','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
+  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR, ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan']);
 
   // Tambah user admin default jika belum ada
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -758,4 +773,346 @@ function getSpreadsheetUrl() {
   } catch (e) {
     return { success: false, message: e.message };
   }
+}
+
+// ============================================================
+// INVENTORY — STOCK BARANG
+// ============================================================
+function generateSKU(nama) {
+  const prefix = nama.replace(/[^A-Za-z]/g,'').toUpperCase().substring(0,3) || 'SKU';
+  const num = String(Date.now()).slice(-5);
+  return prefix + '-' + num;
+}
+
+function getStock() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0], sku: data[i][1], nama: data[i][2],
+        barcode: data[i][3], batch: data[i][4],
+        expDate: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
+        satuan: data[i][6], stok: parseFloat(data[i][7])||0,
+        stokMin: parseFloat(data[i][8])||0, kategori: data[i][9],
+        lokasi: data[i][10],
+        createdAt: data[i][11] instanceof Date ? data[i][11].toISOString() : String(data[i][11]||''),
+        updatedAt: data[i][12] instanceof Date ? data[i][12].toISOString() : String(data[i][12]||'')
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addStock(nama, barcode, batch, expDate, satuan, stok, stokMin, kategori, lokasi) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK);
+    const id = generateId();
+    const sku = generateSKU(nama);
+    const now = new Date().toISOString();
+    sheet.appendRow([id, sku, nama, barcode, batch, expDate, satuan, parseFloat(stok)||0, parseFloat(stokMin)||0, kategori, lokasi, now, now]);
+    return { success: true, id, sku };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function updateStock(id, nama, barcode, batch, expDate, satuan, stok, stokMin, kategori, lokasi) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) {
+        sheet.getRange(i+1,3,1,9).setValues([[nama, barcode, batch, expDate, satuan, parseFloat(stok)||0, parseFloat(stokMin)||0, kategori, lokasi]]);
+        sheet.getRange(i+1,13).setValue(new Date().toISOString());
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Barang tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function deleteStock(id) { return deleteRow(CONFIG.SHEETS.STOCK, id); }
+
+function updateStokQty(id, delta) {
+  // delta: positif = tambah, negatif = kurang
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) {
+        const newStok = (parseFloat(data[i][7])||0) + delta;
+        if (newStok < 0) return { success: false, message: 'Stok tidak cukup! Sisa: ' + (parseFloat(data[i][7])||0) };
+        sheet.getRange(i+1,8).setValue(newStok);
+        sheet.getRange(i+1,13).setValue(new Date().toISOString());
+        return { success: true, newStok };
+      }
+    }
+    return { success: false, message: 'Barang tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// SURAT JALAN MASUK
+// ============================================================
+function generateNoSJ(prefix) {
+  const d = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
+  return prefix + '/' + d + '/' + String(Math.floor(Math.random()*9000)+1000);
+}
+
+function getSuratJalanMasuk() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0], noSJ: data[i][1],
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        supplier: data[i][3], keterangan: data[i][4],
+        createdBy: data[i][5],
+        createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'')
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addSuratJalanMasuk(tanggal, supplier, keterangan, items, createdBy) {
+  // items: [{stockId, sku, nama, qty, satuan, batch, expDate}]
+  try {
+    const noSJ = generateNoSJ('SJM');
+    const id = generateId();
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK);
+    sheet.appendRow([id, noSJ, tanggal, supplier, keterangan, createdBy, new Date().toISOString()]);
+
+    const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL);
+    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+    parsedItems.forEach(item => {
+      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+      updateStokQty(item.stockId, parseFloat(item.qty)||0);
+    });
+    return { success: true, id, noSJ };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function getSJMasukDetail(sjId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0] || data[i][1] !== sjId) continue;
+      result.push({ id:data[i][0], sjId:data[i][1], noSJ:data[i][2], stockId:data[i][3], sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// SURAT JALAN KELUAR
+// ============================================================
+function getSuratJalanKeluar() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0], noSJ: data[i][1],
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        tujuan: data[i][3], keterangan: data[i][4],
+        createdBy: data[i][5],
+        createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'')
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
+  try {
+    const noSJ = generateNoSJ('SJK');
+    const id = generateId();
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR);
+    sheet.appendRow([id, noSJ, tanggal, tujuan, keterangan, createdBy, new Date().toISOString()]);
+
+    const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL);
+    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+    for (const item of parsedItems) {
+      const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0));
+      if (!res.success) return { success: false, message: 'Barang "' + item.nama + '": ' + res.message };
+      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+    }
+    return { success: true, id, noSJ };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// ORDER
+// ============================================================
+function getOrders() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ORDER);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id:data[i][0], noOrder:data[i][1],
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        pelanggan:data[i][3], alamat:data[i][4], status:data[i][5],
+        totalItem:parseFloat(data[i][6])||0, keterangan:data[i][7],
+        createdBy:data[i][8],
+        createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||''),
+        sentAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10]||'')
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy) {
+  try {
+    const noOrder = generateNoSJ('ORD');
+    const id = generateId();
+    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+    const totalItem = parsedItems.reduce((s,x) => s + (parseFloat(x.qty)||0), 0);
+    const sheet = getSheet(CONFIG.SHEETS.ORDER);
+    sheet.appendRow([id, noOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, new Date().toISOString(), '']);
+
+    const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    parsedItems.forEach(item => {
+      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan]);
+    });
+    return { success: true, id, noOrder };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function getOrderDetail(orderId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0] || data[i][1] !== orderId) continue;
+      result.push({ id:data[i][0], orderId:data[i][1], noOrder:data[i][2], stockId:data[i][3], sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7] });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function kirimOrder(orderId) {
+  // Ubah status → Terkirim dan potong stok
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ORDER);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== orderId) continue;
+      if (data[i][5] === 'Terkirim') return { success: false, message: 'Order sudah terkirim' };
+
+      // Ambil detail
+      const details = getOrderDetail(orderId);
+      if (!details.success) return details;
+
+      // Potong stok satu per satu, rollback kalau gagal
+      const rolled = [];
+      for (const item of details.data) {
+        const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0));
+        if (!res.success) {
+          // Rollback
+          rolled.forEach(r => updateStokQty(r.stockId, r.qty));
+          return { success: false, message: 'Stok "' + item.nama + '": ' + res.message };
+        }
+        rolled.push({ stockId: item.stockId, qty: item.qty });
+      }
+
+      // Update status order
+      sheet.getRange(i+1, 6).setValue('Terkirim');
+      sheet.getRange(i+1, 11).setValue(new Date().toISOString());
+      return { success: true };
+    }
+    return { success: false, message: 'Order tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function deleteOrder(id) { return deleteRow(CONFIG.SHEETS.ORDER, id); }
+
+// ============================================================
+// ANALISIS PEMAKAIAN STOCK
+// ============================================================
+function getAnalisisStock() {
+  try {
+    const now = new Date();
+    const oneWeekAgo = new Date(now - 7*24*60*60*1000);
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth()-1, now.getDate());
+
+    // Kumpulkan semua keluar dari SJK + Order Terkirim
+    const sjkDet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL).getDataRange().getValues();
+    const sjkHead = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR).getDataRange().getValues();
+    const ordDet = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues();
+    const ordHead = getSheet(CONFIG.SHEETS.ORDER).getDataRange().getValues();
+
+    // Build SJK tanggal map
+    const sjkDateMap = {};
+    for (let i = 1; i < sjkHead.length; i++) {
+      if (!sjkHead[i][0]) continue;
+      sjkDateMap[sjkHead[i][0]] = sjkHead[i][2] instanceof Date ? sjkHead[i][2] : new Date(sjkHead[i][2]);
+    }
+    // Build Order tanggal map (only Terkirim)
+    const ordDateMap = {};
+    for (let i = 1; i < ordHead.length; i++) {
+      if (!ordHead[i][0] || ordHead[i][5] !== 'Terkirim') continue;
+      ordDateMap[ordHead[i][0]] = ordHead[i][9] instanceof Date ? ordHead[i][9] : new Date(ordHead[i][9]);
+    }
+
+    // Aggregate per SKU
+    const weekly = {}, monthly = {};
+
+    for (let i = 1; i < sjkDet.length; i++) {
+      if (!sjkDet[i][0]) continue;
+      const tgl = sjkDateMap[sjkDet[i][1]];
+      if (!tgl) continue;
+      const key = sjkDet[i][4] + '|' + sjkDet[i][5]; // sku|nama
+      const qty = parseFloat(sjkDet[i][6])||0;
+      if (tgl >= oneWeekAgo) weekly[key] = (weekly[key]||0) + qty;
+      if (tgl >= oneMonthAgo) monthly[key] = (monthly[key]||0) + qty;
+    }
+
+    for (let i = 1; i < ordDet.length; i++) {
+      if (!ordDet[i][0]) continue;
+      const tgl = ordDateMap[ordDet[i][1]];
+      if (!tgl) continue;
+      const key = ordDet[i][4] + '|' + ordDet[i][5];
+      const qty = parseFloat(ordDet[i][6])||0;
+      if (tgl >= oneWeekAgo) weekly[key] = (weekly[key]||0) + qty;
+      if (tgl >= oneMonthAgo) monthly[key] = (monthly[key]||0) + qty;
+    }
+
+    // Merge & sort by monthly desc
+    const stockRes = getStock();
+    const stockMap = {};
+    (stockRes.data||[]).forEach(s => { stockMap[s.sku] = s; });
+
+    const allKeys = new Set([...Object.keys(weekly), ...Object.keys(monthly)]);
+    const rows = [];
+    allKeys.forEach(key => {
+      const [sku, nama] = key.split('|');
+      const st = stockMap[sku] || {};
+      rows.push({
+        sku, nama,
+        stokSaat: st.stok || 0,
+        satuan: st.satuan || '',
+        minggu: weekly[key] || 0,
+        bulan: monthly[key] || 0,
+        rataHarian: Math.round(((monthly[key]||0) / 30) * 100) / 100,
+        statusStok: (st.stok||0) <= (st.stokMin||0) ? 'Kritis' : (st.stok||0) <= (st.stokMin||0)*2 ? 'Rendah' : 'Aman'
+      });
+    });
+    rows.sort((a,b) => b.bulan - a.bulan);
+
+    return { success: true, data: rows };
+  } catch(e) { return { success: false, message: e.message }; }
 }
