@@ -24,6 +24,15 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--navy); color:var(--white); min-height:100vh; overflow-x:hidden; font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; }
 
+/* ---- HIDE SCROLLBAR ---- */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ---- LOGIN ---- */
 #loginPage {
   min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -188,14 +197,7 @@ tr:hover td { background:#ffffff05; }
   border-radius:8px; color:#f0f6ff; font-family:inherit; font-size:14.5px; transition:border-color 0.2s;
 }
 .f-group input:focus, .f-group select:focus, .f-group textarea:focus { outline:none; border-color:var(--accent); }
-
-/* ---- PERBAIKAN WARNA DROPDOWN BARANG ---- */
-select option {
-  background-color: #0f2040 !important;
-  color: #f8fafc !important;
-  padding: 10px;
-}
-
+select option { background-color: #0f2040 !important; color: #f8fafc !important; padding: 10px; }
 .f-group textarea { resize:vertical; min-height:80px; }
 
 /* ---- MODAL ---- */
@@ -302,7 +304,7 @@ select option {
 .rupiah { color:var(--accent); font-weight:600; font-family:'Syne',sans-serif; }
 
 /* ---- INVENTORY ---- */
-.item-row { display:grid; grid-template-columns:2fr 1fr 80px 1fr 100px 32px; gap:6px; margin-bottom:6px; align-items:center; }
+.item-row { display:grid; grid-template-columns:1.5fr 2fr 80px 80px 1fr 100px 32px; gap:6px; margin-bottom:6px; align-items:center; }
 .item-row input, .item-row select { padding:8px 10px; background:#ffffff0d; border:1px solid #ffffff15; border-radius:6px; color:#f0f6ff; font-family:inherit; font-size:13px; width:100%; }
 .item-row .btn-remove { width:32px; height:32px; background:#ef444422; border:1px solid #ef444430; border-radius:6px; color:#fca5a5; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
 .item-row .btn-remove:hover { background:#ef444433; }
@@ -313,7 +315,7 @@ select option {
 .order-pending { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .order-terkirim { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .exp-warning { color:#fca5a5 !important; }
-.item-row-header { display:grid; grid-template-columns:2fr 1fr 80px 1fr 100px 32px; gap:6px; margin-bottom:4px; }
+.item-row-header { display:grid; grid-template-columns:1.5fr 2fr 80px 80px 1fr 100px 32px; gap:6px; margin-bottom:4px; }
 .item-row-header span { font-size:11px; color:#4a6080; font-weight:600; text-transform:uppercase; padding:0 2px; }
 .positive { color:var(--green); }
 .negative { color:#f87171; }
@@ -788,7 +790,7 @@ select option {
     <button class="modal-close" onclick="closeModal('modalUser')">✕</button>
     <h3>⚙️ Tambah User</h3>
     <div class="form-row"><div class="f-group"><label>Username</label><input type="text" id="uUsername" placeholder="username"></div><div class="f-group"><label>Password</label><input type="password" id="uPassword" placeholder="password"></div></div>
-    <div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="uNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Role</label><select id="uRole"><option value="user">User</option><option value="admin">Admin</option></select></div></div>
+    <div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="uNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Role</label><select id="uRole"><option value="user">User / Staff</option><option value="admin">Admin</option></select></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div>
   </div>
 </div>
@@ -904,10 +906,36 @@ function initApp() {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('userName').textContent = currentUser.nama;
-  document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '👑 Admin' : '👤 User';
+  document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '👑 Admin' : '👤 Staff';
   document.getElementById('userAvatar').textContent = currentUser.nama.charAt(0).toUpperCase();
-  if (currentUser.role === 'admin') { document.getElementById('navAdmin').style.display = 'block'; document.getElementById('navUsers').style.display = 'flex'; }
-  loadDashboard();
+  
+  // Logika Hak Akses (Admin vs Staff)
+  if (currentUser.role !== 'admin') {
+    // Sembunyikan semua nav-item yang bukan bagian dari inventory
+    document.querySelectorAll('.nav-item').forEach(el => {
+      const onclickAttr = el.getAttribute('onclick') || '';
+      // Hanya izinkan stock, inbound, outbound, order, analisis
+      if (!['stock', 'inbound', 'outbound', 'order', 'analisis'].some(keyword => onclickAttr.includes(keyword))) {
+        el.style.display = 'none';
+      }
+    });
+    // Sembunyikan section header yang tidak diperlukan staff
+    document.querySelectorAll('.nav-section').forEach(sec => {
+      if (sec.textContent.includes('Utama') || sec.textContent.includes('Keuangan') ||
+          sec.textContent.includes('SDM') || sec.textContent.includes('Dokumentasi') ||
+          sec.textContent.includes('Admin')) {
+        sec.style.display = 'none';
+      }
+    });
+    // Jika staff, langsung diarahkan ke halaman stock
+    showPage('stock');
+  } else {
+    // Jika Admin, tampilkan menu admin dan arahkan ke dashboard
+    document.getElementById('navAdmin').style.display = 'block';
+    document.getElementById('navUsers').style.display = 'flex';
+    showPage('dashboard');
+  }
+  
   setToday();
 }
 
@@ -1266,27 +1294,53 @@ function submitStock() {
 }
 function delStock(id) { if(!confirm('Hapus barang ini?')) return; google.script.run.withSuccessHandler(res=>{ if(res.success){toast('Dihapus ✅');loadStock();}else toast(res.message,'error'); }).deleteStock(id); }
 
-function getStockOptions() { return stockData.map(s=>`<option value="${s.id}" data-sku="${s.sku}" data-satuan="${s.satuan}" data-batch="${s.batch||''}" data-exp="${s.expDate||''}" data-stok="${s.stok}">${s.nama} (${s.sku}) — Stok: ${s.stok} ${s.satuan}</option>`).join(''); }
+function getStockOptions() { 
+  return stockData.map(s => `<option value="${s.id}" data-sku="${s.sku}" data-nama="${s.nama}" data-satuan="${s.satuan}" data-batch="${s.batch||''}" data-exp="${s.expDate||''}" data-stok="${s.stok}">${s.sku} — Stok: ${s.stok}</option>`).join(''); 
+}
+
 function addItemRow(containerId, mode) {
   const container = document.getElementById(containerId);
   if(!container.querySelector('.item-row-header')){
     const hdr = document.createElement('div'); hdr.className='item-row-header';
-    hdr.innerHTML='<span>Barang</span><span>Qty</span><span>Satuan</span><span>Batch</span><span>Exp Date</span><span></span>'; container.prepend(hdr);
+    hdr.innerHTML='<span>SKU</span><span>Nama Barang</span><span>Qty</span><span>Satuan</span><span>Batch</span><span>Exp Date</span><span></span>'; 
+    container.prepend(hdr);
   }
   const row = document.createElement('div'); row.className='item-row';
-  row.innerHTML=`<select class="ir-barang" onchange="fillItemRow(this)"><option value="">-- Pilih Barang --</option>${getStockOptions()}</select><input type="number" class="ir-qty" placeholder="0" min="0"><input type="text" class="ir-satuan" placeholder="Satuan" readonly><input type="text" class="ir-batch" placeholder="Batch"><input type="date" class="ir-exp"><button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
+  row.innerHTML=`<select class="ir-barang" onchange="fillItemRow(this)"><option value="">-- Pilih SKU --</option>${getStockOptions()}</select><input type="text" class="ir-nama" placeholder="Otomatis terisi" readonly><input type="number" class="ir-qty" placeholder="0" min="0"><input type="text" class="ir-satuan" placeholder="Satuan" readonly><input type="text" class="ir-batch" placeholder="Batch"><input type="date" class="ir-exp"><button class="btn-remove" onclick="this.parentElement.remove()">✕</button>`;
   container.appendChild(row);
 }
+
 function fillItemRow(sel) {
-  const opt = sel.options[sel.selectedIndex]; const row = sel.closest('.item-row');
-  row.querySelector('.ir-satuan').value = opt.dataset.satuan || ''; row.querySelector('.ir-batch').value = opt.dataset.batch || ''; row.querySelector('.ir-exp').value = opt.dataset.exp || '';
+  const opt = sel.options[sel.selectedIndex]; 
+  const row = sel.closest('.item-row');
+  if (opt && opt.value) {
+    row.querySelector('.ir-nama').value = opt.dataset.nama || ''; 
+    row.querySelector('.ir-satuan').value = opt.dataset.satuan || ''; 
+    row.querySelector('.ir-batch').value = opt.dataset.batch || ''; 
+    row.querySelector('.ir-exp').value = opt.dataset.exp || '';
+  } else {
+    row.querySelector('.ir-nama').value = ''; 
+    row.querySelector('.ir-satuan').value = ''; 
+    row.querySelector('.ir-batch').value = ''; 
+    row.querySelector('.ir-exp').value = '';
+  }
 }
+
 function collectItems(containerId) {
   const rows = document.querySelectorAll('#'+containerId+' .item-row'); const items = [];
   for(const row of rows){
     const sel = row.querySelector('.ir-barang'); if(!sel||!sel.value) continue;
-    const opt = sel.options[sel.selectedIndex]; const qty = parseFloat(row.querySelector('.ir-qty').value)||0; if(qty<=0) continue;
-    items.push({ stockId: sel.value, sku: opt.dataset.sku||'', nama: opt.textContent.split('(')[0].trim(), qty, satuan: row.querySelector('.ir-satuan').value, batch: row.querySelector('.ir-batch').value, expDate: row.querySelector('.ir-exp').value });
+    const opt = sel.options[sel.selectedIndex]; 
+    const qty = parseFloat(row.querySelector('.ir-qty').value)||0; if(qty<=0) continue;
+    items.push({ 
+      stockId: sel.value, 
+      sku: opt.dataset.sku||'', 
+      nama: opt.dataset.nama||'', 
+      qty, 
+      satuan: row.querySelector('.ir-satuan').value, 
+      batch: row.querySelector('.ir-batch').value, 
+      expDate: row.querySelector('.ir-exp').value 
+    });
   }
   return items;
 }
