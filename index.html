@@ -94,6 +94,7 @@ tr:hover td { background:#ffffff05; }
 .badge-belum { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-aktif { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; }
 .badge-nonaktif { background:#94a3b822; color:#cbd5e1; padding:3px 10px; border-radius:20px; font-size:12px; }
+.badge-pending { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 
 /* ---- BUTTONS ---- */
 .btn { padding:9px 18px; border-radius:8px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; border:none; display:inline-flex; align-items:center; gap:6px; }
@@ -254,6 +255,8 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
         <div class="nav-section">Operasional Kerja</div>
         <div class="nav-item" onclick="showPage('laporanKerja')"><span class="icon">📝</span> Input Laporan Kerja</div>
         <div class="nav-item" onclick="showPage('grafikLaporan')"><span class="icon">📈</span> Grafik Laporan</div>
+        <div class="nav-item" onclick="showPage('handover')"><span class="icon">📦</span> Hand Over</div>
+        <div class="nav-item" onclick="showPage('klaim')"><span class="icon">⚠️</span> Klaim Paket</div>
 
         <div class="nav-section">SDM</div>
         <div class="nav-item" onclick="showPage('karyawan')"><span class="icon">👥</span> Data Karyawan</div>
@@ -360,7 +363,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
           </div>
         </div>
 
-        <!-- HALAMAN LAPORAN KERJA BARU -->
+        <!-- HALAMAN LAPORAN KERJA -->
         <div class="page" id="page-laporanKerja">
           <div class="card">
             <div class="card-header">
@@ -369,25 +372,42 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Staff/Adm</th><th>Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Admin</th><th>Jam Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>KPI</th><th>Aksi</th></tr></thead>
                 <tbody id="tableLaporanKerja"></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- HALAMAN GRAFIK LAPORAN BARU -->
+        <!-- HALAMAN GRAFIK LAPORAN -->
         <div class="page" id="page-grafikLaporan">
           <div class="card">
             <div class="card-header">
               <h4>📈 Dashboard Grafik Laporan Divisi</h4>
-              <button class="btn btn-teal" onclick="window.print()">🖨️ Print Laporan</button>
+              <div style="display:flex;gap:8px;">
+                <input type="month" id="filterBulanGrafik" onchange="filterGrafik()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
+                <button class="btn btn-teal" onclick="window.print()">🖨️ Print Laporan</button>
+              </div>
             </div>
-            <div style="background: var(--navy2); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-              <canvas id="chartLaporan" style="max-height: 400px;"></canvas>
+            
+            <!-- GRAFIK TERPISAH TIAP DIVISI -->
+            <div class="chart-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-bottom: 24px;">
+              <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
+                <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #f59e0b;">🛒 Marketplace</h5>
+                <canvas id="chartMarketplace" style="max-height: 250px;"></canvas>
+              </div>
+              <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
+                <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #0ea5e9;">📦 Distributor</h5>
+                <canvas id="chartDistributor" style="max-height: 250px;"></canvas>
+              </div>
+              <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
+                <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #ef4444;">↩️ Return</h5>
+                <canvas id="chartReturn" style="max-height: 250px;"></canvas>
+              </div>
             </div>
+
             <div class="table-wrap">
-              <h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan</h4>
+              <h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan Keseluruhan</h4>
               <table>
                 <thead><tr><th>Divisi</th><th>Total Laporan</th><th>Rata-rata Pekerja Masuk</th><th>Total Jam Lembur</th><th>Total Keseluruhan Jam Kerja</th><th>Total Orderan</th></tr></thead>
                 <tbody id="tableRingkasanGrafik"></tbody>
@@ -396,9 +416,51 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
           </div>
         </div>
 
+        <!-- HALAMAN HAND OVER -->
+        <div class="page" id="page-handover">
+          <div class="card">
+            <div class="card-header">
+              <h4>📦 Laporan Hand Over</h4>
+              <button class="btn btn-primary" onclick="openModal('modalHandover')">+ Tambah Laporan</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Pengerjaan</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody id="tableHandover"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- HALAMAN KLAIM PAKET -->
+        <div class="page" id="page-klaim">
+          <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px;">
+            <div class="stat-card amber"><div class="stat-label">Total Tagihan (Pending)</div><div class="stat-value amber" id="statKlaimPending">Rp 0</div><div class="stat-icon">⚠️</div></div>
+            <div class="stat-card green"><div class="stat-label">Total Selesai Dibayar</div><div class="stat-value green" id="statKlaimSelesai">Rp 0</div><div class="stat-icon">✅</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h4>⚠️ Laporan Klaim Paket</h4>
+              <button class="btn btn-primary" onclick="openModal('modalKlaim')">+ Tambah Laporan</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Harga Paket</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody id="tableKlaim"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div class="page" id="page-karyawan">
           <div class="card">
-            <div class="card-header"><h4>👥 Data Karyawan</h4><button class="btn btn-primary" onclick="openModal('modalKaryawan')">+ Tambah Karyawan</button></div>
+            <div class="card-header">
+              <h4>👥 Data Karyawan</h4>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="karyawanSearch" placeholder="🔍 Cari Nama / Jabatan..." style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:220px;" oninput="filterKaryawan()">
+                <button class="btn btn-primary" onclick="openModal('modalKaryawan')">+ Tambah Karyawan</button>
+              </div>
+            </div>
             <div class="table-wrap">
               <table><thead><tr><th>Nama</th><th>Jabatan</th><th>Departemen</th><th>Telepon</th><th>Status</th><th>Tgl Masuk</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
             </div>
@@ -655,7 +717,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
   </div>
 </div>
 
-<!-- ===================== MODAL LAPORAN KERJA BARU ===================== -->
+<!-- ===================== MODAL LAPORAN KERJA ===================== -->
 <div class="modal-overlay" id="modalLaporanKerja">
   <div class="modal" style="width: 780px;">
     <button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button>
@@ -674,32 +736,99 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
       <div class="f-group"><label>Nama Pelapor / Shift</label><input type="text" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div>
     </div>
     
-    <!-- TAMBAHAN: INPUT PEKERJA, STAFF, ADMIN -->
-    <div class="form-row triple">
+    <div class="form-row">
       <div class="f-group"><label>Total Pekerja Utama</label><input type="number" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-      <div class="f-group"><label>Total Staff</label><input type="number" id="lapStaff" placeholder="0" min="0" oninput="calcJamKerja()"></div>
       <div class="f-group"><label>Total Admin</label><input type="number" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div>
     </div>
 
-    <!-- TAMBAHAN: INPUT PERBANTUAN & ORDER -->
+    <!-- TAMBAHAN: JAM PERBANTUAN & PENGURANGAN -->
     <div class="form-row triple">
-      <div class="f-group"><label>Total Perbantuan (+)</label><input type="number" id="lapBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-      <div class="f-group"><label>Total Pengurangan (-)</label><input type="number" id="lapKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-      <div class="f-group"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" id="lapOrder" placeholder="0" min="0"></div>
+      <div class="f-group"><label>Orang Perbantuan (+)</label><input type="number" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div>
+      <div class="f-group"><label>Jam / Orang (Bantu)</label><input type="number" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div>
+      <div class="f-group"><label>Orang Pengurangan (-)</label><input type="number" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div>
+    </div>
+    
+    <div class="form-row triple">
+      <div class="f-group"><label>Jam / Orang (Kurang)</label><input type="number" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div>
+      <div class="f-group"><label>Total Pekerja Lembur</label><input type="number" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div>
+      <div class="f-group"><label>Lama Lembur (Jam)</label><input type="number" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div>
     </div>
 
     <div class="form-row">
-      <div class="f-group"><label>Total Jam Lembur</label><input type="number" id="lapLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div>
+      <div class="f-group"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div>
+      <div class="f-group">
+        <label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label>
+        <input type="text" id="lapKPI" readonly placeholder="Otomatis" value="0">
+      </div>
+    </div>
+    <div class="form-row single">
       <div class="f-group">
         <label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label>
         <input type="text" id="lapTotalJam" readonly placeholder="Otomatis" value="0">
-        <span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Staff + Admin + Bantu - Kurang) x 8 jam) + Lembur</span>
+        <span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - (Org Kurang x Jam) + (Org Lembur x Jam)</span>
       </div>
     </div>
     <div class="form-row single">
       <div class="f-group"><label>Kendala Pekerjaan</label><textarea id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DETAIL LAPORAN ===================== -->
+<div class="modal-overlay" id="modalDetailLaporan">
+  <div class="modal" style="width: 520px;">
+    <button class="modal-close" onclick="closeModal('modalDetailLaporan')">✕</button>
+    <h3 id="detailLapTitle">📋 Detail Laporan Kerja</h3>
+    <div id="detailLapContent" style="font-size:14px; line-height:1.8; color:var(--light);"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailLaporan')">Tutup</button></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL HANDOVER ===================== -->
+<div class="modal-overlay" id="modalHandover">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalHandover')">✕</button>
+    <h3>📦 Input Laporan Hand Over</h3>
+    <div class="form-row">
+      <div class="f-group"><label>Tanggal</label><input type="date" id="hoTanggal"></div>
+      <div class="f-group"><label>Nama PIC</label><input type="text" id="hoPic" placeholder="Nama pengurus"></div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group"><label>Nomor Resi</label><input type="text" id="hoResi" placeholder="Masukkan nomor resi"></div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group"><label>Pengerjaan</label><input type="text" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group"><label>Keterangan Tambahan</label><input type="text" id="hoKeterangan" placeholder="Opsional..."></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitHandover()">💾 Simpan Laporan</button></div>
+  </div>
+</div>
+
+<!-- ===================== MODAL KLAIM PAKET ===================== -->
+<div class="modal-overlay" id="modalKlaim">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalKlaim')">✕</button>
+    <h3>⚠️ Input Laporan Klaim Paket</h3>
+    <div class="form-row">
+      <div class="f-group"><label>Tanggal</label><input type="date" id="klTanggal"></div>
+      <div class="f-group"><label>Nama PIC</label><input type="text" id="klPic" placeholder="Nama pengurus"></div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group"><label>Nomor Resi</label><input type="text" id="klResi" placeholder="Masukkan nomor resi"></div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group">
+        <label>Harga Paket (Rp)</label>
+        <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="klHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="f-group"><label>Keterangan Detail</label><input type="text" id="klKeterangan" placeholder="Penyebab klaim, dll."></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKlaim')">Batal</button><button class="btn btn-primary" onclick="submitKlaim()">💾 Simpan Laporan</button></div>
   </div>
 </div>
 
@@ -887,7 +1016,8 @@ let currentUser = null;
 let karyawanData = [];
 let orderDataList = [];
 let stockData = [];
-let laporanChartInstance = null; // Menyimpan referensi ke instance Chart.js
+let laporanKerjaData = [];
+let chartInstances = { mp: null, dist: null, ret: null }; 
 
 window.onload = function() {
   const saved = sessionStorage.getItem('wfcl_user');
@@ -903,16 +1033,14 @@ function initApp() {
   document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '👑 Admin' : '👤 Staff';
   document.getElementById('userAvatar').textContent = currentUser.nama.charAt(0).toUpperCase();
   
-  // Logika Hak Akses (Admin vs Staff)
+  // Logika Hak Akses
   if (currentUser.role !== 'admin') {
-    // Sembunyikan semua nav-item yang tidak sesuai
     document.querySelectorAll('.nav-item').forEach(el => {
       const onclickAttr = el.getAttribute('onclick') || '';
-      if (!['stock', 'inbound', 'outbound', 'retur', 'order', 'analisis', 'laporanKerja', 'grafikLaporan'].some(keyword => onclickAttr.includes(keyword))) {
+      if (!['stock', 'inbound', 'outbound', 'retur', 'order', 'analisis', 'laporanKerja', 'grafikLaporan', 'handover', 'klaim'].some(keyword => onclickAttr.includes(keyword))) {
         el.style.display = 'none';
       }
     });
-    // Sembunyikan section header yang tidak diperlukan staff
     document.querySelectorAll('.nav-section').forEach(sec => {
       if (sec.textContent.includes('Utama') || sec.textContent.includes('Keuangan') ||
           sec.textContent.includes('SDM') || sec.textContent.includes('Dokumentasi') ||
@@ -931,7 +1059,11 @@ function initApp() {
 
 function setToday() {
   const today = new Date().toISOString().split('T')[0];
-  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+  
+  const currentMonth = today.substring(0, 7);
+  const filterBulan = document.getElementById('filterBulanGrafik');
+  if(filterBulan) filterBulan.value = currentMonth;
 }
 
 // ============================================================
@@ -958,13 +1090,14 @@ function doLogout() { sessionStorage.removeItem('wfcl_user'); location.reload();
 const pageTitles = {
   dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', karyawan: '👥 Data Karyawan',
   laporanKerja: '📝 Input Laporan Kerja', grafikLaporan: '📈 Dashboard Laporan Kerja',
+  handover: '📦 Laporan Hand Over', klaim: '⚠️ Laporan Klaim Paket',
   organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
   users: '⚙️ Manajemen User', stock: '📦 Stock Barang', inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
   retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
 };
 const pageLoaders = {
   dashboard: loadDashboard, kasGudang: loadKasGudang, teamBuilding: loadTB, karyawan: loadKaryawan,
-  laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
+  laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan, handover: loadHandover, klaim: loadKlaim,
   organisasi: loadOrg, sop: loadSOP, users: loadUsers,
   stock: loadStock, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
 };
@@ -991,7 +1124,6 @@ function loadDashboard() {
     document.getElementById('statSaldoGudang').textContent = formatRp(res.saldoGudang); document.getElementById('statSaldoTB').textContent = formatRp(res.saldoTB);
     document.getElementById('statKasIn').textContent = formatRp(res.totalKasIn); document.getElementById('statKasOut').textContent = formatRp(res.totalKasOut);
 
-    // Render Data Operasional Hari Ini
     const today = new Date().toISOString().split('T')[0];
     const lapHariIni = (res.laporanData || []).filter(d => d.tanggal.startsWith(today));
     let opBody = document.getElementById('dashOperasional');
@@ -1002,8 +1134,7 @@ function loadDashboard() {
       const divSummary = {};
       lapHariIni.forEach(l => {
         if(!divSummary[l.divisi]) divSummary[l.divisi] = { pekerja: 0, order: 0 };
-        // Total Pekerja Aktif
-        divSummary[l.divisi].pekerja += (l.totalOrang + (l.totalStaff||0) + (l.totalAdmin||0) + l.perbantuan - l.pengurangan);
+        divSummary[l.divisi].pekerja += (l.totalOrang + (l.totalStaff||0) + (l.totalAdmin||0));
         divSummary[l.divisi].order += (l.totalOrder||0);
       });
       Object.keys(divSummary).forEach(div => {
@@ -1011,7 +1142,7 @@ function loadDashboard() {
         opBody.innerHTML += `<tr>
           <td><strong>${icon} ${div}</strong></td>
           <td><strong>${divSummary[div].pekerja}</strong> Orang Hadir</td>
-          <td style="color:var(--teal); font-weight:bold;">${divSummary[div].order} Order</td>
+          <td style="color:var(--teal); font-weight:bold;">${divSummary[div].order.toLocaleString('id-ID')} Order</td>
         </tr>`;
       });
     }
@@ -1035,7 +1166,7 @@ function loadDashboard() {
 }
 
 // ============================================================
-// KAS GUDANG
+// KAS GUDANG & TEAM BUILDING
 // ============================================================
 function loadKasGudang() {
   google.script.run.withSuccessHandler(res => {
@@ -1057,9 +1188,6 @@ function submitKasGudang() {
 }
 function delKasGudang(id) { if (!confirm('Hapus transaksi?')) return; google.script.run.withSuccessHandler(res => { if (res.success) { toast('Dihapus ✅'); loadKasGudang(); loadDashboard(); } else toast(res.message, 'error'); }).deleteKasGudang(id); }
 
-// ============================================================
-// TEAM BUILDING
-// ============================================================
 function loadTB() {
   google.script.run.withSuccessHandler(res => {
     const tbody = document.getElementById('tableTB'); tbody.innerHTML = '';
@@ -1086,42 +1214,63 @@ function delTB(id) { if (!confirm('Hapus data?')) return; google.script.run.with
 // ============================================================
 function calcJamKerja() {
   const orangUtama = parseInt(document.getElementById('lapOrang').value) || 0;
-  const staff = parseInt(document.getElementById('lapStaff').value) || 0;
   const admin = parseInt(document.getElementById('lapAdmin').value) || 0;
-  const perbantuan = parseInt(document.getElementById('lapBantu').value) || 0;
-  const pengurangan = parseInt(document.getElementById('lapKurang').value) || 0;
-  const lembur = parseInt(document.getElementById('lapLembur').value) || 0;
+  
+  const orangBantu = parseInt(document.getElementById('lapOrangBantu').value) || 0;
+  const jamBantu = parseFloat(document.getElementById('lapJamBantu').value) || 0;
+  
+  const orangKurang = parseInt(document.getElementById('lapOrangKurang').value) || 0;
+  const jamKurang = parseFloat(document.getElementById('lapJamKurang').value) || 0;
+  
+  const orangLembur = parseInt(document.getElementById('lapOrangLembur').value) || 0;
+  const jamLembur = parseFloat(document.getElementById('lapLembur').value) || 0;
 
-  // Asumsi standar shift jam kerja adalah 8 Jam. 
-  // Pekerja Aktif termasuk Utama, Staff, Admin, dan Perbantuan, dikurangi Pengurangan
-  const totalOrangAktif = (orangUtama + staff + admin + perbantuan) - pengurangan;
-  const jamKerjaUtama = totalOrangAktif * 8; 
-  const totalKeseluruhan = jamKerjaUtama + lembur;
+  const order = parseInt(document.getElementById('lapOrder').value) || 0;
+
+  const jamKerjaUtama = (orangUtama + admin) * 8; 
+  const totalBantu = orangBantu * jamBantu;
+  const totalKurang = orangKurang * jamKurang;
+  const totalLembur = orangLembur * jamLembur;
+  
+  const totalKeseluruhan = jamKerjaUtama + totalBantu - totalKurang + totalLembur;
 
   document.getElementById('lapTotalJam').value = totalKeseluruhan > 0 ? totalKeseluruhan : 0;
+  
+  // KPI = Order / Jam Kerja
+  const kpi = totalKeseluruhan > 0 ? (order / totalKeseluruhan).toFixed(3) : 0;
+  document.getElementById('lapKPI').value = kpi;
 }
 
 function loadLaporanKerja() {
   google.script.run.withSuccessHandler(res => {
+    laporanKerjaData = res.data || [];
     const tbody = document.getElementById('tableLaporanKerja'); tbody.innerHTML = '';
-    if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="emoji">📝</div><div>Belum ada laporan kerja</div></td></tr>'; return; }
+    if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state"><div class="emoji">📝</div><div>Belum ada laporan kerja</div></td></tr>'; return; }
     
     res.data.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).forEach(d => {
       let divIcon = '🛒'; let divColor = 'var(--accent)';
       if(d.divisi === 'Distributor') { divIcon = '📦'; divColor = 'var(--teal)'; }
       if(d.divisi === 'Return') { divIcon = '↩️'; divColor = 'var(--red)'; }
       
+      const totOrder = d.totalOrder || 0;
+      // Update KPI: Order / Jam Kerja
+      const kpi = d.totalJamKerja > 0 ? (totOrder / d.totalJamKerja).toFixed(3) : 0;
+      
       tbody.innerHTML += `<tr>
         <td>${formatDate(d.tanggal)}</td>
         <td><strong style="color:${divColor}">${divIcon} ${d.divisi}</strong></td>
         <td>${d.pic || '-'}</td>
         <td style="text-align:center">${d.totalOrang}</td>
-        <td style="text-align:center">S: ${d.totalStaff||0} | A: ${d.totalAdmin||0}</td>
-        <td style="text-align:center;"><span style="color:var(--green)">+${d.perbantuan}</span> / <span style="color:var(--red)">-${d.pengurangan}</span></td>
+        <td style="text-align:center">${d.totalAdmin||0}</td>
+        <td style="text-align:center;"><span style="color:var(--green)">+${d.perbantuan} Jam</span> / <span style="color:var(--red)">-${d.pengurangan} Jam</span></td>
         <td style="text-align:center; color:var(--accent)">${d.jamLembur} Jam</td>
         <td style="text-align:center"><strong>${d.totalJamKerja} Jam</strong></td>
-        <td style="text-align:center; color:var(--teal)"><strong>${d.totalOrder||0}</strong></td>
-        <td><button class="btn btn-danger btn-sm" onclick="delLaporanKerja('${d.id}')">🗑️</button></td>
+        <td style="text-align:center; color:var(--teal)"><strong>${totOrder.toLocaleString('id-ID')}</strong></td>
+        <td style="text-align:center; color:var(--green)"><strong>${kpi}</strong></td>
+        <td style="display:flex;gap:4px;">
+          <button class="btn btn-ghost btn-sm" onclick="showDetailLaporan('${d.id}')">📋</button>
+          <button class="btn btn-danger btn-sm" onclick="delLaporanKerja('${d.id}')">🗑️</button>
+        </td>
       </tr>`;
     });
   }).getLaporanKerja();
@@ -1130,14 +1279,28 @@ function loadLaporanKerja() {
 function submitLaporanKerja() {
   const t = v('lapTanggal'), d = v('lapDivisi'), pic = v('lapPic');
   const utama = document.getElementById('lapOrang').value;
-  const staff = document.getElementById('lapStaff').value;
   const admin = document.getElementById('lapAdmin').value;
-  const bantu = document.getElementById('lapBantu').value;
-  const kurang = document.getElementById('lapKurang').value;
-  const lembur = document.getElementById('lapLembur').value;
+  
+  const orangBantu = parseInt(document.getElementById('lapOrangBantu').value) || 0;
+  const jamBantu = parseFloat(document.getElementById('lapJamBantu').value) || 0;
+  const bantu = orangBantu * jamBantu;
+  
+  const orangKurang = parseInt(document.getElementById('lapOrangKurang').value) || 0;
+  const jamKurang = parseFloat(document.getElementById('lapJamKurang').value) || 0;
+  const kurang = orangKurang * jamKurang;
+  
+  const orangLembur = parseInt(document.getElementById('lapOrangLembur').value) || 0;
+  const jamLemburInput = parseFloat(document.getElementById('lapLembur').value) || 0;
+  const lembur = orangLembur * jamLemburInput;
+  
   const order = document.getElementById('lapOrder').value;
   const totalJam = document.getElementById('lapTotalJam').value;
-  const kendala = v('lapKendala');
+  
+  const kpi = document.getElementById('lapKPI').value;
+  let kendala = v('lapKendala');
+  
+  const detailInfo = `[Detail - Bantu: ${orangBantu} org x ${jamBantu} jam | Kurang: ${orangKurang} org x ${jamKurang} jam | Lembur: ${orangLembur} org x ${jamLemburInput} jam | KPI: ${kpi}]`;
+  const finalKendala = kendala ? `${kendala}\n\n${detailInfo}` : detailInfo;
 
   if (!t || !pic || utama === '') { toast('Lengkapi Tanggal, PIC, dan Jumlah Pekerja Utama', 'error'); return; }
 
@@ -1146,10 +1309,55 @@ function submitLaporanKerja() {
       toast('Laporan Berhasil Disimpan ✅'); 
       closeModal('modalLaporanKerja'); 
       loadLaporanKerja(); 
-      resetForm(['lapPic', 'lapOrang', 'lapStaff', 'lapAdmin', 'lapBantu', 'lapKurang', 'lapLembur', 'lapOrder', 'lapKendala']); 
+      resetForm(['lapPic', 'lapOrang', 'lapAdmin', 'lapOrangBantu', 'lapJamBantu', 'lapOrangKurang', 'lapJamKurang', 'lapOrangLembur', 'lapLembur', 'lapOrder', 'lapKendala']); 
       document.getElementById('lapTotalJam').value = '0';
+      document.getElementById('lapKPI').value = '0';
     } else { toast(res.message, 'error'); } 
-  }).addLaporanKerja(t, d, pic, utama, bantu, kurang, lembur, totalJam, kendala, staff, admin, order, currentUser.username);
+  }).addLaporanKerja(t, d, pic, utama, bantu, kurang, lembur, totalJam, finalKendala, 0, admin, order, currentUser.username);
+}
+
+function showDetailLaporan(id) {
+  const d = laporanKerjaData.find(x => x.id === id);
+  if(!d) return;
+  
+  const totOrder = d.totalOrder || 0;
+  const kpi = d.totalJamKerja > 0 ? (totOrder / d.totalJamKerja).toFixed(3) : 0;
+  
+  let html = `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+      <div><span style="color:var(--gray)">Tanggal:</span><br><strong>${formatDate(d.tanggal)}</strong></div>
+      <div><span style="color:var(--gray)">Divisi:</span><br><strong>${d.divisi}</strong></div>
+      <div><span style="color:var(--gray)">PIC / Shift:</span><br><strong>${d.pic}</strong></div>
+      <div><span style="color:var(--gray)">Input By:</span><br><strong>${d.createdBy || '-'}</strong></div>
+    </div>
+    <div style="background:#ffffff0a; padding:12px; border-radius:8px; margin-bottom:16px;">
+      <h4 style="margin-bottom:8px; font-size:13px; color:var(--teal)">Data Pekerja & Jam Kerja</h4>
+      <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:13px;">
+        <li>Pekerja Utama: <strong>${d.totalOrang} Org</strong></li>
+        <li>Admin: <strong>${d.totalAdmin || 0} Org</strong></li>
+        <li>Jam Perbantuan (+): <strong style="color:var(--green)">${d.perbantuan} Jam</strong></li>
+        <li>Jam Pengurangan (-): <strong style="color:var(--red)">${d.pengurangan} Jam</strong></li>
+        <li>Jam Lembur (+): <strong>${d.jamLembur} Jam</strong></li>
+        <li><span style="color:var(--accent)">Total Jam Kerja:</span> <strong>${d.totalJamKerja} Jam</strong></li>
+      </ul>
+    </div>
+    <div style="background:#10b98115; border:1px solid #10b98130; padding:12px; border-radius:8px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span>Total Order Didapat:</span>
+        <strong style="color:var(--teal)">${totOrder.toLocaleString('id-ID')} Order</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between;">
+        <span>KPI (Order / Jam Kerja):</span>
+        <strong style="color:var(--green)">${kpi}</strong>
+      </div>
+    </div>
+    <div>
+      <span style="color:var(--gray)">Kendala & Catatan:</span>
+      <div style="background:#ffffff05; padding:10px; border-radius:6px; margin-top:4px; white-space:pre-wrap;">${d.kendala || '-'}</div>
+    </div>
+  `;
+  document.getElementById('detailLapContent').innerHTML = html;
+  openModal('modalDetailLaporan');
 }
 
 function delLaporanKerja(id) { 
@@ -1163,12 +1371,17 @@ function delLaporanKerja(id) {
 // ============================================================
 // GRAFIK LAPORAN
 // ============================================================
+function filterGrafik() { loadGrafikLaporan(); }
+
 function loadGrafikLaporan() {
   document.getElementById('tableRingkasanGrafik').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;">⏳ Memuat Data Grafik...</td></tr>';
-  
+  const filterBulan = document.getElementById('filterBulanGrafik').value; 
+
   google.script.run.withSuccessHandler(res => {
     if (!res.success) { toast('Gagal memuat grafik', 'error'); return; }
-    const data = res.data || [];
+    
+    let data = res.data || [];
+    if (filterBulan) data = data.filter(d => d.tanggal.startsWith(filterBulan));
     
     let summary = {
       'Marketplace': { totalLaporan: 0, totalPekerja: 0, totalLembur: 0, totalJam: 0, totalOrder: 0 },
@@ -1179,130 +1392,224 @@ function loadGrafikLaporan() {
     data.forEach(d => {
       if (summary[d.divisi]) {
         summary[d.divisi].totalLaporan += 1;
-        summary[d.divisi].totalPekerja += (d.totalOrang + (d.totalStaff||0) + (d.totalAdmin||0) + d.perbantuan - d.pengurangan);
+        summary[d.divisi].totalPekerja += (d.totalOrang + (d.totalStaff||0) + (d.totalAdmin||0));
         summary[d.divisi].totalLembur += d.jamLembur;
         summary[d.divisi].totalJam += d.totalJamKerja;
         summary[d.divisi].totalOrder += (d.totalOrder||0);
       }
     });
 
-    // Populate Table
     const tbody = document.getElementById('tableRingkasanGrafik');
     tbody.innerHTML = '';
-    const divs = ['Marketplace', 'Distributor', 'Return'];
-    const colors = { 'Marketplace': '#f59e0b', 'Distributor': '#0ea5e9', 'Return': '#ef4444' };
     
-    divs.forEach(div => {
-      const s = summary[div];
-      const avgPekerja = s.totalLaporan > 0 ? (s.totalPekerja / s.totalLaporan).toFixed(1) : 0;
-      tbody.innerHTML += `<tr>
-        <td><strong style="color:${colors[div]}">${div}</strong></td>
-        <td>${s.totalLaporan} Laporan</td>
-        <td>${avgPekerja} Orang / Hari</td>
-        <td>${s.totalLembur} Jam</td>
-        <td><strong>${s.totalJam} Jam</strong></td>
-        <td style="color:var(--teal)"><strong>${s.totalOrder} Order</strong></td>
-      </tr>`;
-    });
-
-    // Render Chart.js
-    renderChart(summary);
-
+    if(data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray);">Tidak ada laporan pada bulan ini</td></tr>';
+    } else {
+      const divs = ['Marketplace', 'Distributor', 'Return'];
+      const colors = { 'Marketplace': '#f59e0b', 'Distributor': '#0ea5e9', 'Return': '#ef4444' };
+      
+      divs.forEach(div => {
+        const s = summary[div];
+        const avgPekerja = s.totalLaporan > 0 ? (s.totalPekerja / s.totalLaporan).toFixed(1) : 0;
+        tbody.innerHTML += `<tr>
+          <td><strong style="color:${colors[div]}">${div}</strong></td>
+          <td>${s.totalLaporan} Laporan</td>
+          <td>${avgPekerja} Orang / Hari</td>
+          <td>${s.totalLembur} Jam</td>
+          <td><strong>${s.totalJam} Jam</strong></td>
+          <td style="color:var(--teal)"><strong>${s.totalOrder.toLocaleString('id-ID')} Order</strong></td>
+        </tr>`;
+      });
+    }
+    renderCharts(data);
   }).getLaporanKerja();
 }
 
-function renderChart(summaryData) {
-  const ctx = document.getElementById('chartLaporan').getContext('2d');
-  
-  if (laporanChartInstance) {
-    laporanChartInstance.destroy(); // Hancurkan chart lama jika ada agar tidak tumpah tindih
-  }
+function renderCharts(rawData) {
+  if (chartInstances.mp) chartInstances.mp.destroy();
+  if (chartInstances.dist) chartInstances.dist.destroy();
+  if (chartInstances.ret) chartInstances.ret.destroy();
 
-  const dataJam = [
-    summaryData['Marketplace'].totalJam,
-    summaryData['Distributor'].totalJam,
-    summaryData['Return'].totalJam
-  ];
+  const processData = (divisi) => {
+    const filtered = rawData.filter(d => d.divisi === divisi).sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
+    const dateMap = {};
+    filtered.forEach(d => {
+      const t = formatDate(d.tanggal); 
+      if(!dateMap[t]) dateMap[t] = { jam: 0, order: 0 };
+      dateMap[t].jam += d.totalJamKerja;
+      dateMap[t].order += (d.totalOrder||0);
+    });
+    const labels = Object.keys(dateMap);
+    const dataJam = labels.map(l => dateMap[l].jam);
+    const dataOrder = labels.map(l => dateMap[l].order);
+    return { labels, dataJam, dataOrder };
+  };
 
-  const dataOrder = [
-    summaryData['Marketplace'].totalOrder,
-    summaryData['Distributor'].totalOrder,
-    summaryData['Return'].totalOrder
-  ];
+  const mp = processData('Marketplace');
+  const dist = processData('Distributor');
+  const ret = processData('Return');
 
-  laporanChartInstance = new Chart(ctx, {
+  const createConf = (dataSeries, labelColor) => ({
     type: 'bar',
     data: {
-      labels: ['🛒 Marketplace', '📦 Distributor', '↩️ Return'],
+      labels: dataSeries.labels.length ? dataSeries.labels : ['Belum ada data'],
       datasets: [
-        {
-          label: 'Total Jam Kerja (Jam)',
-          data: dataJam,
-          backgroundColor: 'rgba(245, 158, 11, 0.8)', // Amber
-          borderColor: 'rgba(245, 158, 11, 1)',
-          borderWidth: 1,
-          borderRadius: 8,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Total Order Didapat',
-          data: dataOrder,
-          type: 'line',
-          backgroundColor: 'rgba(14, 165, 233, 1)', // Teal Line
-          borderColor: 'rgba(14, 165, 233, 1)',
-          borderWidth: 3,
-          tension: 0.3,
-          yAxisID: 'y1'
-        }
+        { label: 'Total Jam', data: dataSeries.dataJam.length ? dataSeries.dataJam : [0], backgroundColor: labelColor + 'cc', borderColor: labelColor, borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+        { label: 'Total Order', data: dataSeries.dataOrder.length ? dataSeries.dataOrder : [0], type: 'line', backgroundColor: '#ffffff', borderColor: '#10b981', borderWidth: 2, tension: 0.3, yAxisID: 'y1' }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#f8fafc', font: { family: "'Outfit', sans-serif", size: 14 } } }
-      },
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#f8fafc', font: {family: "'Outfit', sans-serif", size: 11} } } },
       scales: {
-        y: { 
-          type: 'linear',
-          display: true,
-          position: 'left',
-          beginAtZero: true, 
-          ticks: { color: '#94a3b8' }, 
-          grid: { color: 'rgba(255,255,255,0.1)' },
-          title: { display: true, text: 'Total Jam Kerja (Jam)', color: '#a0b4c8' }
-        },
-        y1: {
-          type: 'linear',
-          display: true,
-          position: 'right',
-          beginAtZero: true,
-          ticks: { color: '#0ea5e9' },
-          grid: { drawOnChartArea: false }, // Jangan buat garis grid tumpah tindih
-          title: { display: true, text: 'Total Order', color: '#0ea5e9' }
-        },
-        x: { 
-          ticks: { color: '#f8fafc', font: { weight: 'bold' } }, 
-          grid: { display: false } 
-        }
+        y: { type: 'linear', position: 'left', ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y1: { type: 'linear', position: 'right', ticks: { color: '#10b981' }, grid: { drawOnChartArea: false } },
+        x: { ticks: { color: '#f8fafc', font: {size: 10} }, grid: { display: false } }
       }
     }
   });
+
+  chartInstances.mp = new Chart(document.getElementById('chartMarketplace').getContext('2d'), createConf(mp, '#f59e0b'));
+  chartInstances.dist = new Chart(document.getElementById('chartDistributor').getContext('2d'), createConf(dist, '#0ea5e9'));
+  chartInstances.ret = new Chart(document.getElementById('chartReturn').getContext('2d'), createConf(ret, '#ef4444'));
+}
+
+// ============================================================
+// HAND OVER (NEW)
+// ============================================================
+function loadHandover() {
+  google.script.run.withSuccessHandler(res => {
+    const tbody = document.getElementById('tableHandover'); tbody.innerHTML = '';
+    if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="emoji">📦</div><div>Belum ada laporan Hand Over</div></td></tr>'; return; }
+    res.data.forEach(d => {
+      const isSelesai = d.status === 'Selesai';
+      const statBadge = isSelesai ? '<span class="badge-lunas">✅ Selesai</span>' : '<span class="badge-pending">⏳ Pending</span>';
+      const actBtn = !isSelesai ? `<button class="btn btn-success btn-sm" onclick="markHandoverSelesai('${d.id}')">Selesai</button>` : '';
+      tbody.innerHTML += `<tr>
+        <td>${formatDate(d.tanggal)}</td>
+        <td><strong>${d.pic}</strong></td>
+        <td><code style="color:var(--teal)">${d.resi}</code></td>
+        <td>${d.pengerjaan}</td>
+        <td>${d.keterangan || '-'}</td>
+        <td>${statBadge}</td>
+        <td style="display:flex;gap:4px;">${actBtn}<button class="btn btn-danger btn-sm" onclick="delHandover('${d.id}')">🗑️</button></td>
+      </tr>`;
+    });
+  }).getHandover();
+}
+
+function submitHandover() {
+  const t = v('hoTanggal'), pic = v('hoPic'), r = v('hoResi'), p = v('hoPengerjaan'), k = v('hoKeterangan');
+  if (!t || !pic || !r || !p) { toast('Harap lengkapi Tanggal, PIC, Resi, dan Pengerjaan', 'error'); return; }
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) { toast('Hand Over disimpan ✅'); closeModal('modalHandover'); loadHandover(); resetForm(['hoPic', 'hoResi', 'hoPengerjaan', 'hoKeterangan']); }
+    else { toast(res.message, 'error'); }
+  }).addHandover(t, pic, r, p, k, currentUser.username);
+}
+
+function markHandoverSelesai(id) {
+  if (!confirm('Tandai pekerjaan ini sebagai Selesai?')) return;
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) { toast('Status diperbarui ✅'); loadHandover(); } else toast(res.message, 'error');
+  }).updateHandoverStatus(id, 'Selesai');
+}
+
+function delHandover(id) {
+  if (!confirm('Hapus laporan Hand Over ini?')) return;
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) { toast('Dihapus ✅'); loadHandover(); } else toast(res.message, 'error');
+  }).deleteHandover(id);
+}
+
+// ============================================================
+// KLAIM PAKET (NEW)
+// ============================================================
+function loadKlaim() {
+  google.script.run.withSuccessHandler(res => {
+    const tbody = document.getElementById('tableKlaim'); tbody.innerHTML = '';
+    let totalPending = 0; let totalSelesai = 0;
+    if (!res.success || !res.data.length) { 
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="emoji">⚠️</div><div>Belum ada laporan Klaim</div></td></tr>';
+      document.getElementById('statKlaimPending').textContent = formatRp(0);
+      document.getElementById('statKlaimSelesai').textContent = formatRp(0);
+      return; 
+    }
+    
+    res.data.forEach(d => {
+      const isSelesai = d.status === 'Selesai';
+      if (isSelesai) totalSelesai += d.harga; else totalPending += d.harga;
+      
+      const statBadge = isSelesai ? '<span class="badge-lunas">✅ Selesai</span>' : '<span class="badge-pending">⏳ Pending</span>';
+      const actBtn = !isSelesai ? `<button class="btn btn-success btn-sm" onclick="markKlaimSelesai('${d.id}')">Selesai</button>` : '';
+      tbody.innerHTML += `<tr>
+        <td>${formatDate(d.tanggal)}</td>
+        <td><strong>${d.pic}</strong></td>
+        <td><code style="color:var(--teal)">${d.resi}</code></td>
+        <td class="rupiah">${formatRp(d.harga)}</td>
+        <td>${d.keterangan || '-'}</td>
+        <td>${statBadge}</td>
+        <td style="display:flex;gap:4px;">${actBtn}<button class="btn btn-danger btn-sm" onclick="delKlaim('${d.id}')">🗑️</button></td>
+      </tr>`;
+    });
+    
+    document.getElementById('statKlaimPending').textContent = formatRp(totalPending);
+    document.getElementById('statKlaimSelesai').textContent = formatRp(totalSelesai);
+  }).getKlaim();
+}
+
+function submitKlaim() {
+  const t = v('klTanggal'), pic = v('klPic'), r = v('klResi'), k = v('klKeterangan');
+  const h = getRpValue('klHarga');
+  if (!t || !pic || !r || h <= 0) { toast('Harap lengkapi semua data dan Harga Paket', 'error'); return; }
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) { toast('Klaim disimpan ✅'); closeModal('modalKlaim'); loadKlaim(); resetForm(['klPic', 'klResi', 'klHarga', 'klKeterangan']); }
+    else { toast(res.message, 'error'); }
+  }).addKlaim(t, pic, r, h, k, currentUser.username);
+}
+
+function markKlaimSelesai(id) {
+  if (!confirm('Tandai klaim ini sudah dibayar / selesai?')) return;
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) { toast('Status diperbarui ✅'); loadKlaim(); } else toast(res.message, 'error');
+  }).updateKlaimStatus(id, 'Selesai');
+}
+
+function delKlaim(id) {
+  if (!confirm('Hapus data Klaim ini?')) return;
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) { toast('Dihapus ✅'); loadKlaim(); } else toast(res.message, 'error');
+  }).deleteKlaim(id);
 }
 
 // ============================================================
 // KARYAWAN
 // ============================================================
+function renderKaryawan(data) {
+  const tbody = document.getElementById('tableKaryawan'); tbody.innerHTML = '';
+  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="emoji">👥</div><div>Data karyawan tidak ditemukan</div></td></tr>'; return; }
+  data.forEach(d => {
+    const sCls = d.status === 'Aktif' ? 'badge-aktif' : 'badge-nonaktif';
+    tbody.innerHTML += `<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td>${d.departemen}</td><td>${d.telepon}</td><td><span class="${sCls}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
+  });
+}
+
 function loadKaryawan() {
   google.script.run.withSuccessHandler(res => {
-    karyawanData = res.data || []; const tbody = document.getElementById('tableKaryawan'); tbody.innerHTML = '';
-    if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="emoji">👥</div><div>Belum ada karyawan</div></td></tr>'; return; }
-    res.data.forEach(d => {
-      const sCls = d.status === 'Aktif' ? 'badge-aktif' : 'badge-nonaktif';
-      tbody.innerHTML += `<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td>${d.departemen}</td><td>${d.telepon}</td><td><span class="${sCls}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button><button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
-    });
+    karyawanData = res.data || []; 
+    renderKaryawan(karyawanData);
   }).getKaryawan();
 }
+
+function filterKaryawan() {
+  const q = document.getElementById('karyawanSearch').value.toLowerCase();
+  const filtered = karyawanData.filter(d => 
+    d.nama.toLowerCase().includes(q) || 
+    (d.jabatan || '').toLowerCase().includes(q) || 
+    (d.departemen || '').toLowerCase().includes(q)
+  );
+  renderKaryawan(filtered);
+}
+
 function editKaryawan(id) {
   const d = karyawanData.find(k => k.id === id); if (!d) return;
   document.getElementById('karyawanId').value = d.id; document.getElementById('karyawanModalTitle').textContent = '✏️ Edit Karyawan';
@@ -1738,35 +2045,16 @@ function printSJOrder(orderId) {
 // ============================================================
 function doExportStock() {
   if (!stockData || !stockData.length) { toast('Tidak ada data stok', 'error'); return; }
-  
   let csv = 'SKU,Nama Barang,Barcode,Batch,Exp Date,Stok,Min Stok,Satuan,Kategori,Lokasi,Status\n';
-  
   stockData.forEach(d => {
     const status = d.stok <= 0 ? 'Habis' : (d.stok <= d.stokMin ? 'Rendah' : 'Aman');
-    const row = [
-      d.sku, 
-      `"${d.nama}"`, 
-      d.barcode || '-', 
-      d.batch || '-', 
-      d.expDate ? d.expDate.split('T')[0] : '',
-      d.stok, 
-      d.stokMin, 
-      d.satuan, 
-      `"${d.kategori || '-'}"`, 
-      `"${d.lokasi || '-'}"`, 
-      status
-    ];
+    const row = [d.sku, `"${d.nama}"`, d.barcode || '-', d.batch || '-', d.expDate ? d.expDate.split('T')[0] : '', d.stok, d.stokMin, d.satuan, `"${d.kategori || '-'}"`, `"${d.lokasi || '-'}"`, status];
     csv += row.join(',') + '\n';
   });
-
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Export_Stock_FCL_${new Date().toISOString().split('T')[0]}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const link = document.createElement('a'); link.setAttribute('href', url); link.setAttribute('download', `Export_Stock_FCL_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
 // ============================================================
@@ -1775,46 +2063,27 @@ function doExportStock() {
 function handleImportOrder(input) {
   const file = input.files[0];
   if (!file) return;
-  
   const reader = new FileReader();
   reader.onload = function(e) {
     const text = e.target.result;
     const lines = text.split('\n');
     const orderMap = {};
-    
     for (let i = 1; i < lines.length; i++) {
        if (!lines[i].trim()) continue;
        const cols = lines[i].split(',');
-       
        if (cols.length >= 5) {
-          const tgl = cols[0].trim();
-          const pel = cols[1].replace(/"/g, '').trim();
-          const al = cols[2].replace(/"/g, '').trim();
-          const sku = cols[3].trim();
-          const qty = cols[4].trim();
-          const ket = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
-          
+          const tgl = cols[0].trim(), pel = cols[1].replace(/"/g, '').trim(), al = cols[2].replace(/"/g, '').trim(), sku = cols[3].trim(), qty = cols[4].trim(), ket = cols[5] ? cols[5].replace(/"/g, '').trim() : '';
           const key = tgl + '|' + pel;
-          if (!orderMap[key]) {
-            orderMap[key] = { tanggal: tgl, pelanggan: pel, alamat: al, keterangan: ket, items: [] };
-          }
+          if (!orderMap[key]) orderMap[key] = { tanggal: tgl, pelanggan: pel, alamat: al, keterangan: ket, items: [] };
           orderMap[key].items.push({ sku: sku, qty: qty });
        }
     }
-    
     const ordersArray = Object.values(orderMap);
     if (ordersArray.length === 0) { toast('Tidak ada data valid di CSV', 'error'); return; }
-
     toast(`Mengimpor ${ordersArray.length} order... Mohon tunggu.`, 'success');
-    
     google.script.run.withSuccessHandler(res => {
        input.value = ''; 
-       if(res.success) { 
-         toast(`${res.count} Order berhasil diimpor ✅`); 
-         loadOrder(); 
-       } else { 
-         toast('Gagal mengimpor: ' + res.message, 'error'); 
-       }
+       if(res.success) { toast(`${res.count} Order berhasil diimpor ✅`); loadOrder(); } else { toast('Gagal mengimpor: ' + res.message, 'error'); }
     }).importOrdersBulk(JSON.stringify(ordersArray), currentUser.username);
   };
   reader.readAsText(file);
