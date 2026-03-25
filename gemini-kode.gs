@@ -21,7 +21,9 @@ const CONFIG = {
     SURAT_JALAN_KELUAR: 'SuratJalanKeluar',
     SURAT_JALAN_KELUAR_DETAIL: 'SuratJalanKeluarDetail',
     ORDER: 'Order',
-    ORDER_DETAIL: 'OrderDetail'
+    ORDER_DETAIL: 'OrderDetail',
+    RETUR: 'Retur',
+    RETUR_DETAIL: 'ReturDetail'
   },
   VERSION: '1.1.0'
 };
@@ -69,6 +71,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
   setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan']);
+  setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   
   // Tambah user admin default jika belum ada
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -1159,4 +1163,61 @@ function importOrdersBulk(ordersData, createdBy) {
   } catch(e) { 
     return { success: false, message: e.message }; 
   }
+}
+
+// ============================================================
+// RETUR BARANG
+// ============================================================
+function getRetur() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.RETUR);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0], noRetur: data[i][1],
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        sumber: data[i][3], alasan: data[i][4],
+        keterangan: data[i][5], createdBy: data[i][6],
+        createdAt: data[i][7] instanceof Date ? data[i][7].toISOString() : String(data[i][7]||'')
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
+  try {
+    const noRetur = generateNoSJ('RTR');
+    const id = generateId();
+    const sheet = getSheet(CONFIG.SHEETS.RETUR);
+    sheet.appendRow([id, noRetur, tanggal, sumber, alasan, keterangan, createdBy, new Date().toISOString()]);
+
+    const detSheet = getSheet(CONFIG.SHEETS.RETUR_DETAIL);
+    const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+    for (const item of parsedItems) {
+      const res = updateStokQty(item.stockId, parseFloat(item.qty)||0);
+      if (!res.success) return { success: false, message: 'Barang "' + item.nama + '": ' + res.message };
+      detSheet.appendRow([generateId(), id, noRetur, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+    }
+    return { success: true, id, noRetur };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function getReturDetail(returId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.RETUR_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0] || data[i][1] !== returId) continue;
+      result.push({ id:data[i][0], returId:data[i][1], noRetur:data[i][2], stockId:data[i][3], sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8]||'-', expDate:data[i][9]||'-' });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function deleteRetur(id) {
+  return deleteRow(CONFIG.SHEETS.RETUR, id);
 }
