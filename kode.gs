@@ -23,19 +23,27 @@ const CONFIG = {
     ORDER: 'Order',
     ORDER_DETAIL: 'OrderDetail',
     RETUR: 'Retur',
-    RETUR_DETAIL: 'ReturDetail'
+    RETUR_DETAIL: 'ReturDetail',
+    HANDOVER: 'Handover',
+    KLAIM: 'Klaim'
   },
-  VERSION: '1.3.0'
+  VERSION: '1.4.0'
 };
 
 // ============================================================
 // ENTRY POINT
 // ============================================================
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('Gudang FCL')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  // Pastikan nama 'Index' sesuai dengan nama file HTML Anda
+  var html = HtmlService.createHtmlOutputFromFile('Index'); 
+  
+  // INI BARIS YANG MEMBUKA BLOKIR BLANK PUTIH
+  html.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  
+  // Agar tampilan responsif di HP
+  html.addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  
+  return html;
 }
 
 // ============================================================
@@ -60,7 +68,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'departemen', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt']);
   
-  // Setup Sheet Laporan Kerja dengan Field Baru
+  // Setup Sheet Laporan Kerja
   setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, [
     'id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 
     'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt'
@@ -69,6 +77,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value']);
+  
   // Inventory
   setupSheet(ss, CONFIG.SHEETS.STOCK, ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK, ['id','noSJ','tanggal','supplier','keterangan','createdBy','createdAt']);
@@ -80,6 +89,10 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   
+  // Fitur Baru: Handover & Klaim Paket
+  setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
+
   // Tambah user admin default jika belum ada
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -327,10 +340,10 @@ function getLaporanKerja() {
         divisi: data[i][2],
         pic: data[i][3],
         totalOrang: parseInt(data[i][4]) || 0,
-        perbantuan: parseInt(data[i][5]) || 0,
-        pengurangan: parseInt(data[i][6]) || 0,
-        jamLembur: parseInt(data[i][7]) || 0,
-        totalJamKerja: parseInt(data[i][8]) || 0,
+        perbantuan: parseFloat(data[i][5]) || 0,
+        pengurangan: parseFloat(data[i][6]) || 0,
+        jamLembur: parseFloat(data[i][7]) || 0,
+        totalJamKerja: parseFloat(data[i][8]) || 0,
         kendala: data[i][9] || '-',
         totalStaff: parseInt(data[i][10]) || 0,
         totalAdmin: parseInt(data[i][11]) || 0,
@@ -350,8 +363,8 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
     const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
     const id = generateId();
     sheet.appendRow([
-      id, tanggal, divisi, pic, parseInt(totalOrang), parseInt(perbantuan), 
-      parseInt(pengurangan), parseInt(jamLembur), parseInt(totalJamKerja), 
+      id, tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, 
+      parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, 
       kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, 
       createdBy, new Date().toISOString()
     ]);
@@ -364,6 +377,124 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
 function deleteLaporanKerja(id) {
   return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id);
 }
+
+// ============================================================
+// HANDOVER & KLAIM
+// ============================================================
+
+function getHandover() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.HANDOVER);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        pic: data[i][2],
+        resi: data[i][3],
+        pengerjaan: data[i][4],
+        keterangan: data[i][5],
+        status: data[i][6],
+        createdBy: data[i][7],
+        createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8])
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function addHandover(tanggal, pic, resi, pengerjaan, keterangan, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.HANDOVER);
+    const id = generateId();
+    sheet.appendRow([id, tanggal, pic, resi, pengerjaan, keterangan, 'Pending', createdBy, new Date().toISOString()]);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function updateHandoverStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.HANDOVER);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) {
+        sheet.getRange(i + 1, 7).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function deleteHandover(id) {
+  return deleteRow(CONFIG.SHEETS.HANDOVER, id);
+}
+
+
+function getKlaim() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KLAIM);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        pic: data[i][2],
+        resi: data[i][3],
+        harga: parseFloat(data[i][4]) || 0,
+        keterangan: data[i][5],
+        status: data[i][6],
+        createdBy: data[i][7],
+        createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8])
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function addKlaim(tanggal, pic, resi, harga, keterangan, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KLAIM);
+    const id = generateId();
+    sheet.appendRow([id, tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()]);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function updateKlaimStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KLAIM);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === id) {
+        sheet.getRange(i + 1, 7).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function deleteKlaim(id) {
+  return deleteRow(CONFIG.SHEETS.KLAIM, id);
+}
+
 
 // ============================================================
 // UPLOAD FILE KE GOOGLE DRIVE
