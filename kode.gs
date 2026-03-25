@@ -11,7 +11,7 @@ const CONFIG = {
     KAS_GUDANG: 'KasGudang',
     TEAM_BUILDING: 'TeamBuilding',
     KARYAWAN: 'Karyawan',
-    PEMBAYARAN_TB: 'PembayaranTB',
+    LAPORAN_KERJA: 'LaporanKerja',
     SOP: 'SOP',
     ORGANISASI: 'Organisasi',
     SETTINGS: 'Settings',
@@ -25,7 +25,7 @@ const CONFIG = {
     RETUR: 'Retur',
     RETUR_DETAIL: 'ReturDetail'
   },
-  VERSION: '1.1.0'
+  VERSION: '1.3.0'
 };
 
 // ============================================================
@@ -59,7 +59,13 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.KAS_GUDANG, ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'departemen', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.PEMBAYARAN_TB, ['id', 'karyawanId', 'karyawanNama', 'periode', 'nominal', 'status', 'tanggalBayar', 'keterangan', 'createdAt']);
+  
+  // Setup Sheet Laporan Kerja dengan Field Baru
+  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, [
+    'id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 
+    'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt'
+  ]);
+  
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value']);
@@ -306,7 +312,61 @@ function deleteKaryawan(id) {
 }
 
 // ============================================================
-// UPLOAD FILE KE GOOGLE DRIVE (Single + Chunked)
+// LAPORAN KERJA
+// ============================================================
+function getLaporanKerja() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        divisi: data[i][2],
+        pic: data[i][3],
+        totalOrang: parseInt(data[i][4]) || 0,
+        perbantuan: parseInt(data[i][5]) || 0,
+        pengurangan: parseInt(data[i][6]) || 0,
+        jamLembur: parseInt(data[i][7]) || 0,
+        totalJamKerja: parseInt(data[i][8]) || 0,
+        kendala: data[i][9] || '-',
+        totalStaff: parseInt(data[i][10]) || 0,
+        totalAdmin: parseInt(data[i][11]) || 0,
+        totalOrder: parseInt(data[i][12]) || 0,
+        createdBy: data[i][13],
+        createdAt: data[i][14] instanceof Date ? data[i][14].toISOString() : String(data[i][14])
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
+    const id = generateId();
+    sheet.appendRow([
+      id, tanggal, divisi, pic, parseInt(totalOrang), parseInt(perbantuan), 
+      parseInt(pengurangan), parseInt(jamLembur), parseInt(totalJamKerja), 
+      kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, 
+      createdBy, new Date().toISOString()
+    ]);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function deleteLaporanKerja(id) {
+  return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id);
+}
+
+// ============================================================
+// UPLOAD FILE KE GOOGLE DRIVE
 // ============================================================
 function uploadFileToDrive(base64Data, fileName, mimeType, folderName) {
   try {
@@ -435,59 +495,6 @@ function exportSOP() {
 }
 
 // ============================================================
-// PEMBAYARAN TEAM BUILDING
-// ============================================================
-function getPembayaranTB() {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.PEMBAYARAN_TB);
-    const data = sheet.getDataRange().getValues();
-    const result = [];
-    for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
-      result.push({
-        id: data[i][0], karyawanId: data[i][1], karyawanNama: data[i][2],
-        periode: data[i][3], nominal: data[i][4], status: data[i][5],
-        tanggalBayar: data[i][6], keterangan: data[i][7], createdAt: data[i][8]
-      });
-    }
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
-
-function addPembayaranTB(karyawanId, karyawanNama, periode, nominal, status, tanggalBayar, keterangan) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.PEMBAYARAN_TB);
-    const id = generateId();
-    sheet.appendRow([id, karyawanId, karyawanNama, periode, parseFloat(nominal), status, tanggalBayar, keterangan, new Date().toISOString()]);
-    return { success: true, id: id };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
-
-function updateStatusPembayaran(id, status, tanggalBayar) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.PEMBAYARAN_TB);
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === id) {
-        sheet.getRange(i + 1, 6, 1, 2).setValues([[status, tanggalBayar || new Date().toISOString()]]);
-        return { success: true };
-      }
-    }
-    return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-}
-
-function deletePembayaranTB(id) {
-  return deleteRow(CONFIG.SHEETS.PEMBAYARAN_TB, id);
-}
-
-// ============================================================
 // SOP GUDANG
 // ============================================================
 function getSOP() {
@@ -600,6 +607,7 @@ function getDashboardData() {
     const saldoTB = getSaldoTeamBuilding();
     const kasGudang = getKasGudang();
     const teamBuilding = getTeamBuilding();
+    const laporanReq = getLaporanKerja();
 
     let history = [];
     if (kasGudang.success && kasGudang.data) {
@@ -644,7 +652,8 @@ function getDashboardData() {
       totalKasIn: totalKasIn,
       totalKasOut: totalKasOut,
       kasData: kasGudang.data || [],
-      tbData: teamBuilding.data || []
+      tbData: teamBuilding.data || [],
+      laporanData: laporanReq.success ? laporanReq.data : []
     };
   } catch (e) {
     return { success: false, message: e.message };
@@ -1120,9 +1129,6 @@ function getAnalisisStock() {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-// ============================================================
-// FITUR BARU: IMPORT ORDER BULK
-// ============================================================
 function importOrdersBulk(ordersData, createdBy) {
   try {
     const parsedOrders = typeof ordersData === 'string' ? JSON.parse(ordersData) : ordersData;
