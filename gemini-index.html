@@ -87,7 +87,7 @@ td { padding:13px 14px; border-bottom:1px solid #ffffff0a; vertical-align:middle
 tr:hover td { background:#ffffff05; }
 .badge-in { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-out { background:#ef444422; color:#fca5a5; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-tb { background:#0ea5e922; color:#7dd3fc; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-retur { background:#0ea5e922; color:#7dd3fc; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-lunas { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-belum { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
 .badge-aktif { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; }
@@ -242,6 +242,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
         <div class="nav-item" onclick="showPage('stock')"><span class="icon">📦</span> Stock Barang</div>
         <div class="nav-item" onclick="showPage('inbound')"><span class="icon">📥</span> Inbound Barang</div>
         <div class="nav-item" onclick="showPage('outbound')"><span class="icon">✂️</span> Potong Stok Manual</div>
+        <div class="nav-item" onclick="showPage('retur')"><span class="icon">↩️</span> Retur Barang</div>
         <div class="nav-item" onclick="showPage('order')"><span class="icon">🛒</span> Orderan</div>
         <div class="nav-item" onclick="showPage('analisis')"><span class="icon">📈</span> Analisis Stok</div>
         <div class="nav-section" id="navAdmin" style="display:none">Admin</div>
@@ -426,6 +427,21 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <table>
                 <thead><tr><th>No. Dokumen</th><th>Tanggal</th><th>Alasan / Tujuan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead>
                 <tbody id="tableOutbound"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="page-retur">
+          <div class="card">
+            <div class="card-header">
+              <h4>↩️ Riwayat Retur Barang</h4>
+              <button class="btn btn-teal" onclick="openModal('modalRetur')">+ Buat Retur</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>No. Retur</th><th>Tanggal</th><th>Sumber Retur</th><th>Alasan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead>
+                <tbody id="tableRetur"></tbody>
               </table>
             </div>
           </div>
@@ -696,6 +712,40 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
   </div>
 </div>
 
+<div class="modal-overlay" id="modalRetur">
+  <div class="modal" style="width:680px">
+    <button class="modal-close" onclick="closeModal('modalRetur')">✕</button>
+    <h3>↩️ Form Retur Barang</h3>
+    <div class="form-row">
+      <div class="f-group"><label>Tanggal Retur</label><input type="date" id="retTanggal"></div>
+      <div class="f-group"><label>Alasan Retur</label>
+        <select id="retAlasan">
+          <option value="Barang Salah Kirim">Barang Salah Kirim</option>
+          <option value="Barang Rusak">Barang Rusak / Cacat</option>
+          <option value="Kelebihan Pengiriman">Kelebihan Pengiriman</option>
+          <option value="Tidak Sesuai Pesanan">Tidak Sesuai Pesanan</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="f-group"><label>Sumber Retur <span style="color:var(--gray);font-weight:400">(Pelanggan / Toko)</span></label><input type="text" id="retSumber" placeholder="Nama pelanggan / toko yang meretur"></div>
+      <div class="f-group"><label>Keterangan Detail</label><input type="text" id="retKet" placeholder="Penjelasan tambahan (opsional)"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Diretur</label>
+        <button class="btn btn-ghost btn-sm" onclick="addItemRow('retItems','retur')">+ Tambah Baris</button>
+      </div>
+      <div id="retItems"></div>
+    </div>
+    <div style="background:#0ea5e912;border:1px solid #0ea5e922;border-radius:8px;padding:10px 14px;font-size:13px;color:#7dd3fc;margin-bottom:16px;">
+      ℹ️ Barang yang diretur akan <strong>otomatis masuk kembali ke stok</strong> sesuai jumlah yang diinput.
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRetur')">Batal</button><button class="btn btn-teal" onclick="submitRetur()">↩️ Konfirmasi Retur & Tambah Stok</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalDetailSJ">
   <div class="modal" style="width:640px">
     <button class="modal-close" onclick="closeModal('modalDetailSJ')">✕</button>
@@ -756,7 +806,7 @@ function initApp() {
     // Sembunyikan semua nav-item yang bukan bagian dari inventory
     document.querySelectorAll('.nav-item').forEach(el => {
       const onclickAttr = el.getAttribute('onclick') || '';
-      if (!['stock', 'inbound', 'outbound', 'order', 'analisis'].some(keyword => onclickAttr.includes(keyword))) {
+      if (!['stock', 'inbound', 'outbound', 'retur', 'order', 'analisis'].some(keyword => onclickAttr.includes(keyword))) {
         el.style.display = 'none';
       }
     });
@@ -779,7 +829,7 @@ function initApp() {
 
 function setToday() {
   const today = new Date().toISOString().split('T')[0];
-  ['kgTanggal','tbTanggal','kTglMasuk','pbTglBayar','inbTanggal','outTanggal','ordTanggal'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+  ['kgTanggal','tbTanggal','kTglMasuk','pbTglBayar','inbTanggal','outTanggal','ordTanggal','retTanggal'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
 }
 
 // ============================================================
@@ -807,12 +857,12 @@ const pageTitles = {
   dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', karyawan: '👥 Data Karyawan',
   pembayaranTB: '💳 Pembayaran Team Building', organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
   users: '⚙️ Manajemen User', stock: '📦 Stock Barang', inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
-  order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
+  retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
 };
 const pageLoaders = {
   dashboard: loadDashboard, kasGudang: loadKasGudang, teamBuilding: loadTB, karyawan: loadKaryawan,
   pembayaranTB: loadPembayaran, organisasi: loadOrg, sop: loadSOP, users: loadUsers,
-  stock: loadStock, inbound: loadInbound, outbound: loadOutbound, order: loadOrder, analisis: loadAnalisis
+  stock: loadStock, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
 };
 
 function showPage(name) {
@@ -1215,6 +1265,79 @@ function showInOutDetail(id, noSJ, tipe) {
     if(!res.success||!res.data.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">Tidak ada detail</td></tr>';return;}
     res.data.forEach(d=>{ tbody.innerHTML+=`<tr><td><code style="font-size:12px">${d.sku}</code></td><td>${d.nama}</td><td><strong>${d.qty}</strong></td><td>${d.satuan}</td><td>${d.batch||'-'}</td><td>${d.expDate?formatDate(d.expDate):'-'}</td></tr>`; });
   }).getSJDetailData(id, tipe);
+}
+
+// ============================================================
+// RETUR BARANG
+// ============================================================
+function loadRetur() {
+  google.script.run.withSuccessHandler(res => {
+    const tbody = document.getElementById('tableRetur'); tbody.innerHTML = '';
+    if (!res.success || !res.data.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="emoji">↩️</div><div>Belum ada riwayat retur</div></div></td></tr>';
+      return;
+    }
+    res.data.sort((a,b) => b.createdAt.localeCompare(a.createdAt)).forEach(d => {
+      tbody.innerHTML += `<tr>
+        <td><code style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:4px">${d.noRetur}</code></td>
+        <td>${formatDate(d.tanggal)}</td>
+        <td><strong>${d.sumber}</strong></td>
+        <td><span class="badge-tb">${d.alasan}</span></td>
+        <td>${d.keterangan||'-'}</td>
+        <td>${d.createdBy}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="showReturDetail('${d.id}','${d.noRetur}')">📋 Detail</button>
+          <button class="btn btn-danger btn-sm" onclick="delRetur('${d.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  }).getRetur();
+}
+
+function submitRetur() {
+  const t = v('retTanggal'), s = v('retSumber'), a = v('retAlasan');
+  if (!t || !s) { toast('Tanggal dan Sumber Retur wajib diisi', 'error'); return; }
+  const items = collectItems('retItems');
+  if (!items.length) { toast('Minimal 1 barang harus diisi', 'error'); return; }
+  const btn = document.querySelector('#modalRetur .btn-teal');
+  btn.disabled = true; btn.textContent = '⏳ Memproses...';
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.disabled = false; btn.textContent = '↩️ Konfirmasi Retur & Tambah Stok';
+      if (res.success) {
+        toast('Retur berhasil! Stok sudah diperbarui ✅');
+        closeModal('modalRetur');
+        loadRetur(); loadStock();
+        document.getElementById('retItems').innerHTML = '';
+      } else { toast(res.message, 'error'); }
+    })
+    .withFailureHandler(err => {
+      btn.disabled = false; btn.textContent = '↩️ Konfirmasi Retur & Tambah Stok';
+      toast('Error: ' + err.message, 'error');
+    })
+    .addRetur(t, s, a, v('retKet'), JSON.stringify(items), currentUser.username);
+}
+
+function showReturDetail(id, noRetur) {
+  document.getElementById('detailSJTitle').textContent = '↩️ Detail Retur — ' + noRetur;
+  const tbody = document.getElementById('tblDetailSJ');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px">⏳ Memuat...</td></tr>';
+  openModal('modalDetailSJ');
+  google.script.run.withSuccessHandler(res => {
+    tbody.innerHTML = '';
+    if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">Tidak ada detail</td></tr>'; return; }
+    res.data.forEach(d => {
+      tbody.innerHTML += `<tr><td><code style="font-size:12px">${d.sku}</code></td><td>${d.nama}</td><td><strong style="color:var(--teal)">${d.qty}</strong></td><td>${d.satuan}</td><td>${d.batch||'-'}</td><td>${d.expDate?formatDate(d.expDate):'-'}</td></tr>`;
+    });
+  }).getReturDetail(id);
+}
+
+function delRetur(id) {
+  if (!confirm('Hapus riwayat retur ini?\n\n⚠️ Perhatian: Stok yang sudah ditambahkan TIDAK akan otomatis dikurangi kembali.')) return;
+  google.script.run.withSuccessHandler(res => {
+    if (res.success) { toast('Riwayat retur dihapus ✅'); loadRetur(); }
+    else toast(res.message, 'error');
+  }).deleteRetur(id);
 }
 
 // ============================================================
