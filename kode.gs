@@ -27,7 +27,8 @@ const CONFIG = {
     RETUR: 'Retur',
     RETUR_DETAIL: 'ReturDetail',
     HANDOVER: 'Handover',
-    KLAIM: 'Klaim'
+    KLAIM: 'Klaim',
+    TUGAS_PROJECT: 'TugasProject'
   }
 };
 
@@ -79,6 +80,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -1137,4 +1139,137 @@ function getAnalisisStock() {
     
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// TUGAS PROJECT
+// ============================================================
+
+function getTugasProject() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_PROJECT);
+    const data  = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id:           data[i][0],
+        judul:        data[i][1],
+        assignee:     data[i][2],
+        assigneeName: data[i][3],
+        prioritas:    data[i][4],
+        tanggalMulai: data[i][5] instanceof Date
+          ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(data[i][5] || ''),
+        deadline:     data[i][6] instanceof Date
+          ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(data[i][6] || ''),
+        targetHari:   data[i][7] ? parseInt(data[i][7]) : null,
+        status:       data[i][8],
+        kategori:     data[i][9],
+        deskripsi:    data[i][10],
+        createdBy:    data[i][11],
+        createdAt:    data[i][12] instanceof Date ? data[i][12].toISOString() : String(data[i][12] || ''),
+        updatedAt:    data[i][13] instanceof Date ? data[i][13].toISOString() : String(data[i][13] || ''),
+        log:          data[i][14] ? String(data[i][14]) : '[]'
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addTugasProject(jsonString) {
+  try {
+    const p      = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+    const id     = generateId();
+    const now    = new Date().toISOString();
+    const logEntry = JSON.stringify([{
+      time: now,
+      action: 'Tugas dibuat',
+      by: p.createdBy || '-'
+    }]);
+
+    getSheet(CONFIG.SHEETS.TUGAS_PROJECT).appendRow([
+      id,
+      p.judul,
+      p.assignee,
+      p.assigneeName || p.assignee,
+      p.prioritas || 'Sedang',
+      p.tanggalMulai || '',
+      p.deadline || '',
+      p.targetHari || '',
+      p.status || 'Todo',
+      p.kategori || '',
+      p.deskripsi || '',
+      p.createdBy || '',
+      now,
+      now,
+      logEntry
+    ]);
+    return { success: true, id: id };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function updateTugasProject(jsonString) {
+  try {
+    const p     = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_PROJECT);
+    const data  = sheet.getDataRange().getValues();
+    const now   = new Date().toISOString();
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) !== String(p.id)) continue;
+
+      // Parse existing log
+      let log = [];
+      try { log = JSON.parse(data[i][14] || '[]'); } catch(ex) { log = []; }
+      log.push({
+        time: now,
+        action: 'Tugas diperbarui (status: ' + p.status + ')',
+        by: p.createdBy || '-'
+      });
+
+      sheet.getRange(i+1, 2).setValue(p.judul);
+      sheet.getRange(i+1, 3).setValue(p.assignee);
+      sheet.getRange(i+1, 4).setValue(p.assigneeName || p.assignee);
+      sheet.getRange(i+1, 5).setValue(p.prioritas || 'Sedang');
+      sheet.getRange(i+1, 6).setValue(p.tanggalMulai || '');
+      sheet.getRange(i+1, 7).setValue(p.deadline || '');
+      sheet.getRange(i+1, 8).setValue(p.targetHari || '');
+      sheet.getRange(i+1, 9).setValue(p.status || 'Todo');
+      sheet.getRange(i+1,10).setValue(p.kategori || '');
+      sheet.getRange(i+1,11).setValue(p.deskripsi || '');
+      sheet.getRange(i+1,14).setValue(now);
+      sheet.getRange(i+1,15).setValue(JSON.stringify(log));
+
+      return { success: true };
+    }
+    return { success: false, message: 'Tugas tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function updateTugasStatus(id, newStatus, updatedBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_PROJECT);
+    const data  = sheet.getDataRange().getValues();
+    const now   = new Date().toISOString();
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) !== String(id)) continue;
+
+      let log = [];
+      try { log = JSON.parse(data[i][14] || '[]'); } catch(ex) { log = []; }
+      log.push({ time: now, action: 'Status diubah ke: ' + newStatus, by: updatedBy || '-' });
+
+      sheet.getRange(i+1, 9).setValue(newStatus);
+      sheet.getRange(i+1,14).setValue(now);
+      sheet.getRange(i+1,15).setValue(JSON.stringify(log));
+      return { success: true };
+    }
+    return { success: false, message: 'Tugas tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function deleteTugasProject(id) {
+  return deleteRow(CONFIG.SHEETS.TUGAS_PROJECT, id);
 }
