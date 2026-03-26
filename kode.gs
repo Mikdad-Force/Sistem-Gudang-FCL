@@ -28,7 +28,8 @@ const CONFIG = {
     RETUR_DETAIL: 'ReturDetail',
     HANDOVER: 'Handover',
     KLAIM: 'Klaim',
-    TUGAS_PROJECT: 'TugasProject'
+    TUGAS_PROJECT: 'TugasProject',
+    ASSET: 'PengajuanAsset'
   }
 };
 
@@ -81,6 +82,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
+  setupSheet(ss, CONFIG.SHEETS.ASSET, ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -248,19 +250,30 @@ function getPendingApprovals() {
     return { 
        success: true, 
        ijin: getIjin(),
-       lembur: getLembur()
+       lembur: getLembur(),
+       asset: getAsset()
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
 function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
   try {
-    let sheetName = tipe === 'ijin' ? CONFIG.SHEETS.IJIN : CONFIG.SHEETS.LEMBUR;
+    let sheetName;
+    let statusCol;
+    let historyCol;
+
+    if (tipe === 'ijin') {
+      sheetName = CONFIG.SHEETS.IJIN; statusCol = 7; historyCol = 10;
+    } else if (tipe === 'lembur') {
+      sheetName = CONFIG.SHEETS.LEMBUR; statusCol = 8; historyCol = 11;
+    } else if (tipe === 'asset') {
+      sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12;
+    } else {
+      return { success: false, message: 'Tipe tidak dikenali' };
+    }
+
     const sheet = getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
-    
-    let statusCol = tipe === 'ijin' ? 7 : 8; 
-    let historyCol = tipe === 'ijin' ? 10 : 11; 
 
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
@@ -311,6 +324,7 @@ function getKaryawan() {
         id: String(data[i][0]),
         nama: data[i][1],
         jabatan: data[i][2],
+        cabang: data[i][3] || '-',
         telepon: data[i][4],
         email: data[i][5],
         tanggalMasuk: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6] || ''),
@@ -323,22 +337,22 @@ function getKaryawan() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addKaryawan(nama, jabatan, telepon, email, tanggalMasuk, status, tanggalSelesai) {
+function addKaryawan(nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const id = generateId();
-    sheet.appendRow([id, nama, jabatan, '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '']);
+    sheet.appendRow([id, nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '']);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateKaryawan(id, nama, jabatan, telepon, email, tanggalMasuk, status, tanggalSelesai) {
+function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        sheet.getRange(i + 1, 2, 1, 7).setValues([[nama, jabatan, '', telepon, email, tanggalMasuk, status]]);
+        sheet.getRange(i + 1, 2, 1, 7).setValues([[nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status]]);
         sheet.getRange(i + 1, 10).setValue(tanggalSelesai || '');
         return { success: true };
       }
@@ -1272,4 +1286,46 @@ function updateTugasStatus(id, newStatus, updatedBy) {
 
 function deleteTugasProject(id) {
   return deleteRow(CONFIG.SHEETS.TUGAS_PROJECT, id);
+}
+
+// ============================================================
+// PENGAJUAN ASSET
+// ============================================================
+function getAsset() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        nama: data[i][2],
+        jenisAsset: data[i][3],
+        deskripsi: data[i][4],
+        estimasiHarga: parseFloat(data[i][5]) || 0,
+        prioritas: data[i][6],
+        bukti: data[i][7],
+        status: data[i][8],
+        createdBy: data[i][9],
+        createdAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10] || ''),
+        history: data[i][11] || '[]'
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addAsset(tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas, bukti, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET);
+    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending HR', by: createdBy, role: 'Pemohon', reason: '' }];
+    sheet.appendRow([generateId(), tanggal, nama, jenisAsset, deskripsi, parseFloat(estimasiHarga)||0, prioritas, bukti || '', 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    return { success: true };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function deleteAsset(id) {
+  return deleteRow(CONFIG.SHEETS.ASSET, id);
 }
