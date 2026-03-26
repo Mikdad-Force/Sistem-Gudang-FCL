@@ -369,6 +369,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
         <div class="nav-item" onclick="showPage('karyawan')"><span class="icon">👥</span> Data Karyawan</div>
         <div class="nav-item" onclick="showPage('ijin')"><span class="icon">✉️</span> Pengajuan Ijin/Cuti</div>
         <div class="nav-item" onclick="showPage('lembur')"><span class="icon">⏱️</span> Pengajuan Lembur</div>
+        <div class="nav-item" onclick="showPage('pengajuanAsset')"><span class="icon">📦</span> Pengajuan Asset</div>
         <div class="nav-item" onclick="showPage('organisasi')"><span class="icon">🏗️</span> Struktur Organisasi</div>
         
         <div class="nav-section">Dokumentasi</div>
@@ -526,8 +527,10 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #f59e0b;">🛒 Marketplace</h5><canvas id="chartMarketplace" style="max-height: 250px;"></canvas></div>
               <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #0ea5e9;">📦 Distributor</h5><canvas id="chartDistributor" style="max-height: 250px;"></canvas></div>
               <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #ef4444;">↩️ Return</h5><canvas id="chartReturn" style="max-height: 250px;"></canvas></div>
+              <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #10b981;">🎥 KOL</h5><canvas id="chartKOL" style="max-height: 250px;"></canvas></div>
+              <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #8b5cf6;">�� Inbound</h5><canvas id="chartInbound" style="max-height: 250px;"></canvas></div>
             </div>
-            <div class="table-wrap"><h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan Keseluruhan</h4><table><thead><tr><th>Divisi</th><th>Total Laporan</th><th>Rata-rata Pekerja Masuk</th><th>Total Jam Lembur</th><th>Total Keseluruhan Jam Kerja</th><th>Total Orderan</th></tr></thead><tbody id="tableRingkasanGrafik"></tbody></table></div>
+            <div class="table-wrap"><h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan Keseluruhan</h4><table><thead><tr><th>Divisi</th><th>Total Laporan</th><th>Rata-rata Pekerja Masuk</th><th>Total Jam Lembur</th><th>Total Keseluruhan Jam Kerja</th><th>Total Orderan</th><th>KPI (Ord/Jam)</th></tr></thead><tbody id="tableRingkasanGrafik"></tbody></table></div>
           </div>
         </div>
 
@@ -628,6 +631,10 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
           </div>
 
           <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header" style="margin-bottom:16px;"><h4>🏢 Ringkasan Cabang</h4></div>
+            <div id="cabangSummary" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;"></div>
+          </div>
+          <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="margin-bottom:16px;"><h4>📊 Ringkasan Jabatan</h4></div>
             <div id="jabatanSummary" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:16px;"></div>
           </div>
@@ -640,7 +647,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               </div>
             </div>
             <div class="table-wrap">
-              <table><thead><tr><th>Nama</th><th>Jabatan</th><th>Telepon</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
+              <table><thead><tr><th>Nama</th><th>Jabatan</th><th>Cabang</th><th>Telepon</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
             </div>
           </div>
         </div>
@@ -655,6 +662,28 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <table>
                 <thead><tr><th>Tanggal Mulai</th><th>Nama Karyawan</th><th>Jenis Ijin / Cuti</th><th>Keterangan</th><th>Bukti/Surat</th><th>Status Approval</th><th>Aksi</th></tr></thead>
                 <tbody id="tableIjin"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="page-pengajuanAsset">
+          <!-- STAT CARDS -->
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+            <div class="stat-card teal"><div class="stat-label">Total Pengajuan</div><div class="stat-value teal" id="statAssetTotal">0</div><div class="stat-icon">📦</div></div>
+            <div class="stat-card amber"><div class="stat-label">Menunggu Approval</div><div class="stat-value amber" id="statAssetPending">0</div><div class="stat-icon">⏳</div></div>
+            <div class="stat-card green"><div class="stat-label">Disetujui</div><div class="stat-value green" id="statAssetApproved">0</div><div class="stat-icon">✅</div></div>
+            <div class="stat-card red"><div class="stat-label">Ditolak</div><div class="stat-value red" id="statAssetRejected">0</div><div class="stat-icon">❌</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h4>📦 Riwayat Pengajuan Asset</h4>
+              <button class="btn btn-primary" onclick="openModal('modalAsset')">+ Ajukan Asset</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tanggal</th><th>Nama Pemohon</th><th>Jenis Asset</th><th>Estimasi Harga</th><th>Prioritas</th><th>Deskripsi</th><th>Bukti</th><th>Status Approval</th><th>Aksi</th></tr></thead>
+                <tbody id="tableAsset"></tbody>
               </table>
             </div>
           </div>
@@ -779,7 +808,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 
 <div class="modal-overlay" id="modalExpense"><div class="modal"><button class="modal-close" onclick="closeModal('modalExpense')">✕</button><h3>💸 Tambah Expense</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="exTanggal"></div><div class="f-group"><label>Perusahaan</label><select id="exPerusahaanSelect" onchange="toggleCustomPerusahaan()"><option value="FCL">FCL</option><option value="FCL(SBY)">FCL(SBY)</option><option value="MTC">MTC</option><option value="KAI">KAI</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="exPerusahaanCustom" placeholder="Ketik nama perusahaan..." style="display:none; margin-top:6px;"></div></div><div class="form-row single"><div class="f-group"><label>Kategori</label><select id="exKategoriSelect" onchange="toggleCustomKategori()"><option value="Petty Cash Pinkpick">Petty Cash Pinkpick</option><option value="Pettycash">Pettycash</option><option value="Asset">Asset</option><option value="Welfare">Welfare</option><option value="Shipping Fee">Shipping Fee</option><option value="Maintenance Fee">Maintenance Fee</option><option value="PHL">PHL</option><option value="Consumable">Consumable</option><option value="Accommodation">Accommodation</option><option value="Internet">Internet</option><option value="Electricity">Electricity</option><option value="Transportation Fee">Transportation Fee</option><option value="Furniture">Furniture</option><option value="Car Rental">Car Rental</option><option value="Warehouse Rental">Warehouse Rental</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="exKategoriCustom" placeholder="Ketik nama kategori..." style="display:none; margin-top:6px;"></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="exKeterangan" placeholder="Keterangan pengeluaran"></div></div><div class="form-row single"><div class="f-group"><label>Nominal (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="exNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="form-row"><div class="f-group"><label>Nama Bank</label><input type="text" id="exBank" placeholder="Contoh: BCA, Mandiri"></div><div class="f-group"><label>Nomor Rekening</label><input type="text" id="exRekening" placeholder="No Rekening"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalExpense')">Batal</button><button class="btn btn-primary" onclick="submitExpense()">💾 Simpan</button></div></div></div>
 
-<div class="modal-overlay" id="modalLaporanKerja"><div class="modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="form-row"><div class="f-group"><label>Tanggal Laporan</label><input type="date" id="lapTanggal"></div><div class="f-group"><label>Divisi</label><select id="lapDivisi"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option></select></div></div><div class="form-row single"><div class="f-group"><label>Nama Pelapor / Shift</label><input type="text" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div></div><div class="form-row"><div class="f-group"><label>Total Pekerja Utama</label><input type="number" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Admin</label><input type="number" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Orang Perbantuan (+)</label><input type="number" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Jam / Orang (Bantu)</label><input type="number" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Orang Pengurangan (-)</label><input type="number" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Jam / Orang (Kurang)</label><input type="number" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Pekerja Lembur</label><input type="number" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Lama Lembur (Jam)</label><input type="number" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div><div class="form-row"><div class="f-group"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label><input type="text" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="form-row single"><div class="f-group"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - (Org Kurang x Jam) + (Org Lembur x Jam)</span></div></div><div class="form-row single"><div class="f-group"><label>Kendala Pekerjaan</label><textarea id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
+<div class="modal-overlay" id="modalLaporanKerja"><div class="modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="form-row"><div class="f-group"><label>Tanggal Laporan</label><input type="date" id="lapTanggal"></div><div class="f-group"><label>Divisi</label><select id="lapDivisi"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option><option value="KOL">🎥 KOL</option><option value="Inbound">📥 Inbound</option></select></div></div><div class="form-row single"><div class="f-group"><label>Nama Pelapor / Shift</label><input type="text" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div></div><div class="form-row"><div class="f-group"><label>Total Pekerja Utama</label><input type="number" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Admin</label><input type="number" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Orang Perbantuan (+)</label><input type="number" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Jam / Orang (Bantu)</label><input type="number" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Orang Pengurangan (-)</label><input type="number" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Jam / Orang (Kurang)</label><input type="number" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Pekerja Lembur</label><input type="number" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Lama Lembur (Jam)</label><input type="number" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div><div class="form-row"><div class="f-group"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label><input type="text" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="form-row single"><div class="f-group"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - ( Jam ) + (Org Lembur x Jam)</span></div></div><div class="form-row single"><div class="f-group"><label>Kendala Pekerjaan</label><textarea id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
 <div class="modal-overlay" id="modalDetailLaporan"><div class="modal" style="width: 520px;"><button class="modal-close" onclick="closeModal('modalDetailLaporan')">✕</button><h3 id="detailLapTitle">📋 Detail Laporan Kerja</h3><div id="detailLapContent" style="font-size:14px; line-height:1.8; color:var(--light);"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailLaporan')">Tutup</button></div></div></div>
 
 <div class="modal-overlay" id="modalHandover"><div class="modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button><h3>📦 Input Laporan Hand Over</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="hoTanggal"></div><div class="f-group"><label>Nama PIC</label><input type="text" id="hoPic" placeholder="Nama pengurus"></div></div><div class="form-row single"><div class="f-group"><label>Nomor Resi</label><input type="text" id="hoResi" placeholder="Masukkan nomor resi"></div></div><div class="form-row single"><div class="f-group"><label>Pengerjaan</label><input type="text" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Tambahan</label><input type="text" id="hoKeterangan" placeholder="Opsional..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitHandover()">💾 Simpan Laporan</button></div></div></div>
@@ -801,14 +830,70 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 </div>
 <div class="modal-overlay" id="modalTugasDetail"><div class="modal task-detail-modal"><button class="modal-close" onclick="closeModal('modalTugasDetail')">✕</button><div id="tugasDetailContent"></div><div class="modal-footer" id="tugasDetailFooter"></div></div></div>
 
-<div class="modal-overlay" id="modalKaryawan"><div class="modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="kNama" placeholder="Nama karyawan"></div><div class="f-group"><label>Jabatan</label><input type="text" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="form-row"><div class="f-group"><label>Status Karyawan</label><select id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="f-group"><label>Tanggal Masuk</label><input type="date" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="f-group"><label>Tanggal Selesai Kontrak</label><input type="date" id="kTglSelesai"></div></div><div class="form-row"><div class="f-group"><label>Telepon</label><input type="text" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="f-group"><label>Email</label><input type="email" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKaryawan"><div class="modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="kNama" placeholder="Nama karyawan"></div><div class="f-group"><label>Jabatan</label><input type="text" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="form-row single"><div class="f-group"><label>Cabang Perusahaan</label><input type="text" id="kCabang" placeholder="Ketik atau pilih cabang..." list="listCabang"><datalist id="listCabang"><option value="Pusat"><option value="Cabang SBY"><option value="Cabang JKT"></datalist></div></div><div class="form-row"><div class="f-group"><label>Status Karyawan</label><select id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="f-group"><label>Tanggal Masuk</label><input type="date" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="f-group"><label>Tanggal Selesai Kontrak</label><input type="date" id="kTglSelesai"></div></div><div class="form-row"><div class="f-group"><label>Telepon</label><input type="text" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="f-group"><label>Email</label><input type="email" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
 <div class="modal-overlay" id="modalIjin"><div class="modal"><button class="modal-close" onclick="closeModal('modalIjin')">✕</button><h3>✉️ Form Pengajuan Ijin / Cuti</h3><div class="form-row"><div class="f-group"><label>Tanggal Mulai</label><input type="date" id="ijTanggal"></div><div class="f-group"><label>Nama Karyawan</label><input type="text" id="ijNama" placeholder="Nama Lengkap"></div></div><div class="form-row single"><div class="f-group"><label>Jenis Ijin / Cuti</label><select id="ijJenis" onchange="toggleBuktiIjin()"><option value="Sakit (Dengan Surat Dokter)">Sakit (Dengan Surat Dokter)</option><option value="Ijin">Ijin</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Cuti Keluarga Meninggal">Cuti Keluarga Meninggal</option><option value="Cuti Keluarga Meninggal (1 Rumah)">Cuti Keluarga Meninggal (1 Rumah)</option><option value="Cuti Keguguran">Cuti Keguguran</option><option value="Cuti Melahirkan">Cuti Melahirkan</option></select></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Lengkap</label><input type="text" id="ijKeterangan" placeholder="Alasan dan lama hari..."></div></div><div class="form-row single" id="ijBuktiWrap"><div class="f-group"><label>Surat Dokter / Bukti Pendukung</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ij','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ij','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="ij-panel-upload"><div class="file-drop-zone" id="ij-dropzone"><input type="file" id="ijFile" accept="image/*,.pdf" onchange="handleFileSelect('ij',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ij-preview"><span>📄</span><span class="file-preview-name" id="ij-fname">-</span><span class="file-preview-size" id="ij-fsize"></span><button class="file-remove" onclick="removeFile('ij')">✕</button></div><div class="upload-progress" id="ij-progress"><div class="upload-progress-bar" id="ij-pbar"></div></div></div><div class="file-tab-panel" id="ij-panel-url"><input type="url" id="ijBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalIjin')">Batal</button><button class="btn btn-primary" id="btnSaveIjin" onclick="submitIjin()">💾 Ajukan Ijin</button></div></div></div>
 <div class="modal-overlay" id="modalLembur"><div class="modal"><button class="modal-close" onclick="closeModal('modalLembur')">✕</button><h3>⏱️ Form Pengajuan Lembur</h3><div class="form-row"><div class="f-group"><label>Tanggal Lembur</label><input type="date" id="lbTanggal"></div><div class="f-group"><label>Nama Karyawan</label><input type="text" id="lbNama" placeholder="Nama Lengkap"></div></div><div class="form-row single"><div class="f-group"><label>Divisi</label><select id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div></div><div class="form-row"><div class="f-group"><label>Jam Mulai</label><input type="time" id="lbJamMulai" oninput="calcDurasiLembur()"></div><div class="f-group"><label>Jam Selesai</label><input type="time" id="lbJamSelesai" oninput="calcDurasiLembur()"></div></div><div id="lbDurasiWrap" style="font-size:13px; color:var(--teal); margin-top:-8px; margin-bottom:12px; display:none; font-weight:600;">⏱️ Durasi Lembur: <span id="lbDurasiText" style="color:var(--accent);">0 Jam</span></div><div class="form-row single"><div class="f-group"><label>Keterangan / Tugas Lembur</label><input type="text" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
+
+<!-- MODAL PENGAJUAN ASSET -->
+<div class="modal-overlay" id="modalAsset"><div class="modal" style="width:580px">
+  <button class="modal-close" onclick="closeModal('modalAsset')">✕</button>
+  <h3>📦 Form Pengajuan Asset</h3>
+  <div class="form-row">
+    <div class="f-group"><label>Tanggal Pengajuan</label><input type="date" id="assetTanggal"></div>
+    <div class="f-group"><label>Nama Pemohon</label><input type="text" id="assetNama" placeholder="Nama lengkap pemohon"></div>
+  </div>
+  <div class="form-row">
+    <div class="f-group"><label>Jenis Asset</label><select id="assetJenis">
+      <option value="Laptop / PC">💻 Laptop / PC</option>
+      <option value="Printer / Scanner">🖨️ Printer / Scanner</option>
+      <option value="Furnitur">🪑 Furnitur (Meja, Kursi, dll)</option>
+      <option value="Alat Kerja">🔧 Alat Kerja / Tools</option>
+      <option value="Kendaraan">🚗 Kendaraan</option>
+      <option value="Perlengkapan Gudang">📦 Perlengkapan Gudang</option>
+      <option value="Elektronik">📱 Elektronik Lainnya</option>
+      <option value="Lainnya">📋 Lainnya</option>
+    </select></div>
+    <div class="f-group"><label>Prioritas</label><select id="assetPrioritas">
+      <option value="Normal">🟢 Normal</option>
+      <option value="Mendesak">🟡 Mendesak</option>
+      <option value="Kritis">🔴 Kritis</option>
+    </select></div>
+  </div>
+  <div class="form-row single"><div class="f-group"><label>Estimasi Harga (Rp)</label>
+    <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="assetHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
+  </div></div>
+  <div class="form-row single"><div class="f-group"><label>Deskripsi Kebutuhan</label>
+    <textarea id="assetDeskripsi" placeholder="Jelaskan kebutuhan asset secara detail: spesifikasi, tujuan penggunaan, jumlah yang diperlukan..." style="min-height:90px"></textarea>
+  </div></div>
+  <div class="form-row single"><div class="f-group"><label>Bukti / Referensi <span style="color:var(--gray);font-weight:400">(opsional)</span></label>
+    <div class="file-upload-wrap">
+      <div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ast','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ast','url',this)">🔗 URL Link</button></div>
+      <div class="file-tab-panel active" id="ast-panel-upload"><div class="file-drop-zone" id="ast-dropzone"><input type="file" id="astFile" accept="image/*,.pdf" onchange="handleFileSelect('ast',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ast-preview"><span>📄</span><span class="file-preview-name" id="ast-fname">-</span><span class="file-preview-size" id="ast-fsize"></span><button class="file-remove" onclick="removeFile('ast')">✕</button></div><div class="upload-progress" id="ast-progress"><div class="upload-progress-bar" id="ast-pbar"></div></div></div>
+      <div class="file-tab-panel" id="ast-panel-url"><input type="url" id="astBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div>
+    </div>
+  </div></div>
+  <!-- Info alur approval -->
+  <div style="background:linear-gradient(135deg,#f59e0b11,#1a3a5c55);border:1px solid #f59e0b33;border-radius:10px;padding:12px 16px;margin-top:4px;">
+    <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px;">📋 Alur Persetujuan</div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#a0b4c8;flex-wrap:wrap;">
+      <span style="background:#f59e0b22;color:#fcd34d;padding:2px 8px;border-radius:10px;">Pemohon</span>
+      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">HR</span>
+      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Team Leader</span>
+      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Vice SPV</span>
+      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Supervisor</span>
+      <span>→</span><span style="background:#10b98122;color:#6ee7b7;padding:2px 8px;border-radius:10px;">✅ Disetujui</span>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalAsset')">Batal</button><button class="btn btn-primary" id="btnSaveAsset" onclick="submitAsset()">📤 Ajukan Asset</button></div>
+</div></div>
+
 <div class="modal-overlay" id="modalRiwayatApproval"><div class="modal" style="width: 500px;"><button class="modal-close" onclick="closeModal('modalRiwayatApproval')">✕</button><h3>📋 Riwayat Approval</h3><div id="riwayatContent" class="timeline"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRiwayatApproval')">Tutup</button></div></div></div>
 
 <div class="modal-overlay" id="modalOrg"><div class="modal"><input type="hidden" id="orgId"><button class="modal-close" onclick="closeModal('modalOrg')">✕</button><h3 id="orgModalTitle">🏗️ Tambah Anggota Organisasi</h3><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="orgNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Jabatan / Posisi</label><input type="text" id="orgJabatan" placeholder="Contoh: Kepala Gudang"></div></div><div class="form-row"><div class="f-group"><label>Atasan Langsung <span style="color:var(--gray);font-weight:400">(jabatan)</span></label><select id="orgAtasan"><option value="">— Tidak ada (Root / Pimpinan) —</option></select></div><div class="f-group"><label>Departemen</label><input type="text" id="orgDept" placeholder="Departemen / Divisi"></div></div><div class="form-row"><div class="f-group"><label>URL Foto</label><input type="url" id="orgFoto" placeholder="https://..."></div><div class="f-group"><label>Urutan Tampil</label><input type="number" id="orgUrutan" placeholder="1" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrg')">Batal</button><button class="btn btn-primary" onclick="submitOrg()">💾 Simpan</button></div></div></div>
 <div class="modal-overlay" id="modalSOP"><div class="modal" style="width:620px"><input type="hidden" id="sopId"><button class="modal-close" onclick="closeModal('modalSOP')">✕</button><h3 id="sopModalTitle">📋 Tambah SOP</h3><div class="form-row single"><div class="f-group"><label>Judul SOP</label><input type="text" id="sopJudul" placeholder="Judul SOP"></div></div><div class="form-row"><div class="f-group"><label>Kategori</label><select id="sopKategori"><option>Penerimaan Barang</option><option>Pengeluaran Barang</option><option>Penyimpanan</option><option>Keselamatan & K3</option><option>Administrasi</option><option>Lainnya</option></select></div></div><div class="form-row single"><div class="f-group"><label>Isi / Konten SOP</label><textarea id="sopKonten" placeholder="Tuliskan langkah-langkah atau isi SOP..." style="min-height:160px"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalSOP')">Batal</button><button class="btn btn-primary" onclick="submitSOP()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalUser"><div class="modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="form-row"><div class="f-group"><label>Username</label><input type="text" id="uUsername" placeholder="username"></div><div class="f-group"><label>Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="uNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Role</label><select id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label><input type="checkbox" value="dashboard"> Dashboard</label><label><input type="checkbox" value="kasGudang"> Kas Gudang</label><label><input type="checkbox" value="teamBuilding"> Team Building</label><label><input type="checkbox" value="expense"> Expense List</label><label><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label><input type="checkbox" value="handover"> Hand Over</label><label><input type="checkbox" value="klaim"> Klaim Paket</label><label><input type="checkbox" value="tugasProject"> Tugas Project</label><label><input type="checkbox" value="karyawan"> Data Karyawan</label><label><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label><input type="checkbox" value="organisasi"> Struktur Org.</label><label><input type="checkbox" value="sop"> SOP Gudang</label><label><input type="checkbox" value="stock"> Stock Barang</label><label><input type="checkbox" value="inbound"> Inbound</label><label><input type="checkbox" value="outbound"> Outbound</label><label><input type="checkbox" value="retur"> Retur</label><label><input type="checkbox" value="order"> Orderan</label><label><input type="checkbox" value="analisis"> Analisis Stok</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalUser"><div class="modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="form-row"><div class="f-group"><label>Username</label><input type="text" id="uUsername" placeholder="username"></div><div class="f-group"><label>Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="uNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Role</label><select id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label><input type="checkbox" value="dashboard"> Dashboard</label><label><input type="checkbox" value="kasGudang"> Kas Gudang</label><label><input type="checkbox" value="teamBuilding"> Team Building</label><label><input type="checkbox" value="expense"> Expense List</label><label><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label><input type="checkbox" value="handover"> Hand Over</label><label><input type="checkbox" value="klaim"> Klaim Paket</label><label><input type="checkbox" value="tugasProject"> Tugas Project</label><label><input type="checkbox" value="karyawan"> Data Karyawan</label><label><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label><input type="checkbox" value="pengajuanAsset"> 📦 Pengajuan Asset</label><label><input type="checkbox" value="organisasi"> Struktur Org.</label><label><input type="checkbox" value="sop"> SOP Gudang</label><label><input type="checkbox" value="stock"> Stock Barang</label><label><input type="checkbox" value="inbound"> Inbound</label><label><input type="checkbox" value="outbound"> Outbound</label><label><input type="checkbox" value="retur"> Retur</label><label><input type="checkbox" value="order"> Orderan</label><label><input type="checkbox" value="analisis"> Analisis Stok</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
+
+
 
 <div class="modal-overlay" id="modalStock"><div class="modal" style="width:580px"><input type="hidden" id="stockId"><button class="modal-close" onclick="closeModal('modalStock')">✕</button><h3 id="stockModalTitle">📦 Tambah Barang</h3><div class="form-row"><div class="f-group"><label>SKU (Kode Barang)</label><input type="text" id="stSKU" placeholder="Kosongkan utk auto-generate"></div><div class="f-group"><label>Nama Barang</label><input type="text" id="stNama" placeholder="Nama barang"></div></div><div class="form-row"><div class="f-group"><label>Kategori</label><input type="text" id="stKategori" placeholder="Misal: Obat, Alat, Bahan"></div><div class="f-group"><label>Barcode</label><input type="text" id="stBarcode" placeholder="Scan atau ketik barcode"></div></div><div class="form-row"><div class="f-group"><label>Batch / Lot</label><input type="text" id="stBatch" placeholder="No. Batch"></div><div class="f-group"><label>Exp Date</label><input type="date" id="stExpDate"></div></div><div class="form-row"><div class="f-group"><label>Satuan</label><select id="stSatuan"><option>PCS</option><option>Box</option><option>Kg</option><option>Liter</option><option>Karton</option><option>Pack</option><option>Roll</option><option>Set</option></select></div><div class="f-group"><label>Lokasi Penyimpanan</label><input type="text" id="stLokasi" placeholder="Rak A-1, Gudang B, dsb."></div></div><div class="form-row"><div class="f-group"><label>Stok Awal</label><input type="number" id="stStok" placeholder="0" min="0"></div><div class="f-group"><label>Stok Minimum (Alert)</label><input type="number" id="stStokMin" placeholder="0" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalStock')">Batal</button><button class="btn btn-primary" onclick="submitStock()">💾 Simpan</button></div></div></div>
 <div class="modal-overlay" id="modalInbound"><div class="modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalInbound')">✕</button><h3>📥 Form Inbound Barang</h3><div class="form-row"><div class="f-group"><label>Tanggal Masuk</label><input type="date" id="inbTanggal"></div><div class="f-group"><label>Supplier Pengirim</label><input type="text" id="inbSupplier" placeholder="Nama Supplier"></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="inbKet" placeholder="Catatan tambahan (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Masuk</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('inbItems','inbound')">+ Tambah Baris</button></div><div id="inbItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalInbound')">Batal</button><button class="btn btn-primary" onclick="submitInbound()">💾 Simpan & Tambah Stok</button></div></div></div>
@@ -873,7 +958,7 @@ function initApp() {
 
 function setToday() {
   const t = new Date().toISOString().split('T')[0];
-  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal','ijTanggal','lbTanggal','exTanggal','tpTanggalMulai'].forEach(id => setVal(id, t));
+  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal','ijTanggal','lbTanggal','exTanggal','tpTanggalMulai','assetTanggal'].forEach(id => setVal(id, t));
   setVal('filterBulanExpense', (new Date().getMonth()+1).toString()); setVal('filterBulanGrafik', t.substring(0,7));
 }
 
@@ -894,7 +979,8 @@ const pageTitles = {
   dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', expense: '💸 Expense List',
   karyawan: '👥 Data Karyawan', laporanKerja: '📝 Input Laporan Kerja', grafikLaporan: '📈 Dashboard Laporan Kerja',
   handover: '📦 Laporan Hand Over', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
-  ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
+  ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', pengajuanAsset: '📦 Pengajuan Asset',
+  organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
   users: '⚙️ Manajemen User', stock: '📦 Stock Barang', inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
   retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
 };
@@ -902,6 +988,7 @@ const pageLoaders = {
   dashboard: loadDashboard, kasGudang: loadKasGudang, teamBuilding: loadTB, expense: loadExpense,
   karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan, 
   handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
+  pengajuanAsset: loadAsset,
   organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
 };
 
@@ -931,11 +1018,12 @@ function checkPendingApprovals() {
         let status = d.status === 'Pending' ? 'Pending HR' : d.status;
         if (canApprove(status, currentUser.role)) {
            pendingCount++;
-           if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${tipe}</span></td><td><strong>${d.nama}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${tipe.toLowerCase()}')">Lihat</button></td></tr>`;
+           if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${tipe}</span></td><td><strong>${d.nama}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${tipe === 'Ijin' ? 'ijin' : tipe === 'Lembur' ? 'lembur' : 'pengajuanAsset'}')">Lihat</button></td></tr>`;
         }
      };
      if (res.ijin && res.ijin.success) { ijinDataAll = res.ijin.data; ijinDataAll.forEach(d => processItem(d, 'Ijin')); }
      if (res.lembur && res.lembur.success) { lemburDataAll = res.lembur.data; lemburDataAll.forEach(d => processItem(d, 'Lembur')); }
+     if (res.asset && res.asset.success) { res.asset.data.forEach(d => processItem(d, 'Asset')); }
      const badge = document.getElementById('approvalBadge');
      if (pendingCount > 0) { badge.style.display = 'inline-block'; badge.textContent = `${pendingCount} Approval`; document.getElementById('dashApprovalWrap').style.display = 'block'; } 
      else { badge.style.display = 'none'; document.getElementById('dashApprovalWrap').style.display = 'none'; if(dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>'; }
@@ -996,7 +1084,7 @@ function uploadFileAndProceed(prefix, file, folder, callback, btn) {
   }; reader.readAsDataURL(file);
 }
 // Drag Drop global setup
-['kg','tb','ij'].forEach(p => {
+['kg','tb','ij','ast'].forEach(p => {
   const zone = document.getElementById(`${p}-dropzone`); if(!zone) return;
   zone.addEventListener('dragover', e=>{e.preventDefault(); zone.classList.add('dragover');});
   zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
@@ -1036,7 +1124,7 @@ function loadDashboard() {
   }).getDashboardData();
 }
 
-function loadKasGudang() { google.script.run.withSuccessHandler(res => { const tb=document.getElementById('tableKasGudang'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe==='IN'?'badge-in':'badge-out'}">${d.tipe==='IN'?'📈 Masuk':'📉 Keluar'}</span></td><td>${d.keterangan}</td><td class="${d.tipe==='IN'?'positive':'negative'} rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl?`<a href="${d.buktiUrl}" target="_blank">Lihat</a>`:'-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delKasGudang('${d.id}')">🗑️</button></td></tr>`); }).getKasGudang(); }
+function loadKasGudang() { google.script.run.withSuccessHandler(res => { const tb=document.getElementById('tableKasGudang'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe==='IN'?'badge-in':'badge-out'}">${d.tipe==='IN'?'📈 Masuk':'📉 Keluar'}</span></td><td>${d.keterangan}</td><td class="${d.tipe==='IN'?'positive':'negative'} rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl?`<a href="${d.buktiUrl}" target="_blank">Lihat</a>`:'-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delKasGudang('${d.id}')">🗑️</button></td></tr>`); }).getKasGudang(); }
 function submitKasGudang() {
   const t=v('kgTanggal'), tp=v('kgTipe'), k=v('kgKeterangan'), n=getRpValue('kgNominal');
   if(!t||!k||n<=0) return toast('Lengkapi form', 'error');
@@ -1047,7 +1135,7 @@ function submitKasGudang() {
 }
 function delKasGudang(id) { if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadKasGudang();loadDashboard();}else toast(res.message,'error');}).deleteKasGudang(id); }
 
-function loadTB() { google.script.run.withSuccessHandler(res => { const tb=document.getElementById('tableTB'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe==='Pemasukan'?'badge-in':'badge-out'}">${d.tipe||'Pengeluaran'}</span></td><td>${d.keterangan}</td><td class="rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl?`<a href="${d.buktiUrl}" target="_blank">Lihat</a>`:'-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delTB('${d.id}')">🗑️</button></td></tr>`); }).getTeamBuilding(); }
+function loadTB() { google.script.run.withSuccessHandler(res => { const tb=document.getElementById('tableTB'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe==='Pemasukan'?'badge-in':'badge-out'}">${d.tipe||'Pengeluaran'}</span></td><td>${d.keterangan}</td><td class="rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl?`<a href="${d.buktiUrl}" target="_blank">Lihat</a>`:'-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delTB('${d.id}')">🗑️</button></td></tr>`); }).getTeamBuilding(); }
 function submitTB() {
   const t=v('tbTanggal'), tp=v('tbTipe'), k=v('tbKeterangan'), n=getRpValue('tbNominal');
   if(!t||!k||n<=0) return toast('Lengkapi form', 'error');
@@ -1100,28 +1188,30 @@ function updateKaryawanStats() {
   const jMap={}; karyawanData.forEach(d=>{jMap[d.jabatan]=(jMap[d.jabatan]||0)+1;});
   const jCont = document.getElementById('jabatanSummary'); jCont.innerHTML='';
   Object.entries(jMap).sort((a,b)=>b[1]-a[1]).forEach(([j,c])=> jCont.innerHTML+=`<div style="background:var(--navy2);padding:14px;border-radius:10px"><div style="font-size:12px;color:var(--gray)">${j}</div><div style="font-size:22px;font-weight:800;color:var(--accent)">${c}</div></div>`);
+  const cMap={}; karyawanData.forEach(d=>{const cbg=d.cabang||'-'; cMap[cbg]=(cMap[cbg]||0)+1;});
+  const cCont = document.getElementById('cabangSummary'); if(cCont) { cCont.innerHTML=''; Object.entries(cMap).sort((a,b)=>b[1]-a[1]).forEach(([cbg,cnt])=> cCont.innerHTML+=`<div style="background:var(--navy2);padding:14px;border-radius:10px;border-top:3px solid var(--teal)"><div style="font-size:13px;color:var(--gray);font-weight:700">${cbg}</div><div style="font-size:20px;font-weight:800;color:var(--teal)">${cnt} Org</div></div>`); }
 }
 function renderKaryawan(data) {
-  const tb = document.getElementById('tableKaryawan'); tb.innerHTML=''; if(!data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;}
+  const tb = document.getElementById('tableKaryawan'); tb.innerHTML=''; if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;}
   const now=new Date(); data.forEach(d=>{
     let sCell='-'; if(d.status==='Kontrak'&&d.tanggalSelesai){ const diff=Math.ceil((new Date(d.tanggalSelesai)-now)/86400000); sCell=`<span style="${diff<=40?'color:#fca5a5;font-weight:bold':''}">${formatDate(d.tanggalSelesai)} ${diff<=40&&diff>=0?`(${diff}hr)`:''}</span>`; }
-    tb.innerHTML+=`<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td>${d.telepon||'-'}</td><td><span class="${d.status==='Tetap'?'badge-aktif':'badge-nonaktif'}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td>${sCell}</td><td><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
+    tb.innerHTML+=`<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td><span class="badge-tb">${d.cabang||'-'}</span></td><td>${d.telepon||'-'}</td><td><span class="${d.status==='Tetap'?'badge-aktif':'badge-nonaktif'}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td>${sCell}</td><td><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
   });
 }
 function filterKaryawan(){ const q=v('karyawanSearch').toLowerCase(); renderKaryawan(karyawanData.filter(d=>d.nama.toLowerCase().includes(q)||(d.jabatan||'').toLowerCase().includes(q))); }
 function toggleTglSelesai(){ document.getElementById('wrapTglSelesai').style.display=v('kStatus')==='Kontrak'?'block':'none'; }
-function openKaryawanModal(){ setVal('karyawanId',''); document.getElementById('karyawanModalTitle').textContent='👤 Tambah Karyawan'; resetForm(['kNama','kJabatan','kTelepon','kEmail','kTglSelesai']); setVal('kStatus','Kontrak'); toggleTglSelesai(); openModal('modalKaryawan'); }
-function editKaryawan(id){ const d=karyawanData.find(x=>x.id===id); if(!d)return; setVal('karyawanId',d.id); document.getElementById('karyawanModalTitle').textContent='✏️ Edit Karyawan'; ['Nama','Jabatan','Telepon','Email','TglMasuk','Status','TglSelesai'].forEach(f=>setVal('k'+f, d[f.charAt(0).toLowerCase()+f.slice(1)]||'')); toggleTglSelesai(); openModal('modalKaryawan'); }
+function openKaryawanModal(){ setVal('karyawanId',''); document.getElementById('karyawanModalTitle').textContent='👤 Tambah Karyawan'; resetForm(['kNama','kJabatan','kCabang','kTelepon','kEmail','kTglSelesai']); setVal('kStatus','Kontrak'); toggleTglSelesai(); openModal('modalKaryawan'); }
+function editKaryawan(id){ const d=karyawanData.find(x=>x.id===id); if(!d)return; setVal('karyawanId',d.id); document.getElementById('karyawanModalTitle').textContent='✏️ Edit Karyawan'; ['Nama','Jabatan','Cabang','Telepon','Email','TglMasuk','Status','TglSelesai'].forEach(f=>setVal('k'+f, d[f.charAt(0).toLowerCase()+f.slice(1)]||'')); toggleTglSelesai(); openModal('modalKaryawan'); }
 function submitKaryawan(){
-  const id=v('karyawanId'), n=v('kNama'), j=v('kJabatan'), tlp=v('kTelepon'), em=v('kEmail'), tm=v('kTglMasuk'), st=v('kStatus'), ts=v('kTglSelesai');
+  const id=v('karyawanId'), n=v('kNama'), j=v('kJabatan'), cbg=v('kCabang'), tlp=v('kTelepon'), em=v('kEmail'), tm=v('kTglMasuk'), st=v('kStatus'), ts=v('kTglSelesai');
   if(!n||!j) return toast('Nama & Jabatan wajib', 'error');
   const btn = document.querySelector('#modalKaryawan .btn-primary'); btn.disabled=true; btn.textContent='⏳...';
   const cb = res => { btn.disabled=false; btn.textContent='💾 Simpan'; if(res.success){toast('Berhasil');closeModal('modalKaryawan');loadKaryawan();}else toast(res.message,'error'); };
-  if(id) google.script.run.withSuccessHandler(cb).updateKaryawan(id,n,j,tlp,em,tm,st,ts); else google.script.run.withSuccessHandler(cb).addKaryawan(n,j,tlp,em,tm,st,ts);
+  if(id) google.script.run.withSuccessHandler(cb).updateKaryawan(id,n,j,cbg,tlp,em,tm,st,ts); else google.script.run.withSuccessHandler(cb).addKaryawan(n,j,cbg,tlp,em,tm,st,ts);
 }
 function delKaryawan(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadKaryawan();}else toast(res.message,'error');}).deleteKaryawan(id); }
 
-function loadIjin(){ google.script.run.withSuccessHandler(res=>{ if(res.success){ijinDataAll=res.data; const tb=document.getElementById('tableIjin'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{ const stsCls = d.status==='Disetujui'?'badge-approved':d.status==='Ditolak'?'badge-rejected':'badge-pending'; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td><span class="badge-tb">${d.jenis}</span></td><td>${d.keterangan}</td><td>${d.bukti?`<a href="${d.bukti}" target="_blank">Lihat Bukti</a>`:'-'}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delIjin('${d.id}')">Batal</button>`:''}</td></tr>`; });} }).getIjin(); }
+function loadIjin(){ google.script.run.withSuccessHandler(res=>{ if(res.success){ijinDataAll=res.data; const tb=document.getElementById('tableIjin'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{ const stsCls = d.status==='Disetujui'?'badge-approved':d.status==='Ditolak'?'badge-rejected':'badge-pending'; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td><span class="badge-tb">${d.jenis}</span></td><td>${d.keterangan}</td><td>${d.bukti?`<a href="${d.bukti}" target="_blank">Lihat Bukti</a>`:'-'}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delIjin('${d.id}')">Batal</button>`:''}</td></tr>`; });} }).getIjin(); }
 function toggleBuktiIjin(){ document.getElementById('ijBuktiWrap').style.display = v('ijJenis').includes('Sakit') ? 'block' : 'none'; }
 function submitIjin(){
   const t=v('ijTanggal'), n=v('ijNama'), j=v('ijJenis'), k=v('ijKeterangan'); if(!t||!n||!k) return toast('Lengkapi data', 'error');
@@ -1131,7 +1221,7 @@ function submitIjin(){
 }
 function delIjin(id){ if(confirm('Batalkan pengajuan?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dibatalkan');loadIjin();}else toast(res.message,'error');}).deleteIjin(id); }
 
-function loadLembur(){ google.script.run.withSuccessHandler(res=>{ if(res.success){lemburDataAll=res.data; const tb=document.getElementById('tableLembur'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{ const stsCls = d.status==='Disetujui'?'badge-approved':d.status==='Ditolak'?'badge-rejected':'badge-pending'; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td>${d.divisi}</td><td><span style="color:var(--accent);font-weight:700">${d.jamMulai} - ${d.jamSelesai}</span></td><td>${d.keterangan}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`:''}</td></tr>`; });} }).getLembur(); }
+function loadLembur(){ google.script.run.withSuccessHandler(res=>{ if(res.success){lemburDataAll=res.data; const tb=document.getElementById('tableLembur'); tb.innerHTML=''; if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{ const stsCls = d.status==='Disetujui'?'badge-approved':d.status==='Ditolak'?'badge-rejected':'badge-pending'; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td>${d.divisi}</td><td><span style="color:var(--accent);font-weight:700">${d.jamMulai} - ${d.jamSelesai}</span></td><td>${d.keterangan}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`:''}</td></tr>`; });} }).getLembur(); }
 function calcDurasiLembur(){ const m=v('lbJamMulai'), s=v('lbJamSelesai'); const w=document.getElementById('lbDurasiWrap'), t=document.getElementById('lbDurasiText'); if(m&&s){ const dm=new Date(`2000/01/01 ${m}`), ds=new Date(`2000/01/01 ${s}`); let dHrs = (ds-dm)/3600000; if(dHrs<0) dHrs+=24; w.style.display='block'; t.textContent=`${dHrs.toFixed(1)} Jam`; } else w.style.display='none'; }
 function submitLembur(){ const t=v('lbTanggal'), n=v('lbNama'), d=v('lbDivisi'), jm=v('lbJamMulai'), js=v('lbJamSelesai'), k=v('lbKeterangan'); if(!t||!n||!jm||!js||!k) return toast('Lengkapi data', 'error'); const btn=document.querySelector('#modalLembur .btn-primary'); btn.disabled=true;btn.textContent='⏳...'; google.script.run.withSuccessHandler(res=>{ btn.disabled=false;btn.textContent='💾 Ajukan Lembur'; if(res.success){toast('Berhasil');closeModal('modalLembur');loadLembur();resetForm(['lbKeterangan']);}else toast(res.message,'error'); }).addLembur(t,n,d,jm,js,k,currentUser.username); }
 function delLembur(id){ if(confirm('Batalkan pengajuan?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dibatalkan');loadLembur();}else toast(res.message,'error');}).deleteLembur(id); }
@@ -1180,7 +1270,7 @@ function delOrg(id){ if(confirm('Hapus anggota ini?')) google.script.run.withSuc
 function calcJamKerja() {
   const oU = parseInt(v('lapOrang'))||0, a = parseInt(v('lapAdmin'))||0, oB = parseInt(v('lapOrangBantu'))||0, jB = parseFloat(v('lapJamBantu'))||0;
   const oK = parseInt(v('lapOrangKurang'))||0, jK = parseFloat(v('lapJamKurang'))||0, oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
-  const ord = parseInt(v('lapOrder'))||0, tot = ((oU+a)*8) + (oB*jB) - (oK*jK) + (oL*jL);
+  const ord = parseInt(v('lapOrder'))||0, tot = ((oU+a)*8) + (oB*jB) - (jK) + (oL*jL);
   setVal('lapTotalJam', tot>0?tot:0); setVal('lapKPI', tot>0?(ord/tot).toFixed(3):0);
 }
 function loadLaporanKerja() {
@@ -1201,12 +1291,12 @@ function submitLaporanKerja() {
   const oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
   const ord = v('lapOrder'), tot = v('lapTotalJam'); let ken = v('lapKendala');
   
-  const det = `[Bantu: ${oB}orgx${jB}j | Kurang: ${oK}orgx${jK}j | Lembur: ${oL}orgx${jL}j]`;
+  const det = `[Bantu: ${oB}orgx${jB}j | Kurang: ${jK}j | Lembur: ${oL}orgx${jL}j]`;
   ken = (ken ? ken + '\n' : '') + det;
   
   if(!t||!pic) return toast('Lengkapi data', 'error');
   const btn = document.querySelector('#modalLaporanKerja .btn-primary'); btn.disabled=true; btn.textContent='⏳...';
-  google.script.run.withSuccessHandler(res => { btn.disabled=false;btn.textContent='💾 Simpan Laporan'; if(res.success){toast('Disimpan');closeModal('modalLaporanKerja');loadLaporanKerja();loadDashboard();}else toast(res.message,'error'); }).addLaporanKerja(t, d, pic, utama, oB*jB, oK*jK, oL*jL, tot, ken, utama, admin, ord, currentUser.username, 0);
+  google.script.run.withSuccessHandler(res => { btn.disabled=false;btn.textContent='💾 Simpan Laporan'; if(res.success){toast('Disimpan');closeModal('modalLaporanKerja');loadLaporanKerja();loadDashboard();}else toast(res.message,'error'); }).addLaporanKerja(t, d, pic, utama, oB*jB, jK, oL*jL, tot, ken, utama, admin, ord, currentUser.username, 0);
 }
 function delLaporanKerja(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadLaporanKerja();}else toast(res.message,'error');}).deleteLaporanKerja(id); }
 function showDetailLaporan(id) {
@@ -1221,7 +1311,7 @@ function loadGrafikLaporan() { google.script.run.withSuccessHandler(res=>{if(res
 function filterGrafik() {
   const ym = v('filterBulanGrafik'); const y=ym.split('-')[0], m=ym.split('-')[1];
   const filtered = laporanKerjaData.filter(d => d.tanggal.startsWith(ym));
-  const maps = { Marketplace:{}, Distributor:{}, Return:{} };
+  const maps = { Marketplace:{}, Distributor:{}, Return:{}, KOL:{}, Inbound:{} };
   const dInM = new Date(y,m,0).getDate();
   for(let i=1;i<=dInM;i++) { const ds=i.toString().padStart(2,'0'); Object.keys(maps).forEach(k=>maps[k][ds]={ord:0, jm:0}); }
   filtered.forEach(d=>{ const day=d.tanggal.split('-')[2].substring(0,2); if(maps[d.divisi] && maps[d.divisi][day]) { maps[d.divisi][day].ord += (d.totalOrder||0); maps[d.divisi][day].jm += d.totalJamKerja; } });
@@ -1232,11 +1322,13 @@ function filterGrafik() {
   createChart('chartMarketplace', 'mp', labels, cData('Marketplace').ord, cData('Marketplace').kpi, '#f59e0b');
   createChart('chartDistributor', 'dist', labels, cData('Distributor').ord, cData('Distributor').kpi, '#0ea5e9');
   createChart('chartReturn', 'ret', labels, cData('Return').ord, cData('Return').kpi, '#ef4444');
+  if(cData('KOL').ord.length) createChart('chartKOL', 'kol', labels, cData('KOL').ord, cData('KOL').kpi, '#10b981');
+  if(cData('Inbound').ord.length) createChart('chartInbound', 'inb', labels, cData('Inbound').ord, cData('Inbound').kpi, '#8b5cf6');
 
-  const summary = { Marketplace:{rep:0,p:0,l:0,j:0,o:0}, Distributor:{rep:0,p:0,l:0,j:0,o:0}, Return:{rep:0,p:0,l:0,j:0,o:0} };
+  const summary = { Marketplace:{rep:0,p:0,l:0,j:0,o:0}, Distributor:{rep:0,p:0,l:0,j:0,o:0}, Return:{rep:0,p:0,l:0,j:0,o:0}, KOL:{rep:0,p:0,l:0,j:0,o:0}, Inbound:{rep:0,p:0,l:0,j:0,o:0} };
   filtered.forEach(d=>{ if(summary[d.divisi]){ summary[d.divisi].rep++; summary[d.divisi].p+=(d.totalOrang+(d.totalAdmin||0)); summary[d.divisi].l+=d.jamLembur; summary[d.divisi].j+=d.totalJamKerja; summary[d.divisi].o+=(d.totalOrder||0); } });
   const tb = document.getElementById('tableRingkasanGrafik'); tb.innerHTML='';
-  Object.keys(summary).forEach(k => { const s=summary[k]; tb.innerHTML+=`<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep>0?Math.round(s.p/s.rep):0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${s.o.toLocaleString('id-ID')}</strong></td></tr>`; });
+  Object.keys(summary).forEach(k => { const s=summary[k]; tb.innerHTML+=`<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep>0?Math.round(s.p/s.rep):0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${s.o.toLocaleString('id-ID')}</strong></td><td style="color:var(--green)"><strong>${s.j>0?(s.o/s.j).toFixed(3):0}</strong></td></tr>`; });
 }
 function createChart(id, instKey, labels, dOrd, dKpi, color) {
   const ctx = document.getElementById(id); if(chartInstances[instKey]) chartInstances[instKey].destroy();
@@ -1244,12 +1336,12 @@ function createChart(id, instKey, labels, dOrd, dKpi, color) {
 }
 
 // HANDOVER & KLAIM
-function loadHandover() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableHandover');tb.innerHTML='';if(!res.data.length)tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';else res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td>${d.pic}</td><td><strong>${d.resi}</strong></td><td>${d.pengerjaan}</td><td>${d.keterangan||'-'}</td><td><select onchange="updateHOStatus('${d.id}',this.value)" style="background:transparent;color:var(--white);border:1px solid #ffffff22;border-radius:4px;padding:2px"><option value="Pending" ${d.status==='Pending'?'selected':''}>Pending</option><option value="Selesai" ${d.status==='Selesai'?'selected':''}>Selesai</option></select></td><td><button class="btn btn-danger btn-sm" onclick="delHandover('${d.id}')">🗑️</button></td></tr>`);}).getHandover(); }
+function loadHandover() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableHandover');tb.innerHTML='';if(!res.data.length)tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';else res.data.forEach(d=>tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td>${d.pic}</td><td><strong>${d.resi}</strong></td><td>${d.pengerjaan}</td><td>${d.keterangan||'-'}</td><td><select onchange="updateHOStatus('${d.id}',this.value)" style="background:transparent;color:var(--white);border:1px solid #ffffff22;border-radius:4px;padding:2px"><option value="Pending" ${d.status==='Pending'?'selected':''}>Pending</option><option value="Selesai" ${d.status==='Selesai'?'selected':''}>Selesai</option></select></td><td><button class="btn btn-danger btn-sm" onclick="delHandover('${d.id}')">🗑️</button></td></tr>`);}).getHandover(); }
 function submitHandover(){ const t=v('hoTanggal'),p=v('hoPic'),r=v('hoResi'),pj=v('hoPengerjaan'),k=v('hoKeterangan'); if(!t||!p||!r)return toast('Lengkapi form','error'); google.script.run.withSuccessHandler(res=>{if(res.success){toast('Berhasil');closeModal('modalHandover');loadHandover();resetForm(['hoResi','hoKeterangan']);}else toast(res.message,'error')}).addHandover(t,p,r,pj,k,currentUser.username); }
 function updateHOStatus(id,st){ google.script.run.withSuccessHandler(res=>{if(res.success)toast('Status update');else toast(res.message,'error')}).updateHandoverStatus(id,st); }
 function delHandover(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadHandover();}}).deleteHandover(id); }
 
-function loadKlaim() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableKlaim');tb.innerHTML='';if(!res.data.length)tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';else{let p=0,s=0;res.data.forEach(d=>{if(d.status==='Selesai')s+=d.harga;else p+=d.harga; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td>${d.pic}</td><td><strong>${d.resi}</strong></td><td class="rupiah">${formatRp(d.harga)}</td><td>${d.keterangan||'-'}</td><td><select onchange="updateKLStatus('${d.id}',this.value)" style="background:transparent;color:var(--white);border:1px solid #ffffff22;border-radius:4px;padding:2px"><option value="Pending" ${d.status==='Pending'?'selected':''}>Pending</option><option value="Selesai" ${d.status==='Selesai'?'selected':''}>Selesai</option></select></td><td><button class="btn btn-danger btn-sm" onclick="delKlaim('${d.id}')">🗑️</button></td></tr>`;}); document.getElementById('statKlaimPending').textContent=formatRp(p); document.getElementById('statKlaimSelesai').textContent=formatRp(s);}}).getKlaim(); }
+function loadKlaim() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableKlaim');tb.innerHTML='';if(!res.data.length)tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';else{let p=0,s=0;res.data.forEach(d=>{if(d.status==='Selesai')s+=d.harga;else p+=d.harga; tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td>${d.pic}</td><td><strong>${d.resi}</strong></td><td class="rupiah">${formatRp(d.harga)}</td><td>${d.keterangan||'-'}</td><td><select onchange="updateKLStatus('${d.id}',this.value)" style="background:transparent;color:var(--white);border:1px solid #ffffff22;border-radius:4px;padding:2px"><option value="Pending" ${d.status==='Pending'?'selected':''}>Pending</option><option value="Selesai" ${d.status==='Selesai'?'selected':''}>Selesai</option></select></td><td><button class="btn btn-danger btn-sm" onclick="delKlaim('${d.id}')">🗑️</button></td></tr>`;}); document.getElementById('statKlaimPending').textContent=formatRp(p); document.getElementById('statKlaimSelesai').textContent=formatRp(s);}}).getKlaim(); }
 function submitKlaim(){ const t=v('klTanggal'),p=v('klPic'),r=v('klResi'),h=getRpValue('klHarga'),k=v('klKeterangan'); if(!t||!p||!r)return toast('Lengkapi form','error'); google.script.run.withSuccessHandler(res=>{if(res.success){toast('Berhasil');closeModal('modalKlaim');loadKlaim();resetForm(['klResi','klKeterangan']);setVal('klHarga','');}else toast(res.message,'error')}).addKlaim(t,p,r,h,k,currentUser.username); }
 function updateKLStatus(id,st){ google.script.run.withSuccessHandler(res=>{if(res.success){toast('Status update');loadKlaim();}else toast(res.message,'error')}).updateKlaimStatus(id,st); }
 function delKlaim(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadKlaim();}}).deleteKlaim(id); }
@@ -1464,12 +1556,12 @@ function showDetailSJ(id, tipe) { google.script.run.withSuccessHandler(res=>{if(
 function loadOutbound() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableOutbound');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="6" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noSJ}</strong></td><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${d.tujuan}</span></td><td>${d.keterangan}</td><td>${d.createdBy}</td><td><button class="btn btn-ghost btn-sm" onclick="showDetailSJ('${d.id}','keluar')">Detail</button></td></tr>`);}).getSuratJalanKeluar(); }
 function submitOutbound() { const t=v('outTanggal'),tj=v('outTujuan'),k=v('outKet'),items=collectItems('outItems','outbound'); if(!t||!items) return toast('Lengkapi data','error'); const btn=document.querySelector('#modalOutbound .btn-danger');btn.disabled=true; google.script.run.withSuccessHandler(res=>{btn.disabled=false;if(res.success){toast('Berhasil dipotong');closeModal('modalOutbound');loadOutbound();loadStock();document.getElementById('outItems').innerHTML='';resetForm(['outKet']);}else toast(res.message,'error')}).addSuratJalanKeluar(t,tj,k,JSON.stringify(items),currentUser.username); }
 
-function loadRetur() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableRetur');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noRetur}</strong></td><td>${formatDate(d.tanggal)}</td><td>${d.sumber}</td><td><span class="badge-tb">${d.alasan}</span></td><td>${d.keterangan}</td><td>${d.createdBy}</td><td><button class="btn btn-ghost btn-sm" onclick="showDetailRetur('${d.id}')">Detail</button></td></tr>`);}).getRetur(); }
+function loadRetur() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableRetur');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noRetur}</strong></td><td>${formatDate(d.tanggal)}</td><td>${d.sumber}</td><td><span class="badge-tb">${d.alasan}</span></td><td>${d.keterangan}</td><td>${d.createdBy}</td><td><button class="btn btn-ghost btn-sm" onclick="showDetailRetur('${d.id}')">Detail</button></td></tr>`);}).getRetur(); }
 function submitRetur() { const t=v('retTanggal'),a=v('retAlasan'),s=v('retSumber'),k=v('retKet'),items=collectItems('retItems','retur'); if(!t||!s||!items) return toast('Lengkapi data','error'); const btn=document.querySelector('#modalRetur .btn-teal');btn.disabled=true; google.script.run.withSuccessHandler(res=>{btn.disabled=false;if(res.success){toast('Berhasil');closeModal('modalRetur');loadRetur();loadStock();document.getElementById('retItems').innerHTML='';resetForm(['retSumber','retKet']);}else toast(res.message,'error')}).addRetur(t,s,a,k,JSON.stringify(items),currentUser.username); }
 function showDetailRetur(id) { google.script.run.withSuccessHandler(res=>{if(res.success){ const tb=document.getElementById('tblDetailSJ'); tb.innerHTML=''; res.data.forEach(d=>tb.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td>${d.qty}</td><td>${d.satuan}</td><td>${d.batch||'-'}</td><td>${formatDate(d.expDate)}</td></tr>`); document.getElementById('detailSJTitle').textContent=`Detail Retur Barang`; openModal('modalDetailSJ'); }}).getReturDetail(id); }
 
 // ORDER
-function loadOrder() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableOrder');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noOrder}</strong></td><td>${formatDate(d.tanggal)}</td><td>${d.pelanggan}</td><td>${d.alamat}</td><td><strong style="font-size:16px">${d.totalItem}</strong> Unit</td><td><span class="${d.status==='Terkirim'?'order-terkirim':'order-pending'}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showDetailOrder('${d.id}')">Detail</button> ${d.status!=='Terkirim'?`<button class="btn btn-teal btn-sm" onclick="kirimOrder('${d.id}')">Kirim</button>`:''}</td></tr>`);}).getOrders(); }
+function loadOrder() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableOrder');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noOrder}</strong></td><td>${formatDate(d.tanggal)}</td><td>${d.pelanggan}</td><td>${d.alamat}</td><td><strong style="font-size:16px">${d.totalItem}</strong> Unit</td><td><span class="${d.status==='Terkirim'?'order-terkirim':'order-pending'}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showDetailOrder('${d.id}')">Detail</button> ${d.status!=='Terkirim'?`<button class="btn btn-teal btn-sm" onclick="kirimOrder('${d.id}')">Kirim</button>`:''}</td></tr>`);}).getOrders(); }
 function submitOrder() { const t=v('ordTanggal'),p=v('ordPelanggan'),a=v('ordAlamat'),k=v('ordKet'),items=collectItems('ordItems','order'); if(!t||!p||!items) return toast('Lengkapi data','error'); const btn=document.querySelector('#modalOrder .btn-primary');btn.disabled=true; google.script.run.withSuccessHandler(res=>{btn.disabled=false;if(res.success){toast('Order Dibuat');closeModal('modalOrder');loadOrder();document.getElementById('ordItems').innerHTML='';resetForm(['ordPelanggan','ordAlamat','ordKet']);}else toast(res.message,'error')}).addOrder(t,p,a,k,JSON.stringify(items),currentUser.username); }
 function kirimOrder(id) { if(confirm('Tandai terkirim? Stok akan otomatis terpotong.')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Terkirim & Stok Dipotong');loadOrder();loadStock();}else toast(res.message,'error')}).kirimOrder(id); }
 function showDetailOrder(id) { google.script.run.withSuccessHandler(res=>{if(res.success){ const tb=document.getElementById('tblDetailSJ'); tb.innerHTML=''; res.data.forEach(d=>tb.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td>${d.qty}</td><td>${d.satuan}</td><td>-</td><td>-</td></tr>`); document.getElementById('detailSJTitle').textContent=`Detail Order`; openModal('modalDetailSJ'); }}).getOrderDetail(id); }
@@ -1485,6 +1577,78 @@ function loadAnalisis() {
     mD.forEach(d=>tM.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td style="color:var(--teal);font-weight:700">${d.bulan}</td><td>${d.satuan}</td></tr>`);
     res.data.forEach(d=>{ const cls=d.statusStok==='Aman'?'stok-aman':d.statusStok==='Rendah'?'stok-rendah':'stok-kritis'; tF.innerHTML+=`<tr><td><strong>${d.sku}</strong></td><td>${d.nama}</td><td><strong style="font-size:16px">${d.stokSaat}</strong></td><td style="color:var(--accent)">${d.minggu}</td><td style="color:var(--teal)">${d.bulan}</td><td>${d.rataHarian} / hr</td><td>${d.satuan}</td><td><span class="stok-badge ${cls}">${d.statusStok}</span></td></tr>`; });
   }).getAnalisisStock();
+}
+
+// ============================================================
+// PENGAJUAN ASSET
+// ============================================================
+let assetDataAll = [];
+
+function loadAsset() {
+  google.script.run.withSuccessHandler(res => {
+    if (!res.success) return;
+    assetDataAll = res.data;
+    const tb = document.getElementById('tableAsset'); tb.innerHTML = '';
+    let tot = res.data.length, pend = 0, appr = 0, rej = 0;
+    if (!res.data.length) { tb.innerHTML = '<tr><td colspan="9" class="empty-state"><div class="emoji">📦</div>Belum ada pengajuan asset</td></tr>'; }
+    else {
+      res.data.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).forEach(d => {
+        const stsCls = d.status === 'Disetujui' ? 'badge-approved' : d.status === 'Ditolak' ? 'badge-rejected' : 'badge-pending';
+        const priColor = d.prioritas === 'Kritis' ? '#ef4444' : d.prioritas === 'Mendesak' ? '#f59e0b' : '#10b981';
+        const priLabel = d.prioritas === 'Kritis' ? '🔴 Kritis' : d.prioritas === 'Mendesak' ? '🟡 Mendesak' : '🟢 Normal';
+        const canDel = currentUser.username === d.createdBy && d.status === 'Pending HR';
+        const canApr = canApprove(d.status, currentUser.role);
+        if (d.status === 'Disetujui') appr++;
+        else if (d.status === 'Ditolak') rej++;
+        else pend++;
+        tb.innerHTML += `<tr>
+          <td>${formatDate(d.tanggal)}</td>
+          <td><strong>${d.nama}</strong></td>
+          <td><span class="badge-tb">${d.jenisAsset}</span></td>
+          <td class="rupiah">${formatRp(d.estimasiHarga)}</td>
+          <td><span style="color:${priColor};font-weight:700">${priLabel}</span></td>
+          <td><span class="hover-marquee" style="max-width:180px;display:inline-block">${d.deskripsi || '-'}</span></td>
+          <td>${d.bukti ? `<a href="${d.bukti}" target="_blank" class="link-bukti">📎 Lihat</a>` : '-'}</td>
+          <td><span class="${stsCls}">${d.status}</span></td>
+          <td style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>
+            ${canApr ? `<button class="btn btn-success btn-sm" onclick="processApproval('asset','${d.id}','Approve')">✅</button><button class="btn btn-danger btn-sm" onclick="processApproval('asset','${d.id}','Reject')">❌</button>` : ''}
+            ${canDel ? `<button class="btn btn-danger btn-sm" onclick="delAsset('${d.id}')">Batal</button>` : ''}
+          </td>
+        </tr>`;
+      });
+    }
+    document.getElementById('statAssetTotal').textContent = tot;
+    document.getElementById('statAssetPending').textContent = pend;
+    document.getElementById('statAssetApproved').textContent = appr;
+    document.getElementById('statAssetRejected').textContent = rej;
+  }).getAsset();
+}
+
+function submitAsset() {
+  const t = v('assetTanggal'), n = v('assetNama'), j = v('assetJenis'), h = getRpValue('assetHarga'), p = v('assetPrioritas'), ds = v('assetDeskripsi');
+  if (!t || !n || !ds) return toast('Tanggal, Nama, dan Deskripsi wajib diisi', 'error');
+  const btn = document.getElementById('btnSaveAsset'); btn.disabled = true; btn.textContent = '⏳...';
+  const proceed = url => {
+    google.script.run.withSuccessHandler(res => {
+      btn.disabled = false; btn.textContent = '📤 Ajukan Asset';
+      if (res.success) {
+        toast('Pengajuan asset berhasil dikirim! ✅');
+        closeModal('modalAsset'); loadAsset(); checkPendingApprovals();
+        resetForm(['assetNama','assetDeskripsi']); setVal('assetHarga',''); removeFile('ast');
+      } else toast(res.message, 'error');
+    }).addAsset(t, n, j, ds, h, p, url, currentUser.username);
+  };
+  const f = document.getElementById('astFile').files[0] || window['_droppedFile_ast'];
+  if (f) { window['_droppedFile_ast'] = null; uploadFileAndProceed('ast', f, 'Pengajuan Asset', proceed, btn); } else proceed(v('astBukti'));
+}
+
+function delAsset(id) {
+  if (confirm('Batalkan pengajuan asset ini?'))
+    google.script.run.withSuccessHandler(res => {
+      if (res.success) { toast('Pengajuan dibatalkan'); loadAsset(); checkPendingApprovals(); }
+      else toast(res.message, 'error');
+    }).deleteAsset(id);
 }
 </script>
 </body>
