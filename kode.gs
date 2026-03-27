@@ -70,7 +70,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti']);
   setupSheet(ss, CONFIG.SHEETS.IJIN, ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history']);
   setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jumlahJam', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
-  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames']);
+  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames', 'shift', 'totalPHL', 'jamKerjaPHL', 'totalPO', 'totalQty', 'totalInbound']);
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
   setupSheet(ss, CONFIG.SHEETS.STOCK, ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt']);
@@ -175,6 +175,21 @@ function login(username, password) {
       }
     }
     return { success: false, message: 'Username atau password salah' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function changePassword(newPassword, userId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.USERS);
+    const data = sheet.getDataRange().getValues();
+    const hashed = hashPassword(newPassword);
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(userId)) {
+        sheet.getRange(i + 1, 3).setValue(hashed);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'User tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -776,17 +791,23 @@ function getLaporanKerja() {
         totalOrder: parseInt(data[i][12]) || 0,
         createdBy: data[i][13],
         sisaOrder: parseInt(data[i][15]) || 0,
-        staffLemburNames: data[i][16] || ''
+        staffLemburNames: data[i][16] || '',
+        shift: data[i][17] || 'Pagi',
+        totalPHL: parseInt(data[i][18]) || 0,
+        jamKerjaPHL: parseFloat(data[i][19]) || 0,
+        totalPO: parseInt(data[i][20]) || 0,
+        totalQty: parseInt(data[i][21]) || 0,
+        totalInbound: parseInt(data[i][22]) || 0
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames) {
+function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound) {
   try {
     getSheet(CONFIG.SHEETS.LAPORAN_KERJA).appendRow([
-      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || ''
+      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
