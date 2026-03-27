@@ -7,192 +7,219 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Menambahkan CDN Chart.js untuk Grafik -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-:root {
-  --navy: #0a1628; --navy2: #0f2040; --navy3: #1a3a5c;
+:root[data-theme="dark"] {
+  --bg-main: #0a1628; --bg-panel: #0f2040; --bg-panel-light: #162a4d;
+  --text-main: #f8fafc; --text-muted: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.05); --border-light: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.03);
+
   --accent: #f59e0b; --accent2: #fbbf24;
   --teal: #0ea5e9; --green: #10b981; --red: #ef4444; --gray: #94a3b8;
   --light: #e2e8f0; --white: #f8fafc;
+  --navy: #0a1628; --navy2: #0f2040; --navy3: #1a3a5c;
   --sidebar-w: 260px; --radius: 12px;
 }
+:root[data-theme="light"] {
+  --bg-main: #f1f5f9; --bg-panel: #ffffff; --bg-panel-light: #f8fafc;
+  --text-main: #0f172a; --text-muted: #64748b;
+  --border-color: rgba(0, 0, 0, 0.05); --border-light: rgba(0, 0, 0, 0.1);
+  --input-bg: rgba(0, 0, 0, 0.02);
+
+  --accent: #f59e0b; --accent2: #fbbf24;
+  --teal: #0ea5e9; --green: #10b981; --red: #ef4444; --gray: #64748b;
+  --light: #475569; --white: #0f172a;
+  --navy: #f8fafc; --navy2: #ffffff; --navy3: #f1f5f9;
+  --sidebar-w: 260px; --radius: 12px;
+}
+:root { color-scheme: light dark; }
 * { margin:0; padding:0; box-sizing:border-box; -ms-overflow-style: none; scrollbar-width: none; }
 ::-webkit-scrollbar { display: none; }
-body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--navy); color:var(--white); min-height:100vh; overflow-x:hidden; font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg-main); color:var(--text-main); min-height:100vh; overflow-x:hidden; font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+a { text-decoration: none; }
+/* Override Bootstrap defaults for inputs */
+.form-control, .form-select { background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 11px 14px; font-size: 14.5px; border-radius: 8px; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-control:focus, .form-select:focus { background-color: var(--bg-panel); color: var(--text-main); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); outline: none; }
+.form-control::placeholder { color: var(--text-muted); }
+select option { background-color: var(--bg-panel) !important; color: var(--text-main) !important; padding: 10px; }
 
 /* ---- LOGIN ---- */
-#loginPage { min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(ellipse at 20% 50%, #1a3a5c33 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #f59e0b22 0%, transparent 50%), var(--navy); }
-.login-card { background: linear-gradient(135deg, #0f2040ee, #1a3a5ccc); border: 1px solid #ffffff18; border-radius: 20px; padding: 50px 44px; width: 420px; max-width: 95vw; backdrop-filter: blur(20px); box-shadow: 0 32px 80px #00000060; }
+#loginPage { min-height:100vh; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.12) 0%, transparent 40%), var(--bg-main); }
+.login-card { background: rgba(15, 32, 64, 0.85); border: 1px solid var(--border-light); border-radius: 24px; padding: 50px 44px; width: 440px; max-width: 95vw; backdrop-filter: blur(20px); box-shadow: 0 32px 80px rgba(0,0,0,0.5); }
 .login-logo { text-align: center; margin-bottom: 36px; }
-.login-logo .icon { width: 68px; height: 68px; background: linear-gradient(135deg, var(--accent), #f97316); border-radius: 16px; display: inline-flex; align-items:center; justify-content:center; font-size: 32px; margin-bottom: 16px; box-shadow: 0 8px 32px #f59e0b44; }
-.login-logo h1 { font-family:'Outfit',sans-serif; font-size:28px; font-weight:800; letter-spacing:-0.5px; }
-.login-logo p { color:var(--gray); font-size:13px; margin-top:4px; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display:block; font-size:13px; font-weight:600; color:#a0b4c8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
-.form-group input { width:100%; padding:13px 16px; background:#ffffff0d; border:1px solid #ffffff18; border-radius: 10px; color:#f0f6ff; font-size:15px; font-family:inherit; transition: border-color 0.2s, box-shadow 0.2s; }
-.form-group input:focus { outline:none; border-color:var(--accent); box-shadow: 0 0 0 3px #f59e0b22; }
-.btn-login { width:100%; padding:14px; background:linear-gradient(135deg,var(--accent),#f97316); border:none; border-radius:10px; color:#0a1628; font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; cursor:pointer; letter-spacing:0.3px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 4px 20px #f59e0b44; }
-.btn-login:hover { transform:translateY(-1px); box-shadow:0 8px 28px #f59e0b55; }
-.login-error { color:#fca5a5; font-size:13px; text-align:center; margin-top:12px; display:none; }
+.login-logo .icon { width: 72px; height: 72px; background: linear-gradient(135deg, var(--accent), #f97316); border-radius: 18px; display: inline-flex; align-items:center; justify-content:center; font-size: 34px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4); }
+.login-logo h1 { font-family:'Outfit',sans-serif; font-size:30px; font-weight:800; letter-spacing:-0.5px; color: #fff; }
+.login-logo p { color:rgba(255,255,255,0.7); font-size:14px; margin-top:6px; }
+.form-group { margin-bottom: 24px; }
+.form-group label { display:block; font-size:13px; font-weight:700; color:rgba(255,255,255,0.8); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; }
+.btn-login { width:100%; padding: 16px; background:linear-gradient(135deg,var(--accent),#f97316); border:none; border-radius:12px; color: #000; font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; cursor:pointer; letter-spacing:0.5px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 24px rgba(245, 158, 11, 0.4); margin-top: 10px; }
+.btn-login:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(245, 158, 11, 0.5); }
+.login-error { color:#f87171; font-size:13px; text-align:center; margin-top:16px; font-weight:600; }
 
 /* ---- MAIN LAYOUT ---- */
 #app { display:none; }
-.layout { display:flex; min-height:100vh; }
 
 /* ---- SIDEBAR ---- */
-.sidebar { width: var(--sidebar-w); background: linear-gradient(180deg, #0f2040 0%, #0a1628 100%); border-right: 1px solid #ffffff0f; display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; z-index:100; transition: transform 0.3s; }
-.sidebar-header { padding: 24px 20px 20px; border-bottom: 1px solid #ffffff0f; }
+.sidebar { width: var(--sidebar-w); background: var(--bg-panel); border-right: 1px solid var(--border-color); display:flex; flex-direction:column; z-index:1045; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; }
+.sidebar.collapsed-desktop { margin-left: calc(-1 * var(--sidebar-w)); }
+.sidebar-header { padding: 24px 20px 20px; border-bottom: 1px solid var(--border-color); }
 .sidebar-brand { display:flex; align-items:center; gap:12px; }
 .sidebar-brand .brand-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--accent),#f97316); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
 .sidebar-brand h2 { font-family:'Outfit',sans-serif; font-size:17px; font-weight:800; letter-spacing:-0.3px; }
-.sidebar-brand span { font-size:11px; color:var(--gray); display:block; }
-.sidebar-user { padding: 16px 20px; border-bottom: 1px solid #ffffff0f; display:flex; align-items:center; gap:10px; }
-.user-avatar { width:34px; height:34px; background:var(--navy3); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-weight:700; }
+.sidebar-brand span { font-size:11px; color:var(--text-muted); display:block; }
+.sidebar-user { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display:flex; align-items:center; gap:10px; }
+.user-avatar { width:34px; height:34px; background:var(--input-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-weight:700; }
 .user-info .uname { font-size:13px; font-weight:500; }
-.user-info .urole { font-size:11px; color:var(--gray); }
+.user-info .urole { font-size:11px; color:var(--text-muted); }
 .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
-.nav-section { padding: 12px 20px 6px; font-size:11px; font-weight:700; color:#4a6080; text-transform:uppercase; letter-spacing:1px; }
-.nav-item { display:flex; align-items:center; gap:12px; padding:11px 20px; color:#8faabf; font-size:14px; font-weight:500; cursor:pointer; transition: background 0.15s, color 0.15s; border-left: 3px solid transparent; }
-.nav-item:hover { background:#ffffff08; color:var(--white); }
-.nav-item.active { background:#f59e0b18; color:var(--accent); border-left-color:var(--accent); }
+.nav-section { padding: 12px 20px 6px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:11px 20px; color:var(--text-muted); font-size:14px; font-weight:500; cursor:pointer; transition: background 0.15s, color 0.15s; border-left: 3px solid transparent; }
+.nav-item:hover { background:var(--input-bg); color:var(--accent); }
+.nav-item.active { background:rgba(245, 158, 11, 0.08); color:var(--accent); border-left-color:var(--accent); }
 .nav-item .icon { font-size:16px; width:20px; text-align:center; }
-.sidebar-footer { padding:16px 20px; border-top:1px solid #ffffff0f; }
-.btn-logout { width:100%; padding:10px; background:#ef444418; border:1px solid #ef444430; border-radius:8px; color:#fca5a5; font-size:13px; cursor:pointer; transition:background 0.15s; font-family:inherit; }
-.btn-logout:hover { background:#ef444428; }
+.sidebar-footer { padding:16px 20px; border-top:1px solid var(--border-color); }
+.btn-logout { width:100%; padding:10px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); border-radius:8px; color:var(--red); font-size:13px; cursor:pointer; transition:background 0.15s; font-family:inherit; }
+.btn-logout:hover { background: rgba(239, 68, 68, 0.15); }
 
 /* ---- MAIN CONTENT ---- */
-.main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
-.topbar { background:#0f2040; border-bottom:1px solid #ffffff0f; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
-.topbar h3 { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; letter-spacing:-0.2px; }
+.topbar { background:var(--bg-panel); border-bottom:1px solid var(--border-color); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar-left { display:flex; align-items:center; gap:16px; }
+.btn-toggle { background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; color:var(--text-main); font-size:18px; cursor:pointer; transition:all 0.2s; }
+.btn-toggle:hover { background:var(--border-color); color:var(--accent); }
+.topbar h3 { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; letter-spacing:-0.2px; margin:0; }
 .topbar-right { display:flex; align-items:center; gap:12px; }
-.badge { background:var(--accent); color:#0a1628; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+.badge { background:var(--accent); color: #000; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
 .content { padding:28px; flex:1; }
 
 /* ---- CARDS & STATS ---- */
-.card { background: linear-gradient(135deg, #0f204088, #1a3a5c55); border: 1px solid #ffffff12; border-radius: var(--radius); padding: 24px; backdrop-filter: blur(10px); }
+.card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
 .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
 .card-header h4 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; letter-spacing:-0.2px; }
 .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
-.stat-card { background: linear-gradient(135deg, #0f2040, #1a3a5c); border: 1px solid #ffffff15; border-radius: var(--radius); padding: 22px; position:relative; overflow:hidden; }
-.stat-card::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:0.15; }
+.stat-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 22px; position:relative; overflow:hidden; transition: transform 0.2s, box-shadow 0.2s; }
+.stat-card:hover { transform: translateY(-4px); border-color: var(--border-light); box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+.stat-card::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:0.12; }
 .stat-card.green::after { background:var(--green); } .stat-card.amber::after { background:var(--accent); } .stat-card.teal::after { background:var(--teal); } .stat-card.red::after { background:var(--red); }
-.stat-label { font-size:12px; color:var(--gray); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; font-weight:600; }
-.stat-value { font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; letter-spacing:-0.5px; }
-.stat-value.green { color:var(--green); } .stat-value.amber { color:var(--accent); } .stat-value.teal { color:var(--teal); } .stat-value.red { color:#f87171; }
-.stat-icon { position:absolute; top:18px; right:18px; font-size:26px; opacity:0.4; }
+.stat-label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:10px; font-weight:700; }
+.stat-value { font-family:'Outfit',sans-serif; font-size:26px; font-weight:800; letter-spacing:-0.5px; color:var(--text-main); }
+.stat-value.green { color:var(--green); } .stat-value.amber { color:var(--accent); } .stat-value.teal { color:var(--teal); } .stat-value.red { color:var(--red); }
+.stat-icon { position:absolute; top:18px; right:18px; font-size:28px; opacity:0.3; }
 
 /* ---- TABLE ---- */
-.table-wrap { overflow-x:auto; border-radius:10px; }
-table { width:100%; border-collapse:collapse; font-size:14px; }
-thead tr { background:#ffffff08; }
-th { padding:13px 14px; text-align:left; font-size:11.5px; font-weight:700; color:#a0b4c8; text-transform:uppercase; letter-spacing:0.6px; white-space:nowrap; }
-td { padding:13px 14px; border-bottom:1px solid #ffffff0a; vertical-align:middle; font-size:14px; color:#e8f0f8; }
-tr:hover td { background:#ffffff05; }
-.badge-in { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-out { background:#ef444422; color:#fca5a5; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-retur { background:#0ea5e922; color:#7dd3fc; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-lunas, .badge-approved { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-belum, .badge-pending { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-rejected { background:#ef444422; color:#fca5a5; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.badge-aktif { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; }
-.badge-nonaktif { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; }
+.table-wrap { overflow-x:auto; border-radius:12px; border: 1px solid var(--border-color); background: transparent; }
+.table { --bs-table-bg: transparent; --bs-table-color: var(--text-main); --bs-table-border-color: var(--border-color); --bs-table-striped-bg: rgba(255,255,255,0.02); --bs-table-hover-bg: rgba(245, 158, 11, 0.05); margin-bottom: 0; }
+table { width:100%; border-collapse:collapse; font-size:14px; background: transparent; }
+thead tr { background: var(--bg-panel-light) !important; }
+th { padding:14px 16px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; white-space:nowrap; border-bottom: 2px solid var(--border-color) !important; background: transparent !important; }
+td { padding:14px 16px; border-bottom:1px solid var(--border-color); vertical-align:middle; font-size:14px; color:var(--text-main); background: transparent !important; }
+tr:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
+.badge-in { background:#10b98122; color:var(--green); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-out { background:#ef444422; color:var(--red); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-retur { background:#0ea5e922; color:var(--teal); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-lunas, .badge-approved { background:#10b98122; color:var(--green); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-belum, .badge-pending { background:#f59e0b22; color:var(--accent); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-rejected { background:#ef444422; color:var(--red); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-aktif { background:#10b98122; color:var(--green); padding:3px 10px; border-radius:20px; font-size:12px; }
+.badge-nonaktif { background:#f59e0b22; color:var(--accent); padding:3px 10px; border-radius:20px; font-size:12px; }
 
 /* ---- BUTTONS ---- */
 .btn { padding:9px 18px; border-radius:8px; font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s; border:none; display:inline-flex; align-items:center; gap:6px; }
-.btn-primary { background:var(--accent); color:#0a1628; font-weight:700; } .btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
+.btn-primary { background:var(--accent); color:var(--navy); font-weight:700; } .btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
 .btn-success { background:#10b981; color:#fff; } .btn-success:hover { background:#059669; }
 .btn-danger { background:#ef4444; color:#fff; } .btn-danger:hover { background:#dc2626; }
 .btn-sm { padding:5px 12px; font-size:12px; }
-.btn-ghost { background:#ffffff10; color:var(--light); border:1px solid #ffffff15; } .btn-ghost:hover { background:#ffffff18; }
+.btn-ghost { background:var(--border-color); color:var(--light); border:1px solid var(--border-color); } .btn-ghost:hover { background:var(--border-color); }
 .btn-teal { background:var(--teal); color:#fff; } .btn-teal:hover { background:#0284c7; }
 
 /* ---- FORMS ---- */
-.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
-.form-row.single { grid-template-columns:1fr; }
-.form-row.triple { grid-template-columns:1fr 1fr 1fr; }
-.f-group { display:flex; flex-direction:column; gap:7px; }
-.f-group label { font-size:13px; color:#a0b4c8; font-weight:600; letter-spacing:0.2px; }
-.f-group input, .f-group select, .f-group textarea { padding:11px 14px; background:#ffffff0d; border:1px solid #ffffff18; border-radius:8px; color:#f0f6ff; font-family:inherit; font-size:14.5px; transition:border-color 0.2s; }
-.f-group input:focus, .f-group select:focus, .f-group textarea:focus { outline:none; border-color:var(--accent); }
-.f-group input[readonly] { background: #ffffff05; color: var(--accent); font-weight: 700; border-color: transparent; }
-select option { background-color: #0f2040 !important; color: #f8fafc !important; padding: 10px; }
-.f-group textarea { resize:vertical; min-height:80px; }
+.form-label { font-size:13px; color:var(--text-muted); font-weight:600; letter-spacing:0.2px; margin-bottom:7px; }
+.form-control[readonly] { background-color: var(--border-color) !important; color: var(--accent) !important; font-weight: 700; border-color: transparent !important; }
 
 /* ---- MODAL ---- */
-.modal-overlay { position:fixed; inset:0; background:#00000088; z-index:200; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2040; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
 .modal-overlay.show { display:flex; }
-.modal { background: linear-gradient(135deg, #0f2040, #1a3a5c); border:1px solid #ffffff18; border-radius:16px; padding:28px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; position:relative; }
-.modal h3 { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; margin-bottom:22px; letter-spacing:-0.2px; }
-.modal-close { position:absolute; top:16px; right:16px; background:#ffffff10; border:none; color:var(--gray); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
-.modal-close:hover { background:#ffffff20; color:var(--white); }
+.custom-modal { background: linear-gradient(135deg, var(--navy2), var(--navy3)); border:1px solid var(--border-color); border-radius:16px; padding:28px; width:520px; max-width:95vw; max-height:90vh; overflow-y:auto; position:relative; }
+.custom-modal h3 { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; margin-bottom:22px; letter-spacing:-0.2px; }
+.modal-close { position:absolute; top:16px; right:16px; background:var(--border-color); border:none; color:var(--gray); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+.modal-close:hover { background:var(--border-color); color:var(--white); }
 .modal-footer { margin-top:20px; display:flex; gap:10px; justify-content:flex-end; }
 
 /* ---- PERMISSION GRID (HAK AKSES) ---- */
-#uPermissionsGrid label { display:flex; align-items:center; gap:8px; font-size:13px; color:#e2e8f0; cursor:pointer; }
+#uPermissionsGrid label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--light); cursor:pointer; }
 #uPermissionsGrid input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color: var(--accent); }
 
 /* ---- MISC CSS ---- */
 .page { display:none; } .page.active { display:block; }
-.sop-item { background:#0f204088; border:1px solid #ffffff10; border-radius:10px; padding:18px 20px; margin-bottom:12px; cursor:pointer; transition:border-color 0.2s; }
+.sop-item { background:var(--border-light); border:1px solid var(--border-color); border-radius:10px; padding:18px 20px; margin-bottom:12px; cursor:pointer; transition:border-color 0.2s; }
 .sop-item:hover { border-color:#f59e0b44; }
 .sop-title { font-family:'Outfit',sans-serif; font-size:15px; font-weight:700; margin-bottom:4px; letter-spacing:-0.1px; }
 .sop-cat { font-size:12px; color:var(--teal); background:#0ea5e918; padding:3px 10px; border-radius:10px; display:inline-block; font-weight:500; }
 .sop-body { margin-top:12px; font-size:14px; line-height:1.8; color:var(--light); display:none; white-space:pre-wrap; }
-#toast { position:fixed; bottom:24px; right:24px; z-index:999; background:#1a3a5c; border:1px solid #ffffff18; padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; }
+#toast { position:fixed; bottom:24px; right:24px; z-index:999; background:var(--navy3); border:1px solid var(--border-color); padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; }
 #toast.show { transform:translateY(0); opacity:1; }
 #toast.success { border-left:4px solid var(--green); }
 #toast.error { border-left:4px solid var(--red); }
-.spinner { width:40px; height:40px; border:3px solid #ffffff18; border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto; }
+.spinner { width:40px; height:40px; border:3px solid var(--border-color); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .loading-screen { position:fixed; inset:0; background:var(--navy); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
 .menu-toggle { display:none; }
-@media (max-width:768px) { .sidebar { transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .main { margin-left:0; } .menu-toggle { display:flex; align-items:center; justify-content:center; width:38px; height:38px; background:#ffffff10; border-radius:8px; border:none; color:var(--white); font-size:18px; cursor:pointer; } .form-row, .form-row.triple { grid-template-columns:1fr; } .stats-grid { grid-template-columns:1fr 1fr; } .dash-detail-grid { grid-template-columns:1fr !important; } }
+@media (max-width:768px) {
+  .menu-toggle { display:flex; align-items:center; justify-content:center; width:38px; height:38px; background:var(--border-color); border-radius:8px; border:none; color:var(--white); font-size:18px; cursor:pointer; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .dash-detail-grid { grid-template-columns:1fr !important; }
+}
 .text-muted { color:var(--gray); font-size:13px; }
 .mt-16 { margin-top:16px; }
 .empty-state { text-align:center; padding:48px 20px; color:var(--gray); } .empty-state .emoji { font-size:40px; margin-bottom:12px; }
 .rupiah { color:var(--accent); font-weight:600; font-family:'Syne',sans-serif; }
 .item-row { display:grid; grid-template-columns:1.5fr 2fr 80px 80px 1fr 100px 32px; gap:6px; margin-bottom:6px; align-items:center; }
-.item-row input, .item-row select { padding:8px 10px; background:#ffffff0d; border:1px solid #ffffff15; border-radius:6px; color:#f0f6ff; font-family:inherit; font-size:13px; width:100%; }
-.item-row .btn-remove { width:32px; height:32px; background:#ef444422; border:1px solid #ef444430; border-radius:6px; color:#fca5a5; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.item-row input, .item-row select { padding:8px 10px; background:var(--border-color); border:1px solid var(--border-color); border-radius:6px; color:var(--text-main); font-family:inherit; font-size:13px; width:100%; }
+.item-row .btn-remove { width:32px; height:32px; background:#ef444422; border:1px solid #ef444430; border-radius:6px; color:var(--red); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
 .stok-badge { padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
-.stok-aman { background:#10b98122; color:#6ee7b7; } .stok-rendah { background:#f59e0b22; color:#fcd34d; } .stok-kritis { background:#ef444422; color:#fca5a5; }
-.order-pending { background:#f59e0b22; color:#fcd34d; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.order-terkirim { background:#10b98122; color:#6ee7b7; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
-.exp-warning { color:#fca5a5 !important; }
+.stok-aman { background:#10b98122; color:var(--green); } .stok-rendah { background:#f59e0b22; color:var(--accent); } .stok-kritis { background:#ef444422; color:var(--red); }
+.order-pending { background:#f59e0b22; color:var(--accent); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.order-terkirim { background:#10b98122; color:var(--green); padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.exp-warning { color:var(--red) !important; }
 .item-row-header { display:grid; grid-template-columns:1.5fr 2fr 80px 80px 1fr 100px 32px; gap:6px; margin-bottom:4px; }
-.item-row-header span { font-size:11px; color:#4a6080; font-weight:600; text-transform:uppercase; padding:0 2px; }
-.positive { color:var(--green); } .negative { color:#f87171; }
+.item-row-header span { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; padding:0 2px; }
+.positive { color:var(--green); } .negative { color:var(--red); }
 .link-bukti { color:var(--teal); font-size:12px; text-decoration:none; } .link-bukti:hover { text-decoration:underline; }
 
 /* ---- ORG CHART CSS ---- */
 .org-chart-wrap { overflow-x: auto; overflow-y: auto; padding: 32px 16px 40px; min-height: 200px; }
 .oc-col { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 12px; }
-.oc-line-down { width: 2px; height: 24px; background: #4a7ab5; }
+.oc-line-down { width: 2px; height: 24px; background: var(--border-color); }
 .oc-subtree { display: flex; flex-direction: column; align-items: center; transition: opacity 0.3s; }
 .oc-subtree.collapsed { display: none; }
 
 /* ---- UPLOAD WIDGET & RP INPUT ---- */
 .file-upload-wrap { display:flex; flex-direction:column; gap:6px; }
-.file-upload-tabs { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid #ffffff18; }
-.file-tab { flex:1; padding:8px; text-align:center; font-size:12px; font-weight:600; cursor:pointer; background:#ffffff08; color:var(--gray); transition:background 0.15s,color 0.15s; border:none; font-family:inherit; }
-.file-tab.active { background:var(--accent); color:#0a1628; }
+.file-upload-tabs { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid var(--border-color); }
+.file-tab { flex:1; padding:8px; text-align:center; font-size:12px; font-weight:600; cursor:pointer; background:var(--border-color); color:var(--gray); transition:background 0.15s,color 0.15s; border:none; font-family:inherit; }
+.file-tab.active { background:var(--accent); color:var(--navy); }
 .file-tab-panel { display:none; } .file-tab-panel.active { display:block; }
-.file-drop-zone { border:2px dashed #ffffff22; border-radius:8px; padding:18px 12px; text-align:center; cursor:pointer; transition:border-color 0.2s,background 0.2s; background:#ffffff05; position:relative; }
+.file-drop-zone { border:2px dashed var(--border-color); border-radius:8px; padding:18px 12px; text-align:center; cursor:pointer; transition:border-color 0.2s,background 0.2s; background:var(--border-color); position:relative; }
 .file-drop-zone:hover, .file-drop-zone.dragover { border-color:var(--accent); background:#f59e0b0a; }
 .file-drop-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
 .file-drop-icon { font-size:24px; margin-bottom:6px; } .file-drop-text { font-size:12px; color:var(--gray); }
-.file-preview { display:none; align-items:center; gap:10px; padding:8px 12px; background:#10b98118; border:1px solid #10b98130; border-radius:8px; margin-top:6px; }
+.file-preview { display:none; align-items:center; gap:10px; padding:8px 12px; background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.2); border-radius:8px; margin-top:6px; }
 .file-preview.show { display:flex; }
 .file-preview-name { font-size:13px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .file-preview-name:hover { text-overflow:clip; animation: marquee-move 3s linear infinite alternate; cursor: default; }
-.file-remove { background:none; border:none; color:#fca5a5; cursor:pointer; font-size:16px; flex-shrink:0; }
-.upload-progress { display:none; background:#ffffff10; border-radius:20px; height:6px; overflow:hidden; margin-top:6px; }
+.file-remove { background:none; border:none; color:var(--red); cursor:pointer; font-size:16px; flex-shrink:0; }
+.upload-progress { display:none; background:var(--border-color); border-radius:20px; height:6px; overflow:hidden; margin-top:6px; }
 .upload-progress.show { display:block; }
 .upload-progress-bar { height:100%; background:linear-gradient(90deg,var(--teal),var(--accent)); border-radius:20px; width:0%; transition:width 0.3s; animation: progressAnim 1.5s ease-in-out infinite; }
 @keyframes progressAnim { 0%,100%{opacity:1} 50%{opacity:0.6} }
-.rp-input-wrap { display:flex; align-items:center; background:#ffffff0d; border:1px solid #ffffff18; border-radius:8px; overflow:hidden; transition:border-color 0.2s; }
+.rp-input-wrap { display:flex; align-items:center; background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; transition:border-color 0.2s; }
 .rp-input-wrap:focus-within { border-color:var(--accent); }
-.rp-prefix { padding:11px 12px 11px 14px; color:var(--accent); font-weight:700; font-size:14px; background:#f59e0b12; border-right:1px solid #ffffff15; white-space:nowrap; user-select:none; }
-.rp-input-wrap input { border:none !important; background:transparent !important; padding:11px 14px; color:#f0f6ff; font-family:inherit; font-size:14.5px; flex:1; min-width:0; }
+.rp-prefix { padding:11px 12px 11px 14px; color:var(--accent); font-weight:700; font-size:14px; background:rgba(245, 158, 11, 0.08); border-right:1px solid var(--border-color); white-space:nowrap; user-select:none; }
+.rp-input-wrap input { border:none !important; background:transparent !important; padding:11px 14px; color:var(--text-main); font-family:inherit; font-size:14.5px; flex:1; min-width:0; }
 .rp-input-wrap input:focus { outline:none; box-shadow:none; }
 
 /* ---- EFEK TEKS BERGERAK (MARQUEE) ---- */
@@ -202,7 +229,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 
 /* ---- TIMELINE APPROVAL ---- */
 .timeline { position:relative; padding-left:24px; margin-top:16px; }
-.timeline::before { content:''; position:absolute; left:5px; top:0; bottom:0; width:2px; background:#ffffff15; }
+.timeline::before { content:''; position:absolute; left:5px; top:0; bottom:0; width:2px; background:var(--border-color); }
 .timeline-item { position:relative; margin-bottom:16px; }
 .timeline-item::before { content:''; position:absolute; left:-24px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--navy); border:2px solid var(--gray); z-index:2; }
 .timeline-item.approved::before { border-color:var(--green); background:var(--green); box-shadow:0 0 0 3px #10b98133; }
@@ -210,41 +237,41 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 .timeline-item.pending::before { border-color:var(--accent); background:var(--accent); box-shadow:0 0 0 3px #f59e0b33; }
 .timeline-date { font-size:11px; color:var(--gray); margin-bottom:2px; }
 .timeline-title { font-size:13px; font-weight:700; color:var(--white); }
-.timeline-desc { font-size:12px; color:#a0b4c8; margin-top:2px; }
-.timeline-reason { font-size:12px; color:#fca5a5; background:#ef444415; padding:6px 10px; border-radius:6px; margin-top:4px; display:inline-block; border:1px solid #ef444433; }
+.timeline-desc { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.timeline-reason { font-size:12px; color:var(--red); background:#ef444415; padding:6px 10px; border-radius:6px; margin-top:4px; display:inline-block; border:1px solid #ef444433; }
 
 /* ---- TUGAS PROJECT ---- */
 .task-kanban { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-bottom:24px; }
-.kanban-col { background:#ffffff06; border:1px solid #ffffff10; border-radius:12px; padding:16px; min-height:120px; }
+.kanban-col { background:var(--border-color); border:1px solid var(--border-color); border-radius:12px; padding:16px; min-height:120px; }
 .kanban-col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
 .kanban-col-title { font-family:'Outfit',sans-serif; font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
 .kanban-count { font-size:12px; font-weight:700; padding:2px 8px; border-radius:10px; }
 
-.task-card { background:linear-gradient(135deg,#0f2040cc,#1a3a5c88); border:1px solid #ffffff12; border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer; transition:all 0.2s; position:relative; }
-.task-card:hover { border-color:#f59e0b44; transform:translateY(-1px); box-shadow:0 4px 20px #00000044; }
-.task-card.overdue { border-left:3px solid #ef4444 !important; }
-.task-card.warning { border-left:3px solid #f59e0b !important; }
-.task-card.ontime { border-left:3px solid #10b981 !important; }
+.task-card { background: var(--bg-panel-light); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer; transition:all 0.2s; position:relative; }
+.task-card:hover { border-color: var(--accent); transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+.task-card.overdue { border-left:3px solid var(--red) !important; }
+.task-card.warning { border-left:3px solid var(--accent) !important; }
+.task-card.ontime { border-left:3px solid var(--green) !important; }
 
 .task-card-title { font-size:14px; font-weight:700; margin-bottom:6px; line-height:1.4; }
 .task-card-assignee { font-size:12px; color:var(--teal); margin-bottom:8px; display:flex; align-items:center; gap:5px; }
 .task-card-meta { display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:6px; }
 .task-card-date { font-size:11px; color:var(--gray); }
-.task-progress { height:4px; background:#ffffff15; border-radius:2px; margin-top:8px; overflow:hidden; }
+.task-progress { height:4px; background:var(--border-color); border-radius:2px; margin-top:8px; overflow:hidden; }
 .task-progress-bar { height:100%; border-radius:2px; transition:width 0.4s; }
 
 .task-deadline-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px; }
-.task-deadline-badge.overdue { background:#ef444422; color:#fca5a5; border:1px solid #ef444440; }
-.task-deadline-badge.warning { background:#f59e0b22; color:#fcd34d; border:1px solid #f59e0b40; }
-.task-deadline-badge.ontime { background:#10b98122; color:#6ee7b7; border:1px solid #10b98140; }
-.task-deadline-badge.done { background:#0ea5e922; color:#7dd3fc; border:1px solid #0ea5e940; }
+.task-deadline-badge.overdue { background:#ef444422; color:var(--red); border:1px solid #ef444440; }
+.task-deadline-badge.warning { background:#f59e0b22; color:var(--accent); border:1px solid #f59e0b40; }
+.task-deadline-badge.ontime { background:#10b98122; color:var(--green); border:1px solid #10b98140; }
+.task-deadline-badge.done { background:#0ea5e922; color:var(--teal); border:1px solid #0ea5e940; }
 
 .status-pill { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
-.status-todo    { background:#64748b22; color:#94a3b8; border:1px solid #64748b40; }
-.status-progress{ background:#0ea5e922; color:#7dd3fc; border:1px solid #0ea5e940; }
-.status-review  { background:#f59e0b22; color:#fcd34d; border:1px solid #f59e0b40; }
-.status-done    { background:#10b98122; color:#6ee7b7; border:1px solid #10b98140; }
-.status-cancel  { background:#ef444422; color:#fca5a5; border:1px solid #ef444440; }
+.status-todo    { background:#64748b22; color:var(--text-muted); border:1px solid #64748b40; }
+.status-progress{ background:#0ea5e922; color:var(--teal); border:1px solid #0ea5e940; }
+.status-review  { background:#f59e0b22; color:var(--accent); border:1px solid #f59e0b40; }
+.status-done    { background:#10b98122; color:var(--green); border:1px solid #10b98140; }
+.status-cancel  { background:#ef444422; color:var(--red); border:1px solid #ef444440; }
 
 .priority-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .priority-high   { background:#ef4444; box-shadow:0 0 6px #ef444488; }
@@ -252,18 +279,18 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 .priority-low    { background:#10b981; box-shadow:0 0 6px #10b98188; }
 
 .task-stats-wrap { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:22px; }
-.task-stat { background:linear-gradient(135deg,#0f2040,#1a3a5c); border:1px solid #ffffff15; border-radius:10px; padding:16px 18px; position:relative; overflow:hidden; }
-.task-stat::after { content:''; position:absolute; top:-16px; right:-16px; width:60px; height:60px; border-radius:50%; opacity:0.12; }
+.task-stat { background: var(--bg-panel); border:1px solid var(--border-color); border-radius:10px; padding:16px 18px; position:relative; overflow:hidden; }
+.task-stat::after { content:''; position:absolute; top:-16px; right:-16px; width:60px; height:60px; border-radius:50%; opacity:0.1; }
 .task-stat.blue::after { background:var(--teal); }
 .task-stat.amber::after { background:var(--accent); }
 .task-stat.green::after { background:var(--green); }
 .task-stat.red::after { background:var(--red); }
-.task-stat-label { font-size:11px; color:var(--gray); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:600; }
-.task-stat-value { font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; }
-.task-stat-icon { position:absolute; top:14px; right:14px; font-size:22px; opacity:0.4; }
+.task-stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:600; }
+.task-stat-value { font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; color: var(--text-main); }
+.task-stat-icon { position:absolute; top:14px; right:14px; font-size:22px; opacity:0.3; }
 
 .task-filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
-.task-filter-bar select, .task-filter-bar input { padding:8px 12px; background:#ffffff0d; border:1px solid #ffffff18; border-radius:8px; color:#f0f6ff; font-family:inherit; font-size:13px; }
+.task-filter-bar select, .task-filter-bar input { padding:8px 12px; background:var(--border-color); border:1px solid var(--border-color); border-radius:8px; color:var(--text-main); font-family:inherit; font-size:13px; }
 
 .modal-task { width:620px; }
 .duration-display { background:#f59e0b18; border:1px solid #f59e0b33; border-radius:8px; padding:10px 14px; font-size:13px; color:var(--accent); font-weight:600; margin-top:8px; display:none; }
@@ -274,18 +301,18 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 .detail-field { display:flex; flex-direction:column; gap:4px; }
 .detail-label { font-size:11px; color:var(--gray); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
 .detail-value { font-size:14px; color:var(--white); font-weight:500; }
-.task-overdue-alert { background:linear-gradient(135deg,#450a0a33,#1a3a5c55); border:1px solid #ef444444; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.task-overdue-alert { background:linear-gradient(135deg,#450a0a33,var(--border-color)); border:1px solid #ef444444; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:10px; margin-bottom:16px; }
 .task-overdue-alert .alert-icon { font-size:22px; }
-.task-overdue-alert .alert-text { font-size:13px; color:#fca5a5; line-height:1.5; }
-.task-notes-box { background:#ffffff06; border:1px solid #ffffff10; border-radius:8px; padding:12px 14px; font-size:13px; color:#a0b4c8; line-height:1.6; white-space:pre-wrap; min-height:60px; }
+.task-overdue-alert .alert-text { font-size:13px; color:var(--red); line-height:1.5; }
+.task-notes-box { background:var(--border-color); border:1px solid var(--border-color); border-radius:8px; padding:12px 14px; font-size:13px; color:var(--text-muted); line-height:1.6; white-space:pre-wrap; min-height:60px; }
 .task-log { margin-top:4px; }
-.task-log-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #ffffff08; }
+.task-log-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-color); }
 .task-log-item:last-child { border-bottom:none; }
 .task-log-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); margin-top:5px; flex-shrink:0; }
-.task-log-text { font-size:12px; color:#a0b4c8; }
-.task-log-time { font-size:11px; color:#4a6080; }
+.task-log-text { font-size:12px; color:var(--text-muted); }
+.task-log-time { font-size:11px; color:var(--text-muted); }
 
-.days-bar { height:6px; background:#ffffff10; border-radius:3px; margin-top:6px; overflow:hidden; }
+.days-bar { height:6px; background:var(--border-color); border-radius:3px; margin-top:6px; overflow:hidden; }
 .days-bar-fill { height:100%; border-radius:3px; transition:width 0.5s; }
 .days-remaining-label { font-size:11px; color:var(--gray); margin-top:4px; }
 
@@ -326,17 +353,22 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
       <h1>Gudang FCL</h1>
       <p>Sistem Pengelola Gudang</p>
     </div>
-    <div class="form-group"><label>Username</label><input type="text" id="loginUser" placeholder="Masukkan username" autocomplete="username"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="loginPass" placeholder="Masukkan password" autocomplete="current-password"></div>
+    <div class="form-group"><label class="form-label">Username</label><input type="text" class="form-control" id="loginUser" placeholder="Masukkan username" autocomplete="username"></div>
+    <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="loginPass" placeholder="Masukkan password" autocomplete="current-password"></div>
     <button class="btn-login" onclick="doLogin()">🔐 Masuk</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
 
 <div id="app">
-  <div class="layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
+  <div class="d-flex flex-nowrap min-vh-100">
+    <aside class="sidebar offcanvas-md offcanvas-start border-end border-secondary" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header d-md-none border-bottom border-secondary">
+        <h5 class="offcanvas-title" style="font-family:'Outfit',sans-serif;">🏭 Gudang FCL</h5>
+        <button type="button" class="btn-close btn-close-white" onclick="toggleSidebar()"></button>
+      </div>
+      <div class="offcanvas-body flex-column p-0">
+      <div class="sidebar-header d-none d-md-block">
         <div class="sidebar-brand">
           <div class="brand-icon">🏭</div>
           <div><h2>Gudang FCL</h2><span>Sistem Pengelola Gudang</span></div>
@@ -389,21 +421,25 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
       <div class="sidebar-footer">
         <button class="btn-logout" onclick="doLogout()">🚪 Keluar</button>
       </div>
+      </div>
     </aside>
 
-    <main class="main">
+    <main class="main flex-grow-1 d-flex flex-column min-vh-100 w-100" style="overflow-x: hidden;">
       <div class="topbar">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-          <h3 id="pageTitle">Dashboard</h3>
+        <div class="topbar-left">
+          <button class="btn-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+          <h3 id="pageTitle">📊 Dashboard</h3>
         </div>
         <div class="topbar-right">
+        <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch Theme" style="padding:8px 12px; font-size:16px;">
+          <i class="bi bi-moon-stars" id="themeIcon"></i>
+        </button>
            <span id="approvalBadge" class="badge" style="background:var(--red); color:#fff; display:none; cursor:pointer;" onclick="showPage('dashboard')">0 Approval</span>
            <span class="badge">FCL</span>
         </div>
       </div>
 
-      <div class="content">
+      <div class="content container-fluid py-4">
         <!-- Dashboard -->
         <div class="page active" id="page-dashboard">
           
@@ -414,7 +450,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
                  <h4 style="color:var(--accent);">🔔 Menunggu Approval Saya</h4>
               </div>
               <div class="table-wrap">
-                 <table>
+                 <table class="table table-hover table-striped align-middle mt-2">
                    <thead><tr><th>Tanggal</th><th>Tipe Pengajuan</th><th>Nama Staff</th><th>Status Saat Ini</th><th>Aksi</th></tr></thead>
                    <tbody id="dashApprovalList"></tbody>
                  </table>
@@ -422,57 +458,57 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             </div>
           </div>
 
-          <div class="stats-grid">
-            <div class="stat-card green"><div class="stat-label">Saldo Kas Gudang</div><div class="stat-value green" id="statSaldoGudang">Rp 0</div><div class="stat-icon">💰</div></div>
-            <div class="stat-card amber"><div class="stat-label">Saldo Team Building</div><div class="stat-value amber" id="statSaldoTB">Rp 0</div><div class="stat-icon">🤝</div></div>
-            <div class="stat-card teal"><div class="stat-label">Total Kas Masuk</div><div class="stat-value teal" id="statKasIn">Rp 0</div><div class="stat-icon">📈</div></div>
-            <div class="stat-card red"><div class="stat-label">Total Kas Keluar</div><div class="stat-value red" id="statKasOut">Rp 0</div><div class="stat-icon">📉</div></div>
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3"><div class="stat-card green"><div class="stat-label">Saldo Kas Gudang</div><div class="stat-value green" id="statSaldoGudang">Rp 0</div><div class="stat-icon">💰</div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card amber"><div class="stat-label">Saldo Team Building</div><div class="stat-value amber" id="statSaldoTB">Rp 0</div><div class="stat-icon">🤝</div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card teal"><div class="stat-label">Total Kas Masuk</div><div class="stat-value teal" id="statKasIn">Rp 0</div><div class="stat-icon">📈</div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card red"><div class="stat-label">Total Kas Keluar</div><div class="stat-value red" id="statKasOut">Rp 0</div><div class="stat-icon">📉</div></div></div>
           </div>
           <!-- Operasional -->
-          <div class="card" style="margin-bottom:20px;">
+          <div class="card mb-4">
             <div class="card-header"><h4>👥 Operasional & Orderan (Hari Ini)</h4></div>
             <div class="table-wrap">
-              <table><thead><tr><th>Divisi Operasional</th><th>Total Pekerja Masuk</th><th>Total Orderan Didapat</th></tr></thead><tbody id="dashOperasional"></tbody></table>
+              <table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Divisi Operasional</th><th>Total Pekerja Masuk</th><th>Total Orderan Didapat</th></tr></thead><tbody id="dashOperasional"></tbody></table>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="dash-detail-grid">
-            <div class="card"><div class="card-header"><h4>📉 Pengeluaran Kas Gudang</h4><span class="badge" id="badgeKasOut" style="background:#ef444422;color:#fca5a5;font-size:12px;">Rp 0</span></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashKasOut"></tbody></table></div></div>
-            <div class="card"><div class="card-header"><h4>🤝 Pengeluaran Team Building</h4><span class="badge" id="badgeTBOut" style="background:#f59e0b22;color:#fcd34d;font-size:12px;">Rp 0</span></div><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashTBOut"></tbody></table></div></div>
+          <div class="row g-4 mb-4">
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header"><h4>📉 Pengeluaran Kas Gudang</h4><span class="badge" id="badgeKasOut" style="background:#ef444422;color:var(--red);font-size:12px;">Rp 0</span></div><div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashKasOut"></tbody></table></div></div></div>
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header"><h4>🤝 Pengeluaran Team Building</h4><span class="badge" id="badgeTBOut" style="background:#f59e0b22;color:var(--accent);font-size:12px;">Rp 0</span></div><div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashTBOut"></tbody></table></div></div></div>
           </div>
           <div class="card">
             <div class="card-header"><h4>📋 History Transaksi Terbaru</h4><button class="btn btn-ghost btn-sm" onclick="loadDashboard()">🔄 Refresh</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashHistory"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Kategori</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody id="dashHistory"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-kasGudang">
-          <div class="card" style="margin-bottom:20px">
+          <div class="card mb-4">
             <div class="card-header"><h4>💰 Kas Gudang</h4><button class="btn btn-primary" onclick="openModal('modalKasGudang')">+ Tambah Transaksi</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th><th>Bukti</th><th>Input By</th><th>Aksi</th></tr></thead><tbody id="tableKasGudang"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th><th>Bukti</th><th>Input By</th><th>Aksi</th></tr></thead><tbody id="tableKasGudang"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-teamBuilding">
           <div class="card">
             <div class="card-header"><h4>🤝 Team Building</h4><button class="btn btn-primary" onclick="openModal('modalTB')">+ Tambah</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th><th>Bukti</th><th>Input By</th><th>Aksi</th></tr></thead><tbody id="tableTB"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Tipe</th><th>Keterangan</th><th>Nominal</th><th>Bukti</th><th>Input By</th><th>Aksi</th></tr></thead><tbody id="tableTB"></tbody></table></div>
           </div>
         </div>
         
         <!-- HALAMAN EXPENSE LIST -->
         <div class="page" id="page-expense">
-          <div class="card" style="margin-bottom:20px;">
+          <div class="card mb-4">
             <div class="card-header">
               <h4>📊 Dashboard Expense</h4>
               <div style="display:flex;gap:8px;">
-                <select id="filterBulanExpense" onchange="filterExpense()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
+                <select class="form-select" id="filterBulanExpense" onchange="filterExpense()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
                   <option value="all">-- Semua Bulan --</option>
                   <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option>
                   <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
                   <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
                   <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
                 </select>
-                <select id="filterTahunExpense" onchange="filterExpense()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
+                <select class="form-select" id="filterTahunExpense" onchange="filterExpense()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
                 </select>
                 <button class="btn btn-teal" onclick="printExpense()">🖨️ Print Laporan</button>
               </div>
@@ -500,7 +536,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <button class="btn btn-primary" onclick="openModal('modalExpense')">+ Tambah Expense</button>
             </div>
             <div class="table-wrap">
-              <table>
+              <table class="table table-hover table-striped align-middle mt-2">
                 <thead>
                   <tr><th>Tanggal</th><th>Perusahaan</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th><th>Bank & Rekening</th><th>Input By</th><th>Aksi</th></tr>
                 </thead>
@@ -513,7 +549,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
         <div class="page" id="page-laporanKerja">
           <div class="card">
             <div class="card-header"><h4>📝 Riwayat Laporan Pengerjaan Orderan</h4><button class="btn btn-primary" onclick="openModal('modalLaporanKerja')">+ Buat Laporan</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Admin</th><th>Jam Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>KPI</th><th>Aksi</th></tr></thead><tbody id="tableLaporanKerja"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Admin</th><th>Jam Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>KPI</th><th>Aksi</th></tr></thead><tbody id="tableLaporanKerja"></tbody></table></div>
           </div>
         </div>
 
@@ -530,14 +566,14 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #10b981;">🎥 KOL</h5><canvas id="chartKOL" style="max-height: 250px;"></canvas></div>
               <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;"><h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #8b5cf6;">�� Inbound</h5><canvas id="chartInbound" style="max-height: 250px;"></canvas></div>
             </div>
-            <div class="table-wrap"><h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan Keseluruhan</h4><table><thead><tr><th>Divisi</th><th>Total Laporan</th><th>Rata-rata Pekerja Masuk</th><th>Total Jam Lembur</th><th>Total Keseluruhan Jam Kerja</th><th>Total Orderan</th><th>KPI (Ord/Jam)</th></tr></thead><tbody id="tableRingkasanGrafik"></tbody></table></div>
+            <div class="table-wrap"><h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan Data Laporan Keseluruhan</h4><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Divisi</th><th>Total Laporan</th><th>Rata-rata Pekerja Masuk</th><th>Total Jam Lembur</th><th>Total Keseluruhan Jam Kerja</th><th>Total Orderan</th><th>KPI (Ord/Jam)</th></tr></thead><tbody id="tableRingkasanGrafik"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-handover">
           <div class="card">
             <div class="card-header"><h4>📦 Laporan Hand Over</h4><button class="btn btn-primary" onclick="openModal('modalHandover')">+ Tambah Laporan</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Pengerjaan</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableHandover"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Pengerjaan</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableHandover"></tbody></table></div>
           </div>
         </div>
 
@@ -548,7 +584,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
           </div>
           <div class="card">
             <div class="card-header"><h4>⚠️ Laporan Klaim Paket</h4><button class="btn btn-primary" onclick="openModal('modalKlaim')">+ Tambah Laporan</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Harga Paket</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableKlaim"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Nama PIC</th><th>No. Resi</th><th>Harga Paket</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableKlaim"></tbody></table></div>
           </div>
         </div>
 
@@ -558,18 +594,18 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             <div class="task-stat blue"><div class="task-stat-label">Total Tugas</div><div class="task-stat-value" id="tpStatTotal" style="color:var(--teal)">0</div><div class="task-stat-icon">📋</div></div>
             <div class="task-stat amber"><div class="task-stat-label">Dalam Proses</div><div class="task-stat-value" id="tpStatProgress" style="color:var(--accent)">0</div><div class="task-stat-icon">🔄</div></div>
             <div class="task-stat green"><div class="task-stat-label">Selesai</div><div class="task-stat-value" id="tpStatDone" style="color:var(--green)">0</div><div class="task-stat-icon">✅</div></div>
-            <div class="task-stat red"><div class="task-stat-label">Melewati Target</div><div class="task-stat-value" id="tpStatOverdue" style="color:#f87171">0</div><div class="task-stat-icon">⚠️</div></div>
+            <div class="task-stat red"><div class="task-stat-label">Melewati Target</div><div class="task-stat-value" id="tpStatOverdue" style="color:var(--red)">0</div><div class="task-stat-icon">⚠️</div></div>
           </div>
 
           <!-- FILTER + ADD BUTTON -->
-          <div class="card" style="margin-bottom:20px;">
+          <div class="card mb-4">
             <div class="card-header">
               <h4>📋 Tugas Project Warehouse</h4>
               <button class="btn btn-primary" onclick="openTugasModal()">+ Buat Tugas</button>
             </div>
 
             <div class="task-filter-bar">
-              <select id="tpFilterStatus" onchange="renderTugasProject()">
+              <select class="form-select" id="tpFilterStatus" onchange="renderTugasProject()">
                 <option value="">Semua Status</option>
                 <option value="Todo">Todo</option>
                 <option value="In Progress">In Progress</option>
@@ -577,17 +613,17 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
                 <option value="Done">Done</option>
                 <option value="Dibatalkan">Dibatalkan</option>
               </select>
-              <select id="tpFilterAssignee" onchange="renderTugasProject()">
+              <select class="form-select" id="tpFilterAssignee" onchange="renderTugasProject()">
                 <option value="">Semua Assignee</option>
               </select>
-              <select id="tpFilterPriority" onchange="renderTugasProject()">
+              <select class="form-select" id="tpFilterPriority" onchange="renderTugasProject()">
                 <option value="">Semua Prioritas</option>
                 <option value="Tinggi">Tinggi</option>
                 <option value="Sedang">Sedang</option>
                 <option value="Rendah">Rendah</option>
               </select>
-              <input type="text" id="tpSearch" placeholder="🔍 Cari judul tugas..." oninput="renderTugasProject()" style="min-width:200px;">
-              <select id="tpView" onchange="renderTugasProject()">
+              <input type="text" class="form-control" id="tpSearch" placeholder="🔍 Cari judul tugas..." oninput="renderTugasProject()" style="min-width:200px;">
+              <select class="form-select" id="tpView" onchange="renderTugasProject()">
                 <option value="kanban">Papan Kanban</option>
                 <option value="table">Tabel List</option>
               </select>
@@ -601,7 +637,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             <!-- TABLE VIEW -->
             <div id="tpTableView" style="display:none;">
               <div class="table-wrap">
-                <table>
+                <table class="table table-hover table-striped align-middle mt-2">
                   <thead><tr>
                     <th>Judul Tugas</th><th>Assignee</th><th>Prioritas</th>
                     <th>Tgl Mulai</th><th>Target Selesai</th><th>Durasi</th>
@@ -625,7 +661,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
           
           <div id="kontrakWarningWrap" style="display:none; margin-bottom:20px;">
             <div class="card" style="border-color:#ef444444; background:linear-gradient(135deg, #450a0a33, #1a3a5c55);">
-              <div class="card-header" style="margin-bottom:12px;"><h4 style="color:#fca5a5;">⚠️ Peringatan: Karyawan Akan Habis Kontrak</h4></div>
+              <div class="card-header" style="margin-bottom:12px;"><h4 style="color:var(--red);">⚠️ Peringatan: Karyawan Akan Habis Kontrak</h4></div>
               <div id="kontrakWarningList" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
           </div>
@@ -642,12 +678,12 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             <div class="card-header">
               <h4>👥 Data Karyawan</h4>
               <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" id="karyawanSearch" placeholder="🔍 Cari Nama / Jabatan..." style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:220px;" oninput="filterKaryawan()">
+                <input type="text" class="form-control" id="karyawanSearch" placeholder="🔍 Cari Nama / Jabatan..." style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:220px;" oninput="filterKaryawan()">
                 <button class="btn btn-primary" onclick="openKaryawanModal()">+ Tambah Karyawan</button>
               </div>
             </div>
             <div class="table-wrap">
-              <table><thead><tr><th>Nama</th><th>Jabatan</th><th>Cabang</th><th>Telepon</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
+              <table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Nama</th><th>Jabatan</th><th>Cabang</th><th>Telepon</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
             </div>
           </div>
         </div>
@@ -659,7 +695,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <button class="btn btn-primary" onclick="openModal('modalIjin')">+ Ajukan Ijin</button>
             </div>
             <div class="table-wrap">
-              <table>
+              <table class="table table-hover table-striped align-middle mt-2">
                 <thead><tr><th>Tanggal Mulai</th><th>Nama Karyawan</th><th>Jenis Ijin / Cuti</th><th>Keterangan</th><th>Bukti/Surat</th><th>Status Approval</th><th>Aksi</th></tr></thead>
                 <tbody id="tableIjin"></tbody>
               </table>
@@ -681,7 +717,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <button class="btn btn-primary" onclick="openModal('modalAsset')">+ Ajukan Asset</button>
             </div>
             <div class="table-wrap">
-              <table>
+              <table class="table table-hover table-striped align-middle mt-2">
                 <thead><tr><th>Tanggal</th><th>Nama Pemohon</th><th>Jenis Asset</th><th>Estimasi Harga</th><th>Prioritas</th><th>Deskripsi</th><th>Bukti</th><th>Status Approval</th><th>Aksi</th></tr></thead>
                 <tbody id="tableAsset"></tbody>
               </table>
@@ -696,7 +732,7 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
               <button class="btn btn-primary" onclick="openModal('modalLembur')">+ Ajukan Lembur</button>
             </div>
             <div class="table-wrap">
-              <table>
+              <table class="table table-hover table-striped align-middle mt-2">
                 <thead><tr><th>Tanggal</th><th>Nama Karyawan</th><th>Divisi</th><th>Jam Lembur</th><th>Keterangan Tugas</th><th>Status Approval</th><th>Aksi</th></tr></thead>
                 <tbody id="tableLembur"></tbody>
               </table>
@@ -721,11 +757,11 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
         <div class="page" id="page-users">
           <div class="card">
             <div class="card-header"><h4>⚙️ Manajemen User</h4><button class="btn btn-primary" onclick="openUserModal()">+ Tambah User</button></div>
-            <div class="table-wrap"><table><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody id="tableUsers"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Username</th><th>Nama</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody id="tableUsers"></tbody></table></div>
           </div>
           <div class="card mt-16">
             <div class="card-header"><h4>🔑 Ganti Password</h4></div>
-            <div class="form-row"><div class="f-group"><label>Password Lama</label><input type="password" id="oldPass" placeholder="Password lama"></div><div class="f-group"><label>Password Baru</label><input type="password" id="newPass" placeholder="Password baru"></div></div>
+            <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Password Lama</label><input type="password" id="oldPass" placeholder="Password lama"></div><div class="col-md mb-2"><label class="form-label">Password Baru</label><input type="password" id="newPass" placeholder="Password baru"></div></div>
             <button class="btn btn-teal" onclick="doChangePass()">🔄 Ganti Password</button>
           </div>
         </div>
@@ -741,33 +777,33 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
             <div class="card-header">
               <h4>📦 Daftar Stock Barang</h4>
               <div style="display:flex;gap:8px;align-items:center;">
-                <input type="text" id="stockSearch" placeholder="🔍 Cari SKU / Nama..." style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:200px;" oninput="filterStock()">
+                <input type="text" class="form-control" id="stockSearch" placeholder="🔍 Cari SKU / Nama..." style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:200px;" oninput="filterStock()">
                 <button class="btn btn-ghost" onclick="doExportStock()">📤 Export CSV</button>
                 <button class="btn btn-primary" onclick="openModal('modalStock')">+ Tambah Barang</button>
               </div>
             </div>
-            <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Nama Barang</th><th>Barcode</th><th>Batch</th><th>Exp Date</th><th>Stok</th><th>Min</th><th>Satuan</th><th>Kategori</th><th>Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableStock"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama Barang</th><th>Barcode</th><th>Batch</th><th>Exp Date</th><th>Stok</th><th>Min</th><th>Satuan</th><th>Kategori</th><th>Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableStock"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-inbound">
           <div class="card">
             <div class="card-header"><h4>📥 Riwayat Inbound (Barang Masuk)</h4><button class="btn btn-primary" onclick="openModal('modalInbound')">+ Inbound Barang</button></div>
-            <div class="table-wrap"><table><thead><tr><th>No. SJ</th><th>Tanggal</th><th>Supplier</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableInbound"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>No. SJ</th><th>Tanggal</th><th>Supplier</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableInbound"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-outbound">
           <div class="card">
             <div class="card-header"><h4>✂️ Riwayat Pemotongan Stok Manual</h4><button class="btn btn-danger" onclick="openModal('modalOutbound')">- Potong Stok</button></div>
-            <div class="table-wrap"><table><thead><tr><th>No. Dokumen</th><th>Tanggal</th><th>Alasan / Tujuan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableOutbound"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>No. Dokumen</th><th>Tanggal</th><th>Alasan / Tujuan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableOutbound"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-retur">
           <div class="card">
             <div class="card-header"><h4>↩️ Riwayat Retur Barang</h4><button class="btn btn-teal" onclick="openModal('modalRetur')">+ Buat Retur</button></div>
-            <div class="table-wrap"><table><thead><tr><th>No. Retur</th><th>Tanggal</th><th>Sumber Retur</th><th>Alasan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableRetur"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>No. Retur</th><th>Tanggal</th><th>Sumber Retur</th><th>Alasan</th><th>Keterangan</th><th>Dibuat Oleh</th><th>Aksi</th></tr></thead><tbody id="tableRetur"></tbody></table></div>
           </div>
         </div>
 
@@ -781,18 +817,18 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
                 <button class="btn btn-primary" onclick="openModal('modalOrder')">+ Buat Order</button>
               </div>
             </div>
-            <div class="table-wrap"><table><thead><tr><th>No. Order</th><th>Tanggal</th><th>Pelanggan</th><th>Alamat</th><th>Total Item</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableOrder"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>No. Order</th><th>Tanggal</th><th>Pelanggan</th><th>Alamat</th><th>Total Item</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tableOrder"></tbody></table></div>
           </div>
         </div>
 
         <div class="page" id="page-analisis">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;" class="dash-detail-grid">
-            <div class="card" style="border-color:#f59e0b44"><div class="card-header"><h4>📅 Pemakaian Minggu Ini</h4></div><div class="table-wrap"><table><thead><tr><th>SKU</th><th>Nama</th><th>Keluar</th><th>Satuan</th></tr></thead><tbody id="tblAnalisisMinggu"></tbody></table></div></div>
-            <div class="card" style="border-color:#0ea5e944"><div class="card-header"><h4>📆 Pemakaian Bulan Ini</h4></div><div class="table-wrap"><table><thead><tr><th>SKU</th><th>Nama</th><th>Keluar</th><th>Satuan</th></tr></thead><tbody id="tblAnalisisBulan"></tbody></table></div></div>
+          <div class="row g-4 mb-4">
+            <div class="col-lg-6"><div class="card h-100" style="border-color:#f59e0b44"><div class="card-header"><h4>📅 Pemakaian Minggu Ini</h4></div><div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama</th><th>Keluar</th><th>Satuan</th></tr></thead><tbody id="tblAnalisisMinggu"></tbody></table></div></div></div>
+            <div class="col-lg-6"><div class="card h-100" style="border-color:#0ea5e944"><div class="card-header"><h4>📆 Pemakaian Bulan Ini</h4></div><div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama</th><th>Keluar</th><th>Satuan</th></tr></thead><tbody id="tblAnalisisBulan"></tbody></table></div></div></div>
           </div>
           <div class="card">
             <div class="card-header"><h4>📊 Ringkasan Pemakaian & Status Stok</h4><button class="btn btn-ghost btn-sm" onclick="loadAnalisis()">🔄 Refresh</button></div>
-            <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Nama</th><th>Stok Saat Ini</th><th>Keluar Minggu</th><th>Keluar Bulan</th><th>Rata/Hari</th><th>Satuan</th><th>Status</th></tr></thead><tbody id="tblAnalisisFull"></tbody></table></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama</th><th>Stok Saat Ini</th><th>Keluar Minggu</th><th>Keluar Bulan</th><th>Rata/Hari</th><th>Satuan</th><th>Status</th></tr></thead><tbody id="tblAnalisisFull"></tbody></table></div>
           </div>
         </div>
 
@@ -802,48 +838,48 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 </div>
 
 <!-- ===================== MODAL FORM ===================== -->
-<div class="modal-overlay" id="modalKasGudang"><div class="modal"><button class="modal-close" onclick="closeModal('modalKasGudang')">✕</button><h3>💰 Tambah Transaksi Kas Gudang</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="kgTanggal"></div><div class="f-group"><label>Tipe</label><select id="kgTipe"><option value="IN">📈 Kas Masuk (IN)</option><option value="OUT">📉 Kas Keluar (OUT)</option></select></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="kgKeterangan" placeholder="Deskripsi transaksi"></div></div><div class="form-row single"><div class="f-group"><label>Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="kgNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="form-row single"><div class="f-group"><label>Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('kg','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('kg','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="kg-panel-upload"><div class="file-drop-zone" id="kg-dropzone"><input type="file" id="kgFile" accept="image/*,.pdf" onchange="handleFileSelect('kg',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="kg-preview"><span>📄</span><span class="file-preview-name" id="kg-fname">-</span><span class="file-preview-size" id="kg-fsize"></span><button class="file-remove" onclick="removeFile('kg')">✕</button></div><div class="upload-progress" id="kg-progress"><div class="upload-progress-bar" id="kg-pbar"></div></div></div><div class="file-tab-panel" id="kg-panel-url"><input type="url" id="kgBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKasGudang')">Batal</button><button class="btn btn-primary" id="btnSaveKg" onclick="submitKasGudang()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKasGudang"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalKasGudang')">✕</button><h3>💰 Tambah Transaksi Kas Gudang</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="kgTanggal"></div><div class="col-md mb-2"><label class="form-label">Tipe</label><select class="form-select" id="kgTipe"><option value="IN">📈 Kas Masuk (IN)</option><option value="OUT">📉 Kas Keluar (OUT)</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="kgKeterangan" placeholder="Deskripsi transaksi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="kgNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('kg','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('kg','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="kg-panel-upload"><div class="file-drop-zone" id="kg-dropzone"><input type="file" id="kgFile" accept="image/*,.pdf" onchange="handleFileSelect('kg',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="kg-preview"><span>📄</span><span class="file-preview-name" id="kg-fname">-</span><span class="file-preview-size" id="kg-fsize"></span><button class="file-remove" onclick="removeFile('kg')">✕</button></div><div class="upload-progress" id="kg-progress"><div class="upload-progress-bar" id="kg-pbar"></div></div></div><div class="file-tab-panel" id="kg-panel-url"><input type="url" id="kgBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKasGudang')">Batal</button><button class="btn btn-primary" id="btnSaveKg" onclick="submitKasGudang()">💾 Simpan</button></div></div></div>
 
-<div class="modal-overlay" id="modalTB"><div class="modal"><button class="modal-close" onclick="closeModal('modalTB')">✕</button><h3>🤝 Input Team Building</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="tbTanggal"></div><div class="f-group"><label>Tipe Transaksi</label><select id="tbTipe"><option value="Pengeluaran">📉 Pengeluaran</option><option value="Pemasukan">📈 Pemasukan</option></select></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Kegiatan</label><input type="text" id="tbKeterangan" placeholder="Nama / deskripsi kegiatan"></div></div><div class="form-row single"><div class="f-group"><label>Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="tbNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="form-row single"><div class="f-group"><label>Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('tb','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('tb','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="tb-panel-upload"><div class="file-drop-zone" id="tb-dropzone"><input type="file" id="tbFile" accept="image/*,.pdf" onchange="handleFileSelect('tb',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="tb-preview"><span>📄</span><span class="file-preview-name" id="tb-fname">-</span><span class="file-preview-size" id="tb-fsize"></span><button class="file-remove" onclick="removeFile('tb')">✕</button></div><div class="upload-progress" id="tb-progress"><div class="upload-progress-bar" id="tb-pbar"></div></div></div><div class="file-tab-panel" id="tb-panel-url"><input type="url" id="tbBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalTB')">Batal</button><button class="btn btn-primary" id="btnSaveTb" onclick="submitTB()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalTB"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalTB')">✕</button><h3>🤝 Input Team Building</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="tbTanggal"></div><div class="col-md mb-2"><label class="form-label">Tipe Transaksi</label><select class="form-select" id="tbTipe"><option value="Pengeluaran">📉 Pengeluaran</option><option value="Pemasukan">📈 Pemasukan</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Kegiatan</label><input type="text" class="form-control" id="tbKeterangan" placeholder="Nama / deskripsi kegiatan"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="tbNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('tb','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('tb','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="tb-panel-upload"><div class="file-drop-zone" id="tb-dropzone"><input type="file" id="tbFile" accept="image/*,.pdf" onchange="handleFileSelect('tb',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="tb-preview"><span>📄</span><span class="file-preview-name" id="tb-fname">-</span><span class="file-preview-size" id="tb-fsize"></span><button class="file-remove" onclick="removeFile('tb')">✕</button></div><div class="upload-progress" id="tb-progress"><div class="upload-progress-bar" id="tb-pbar"></div></div></div><div class="file-tab-panel" id="tb-panel-url"><input type="url" id="tbBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalTB')">Batal</button><button class="btn btn-primary" id="btnSaveTb" onclick="submitTB()">💾 Simpan</button></div></div></div>
 
-<div class="modal-overlay" id="modalExpense"><div class="modal"><button class="modal-close" onclick="closeModal('modalExpense')">✕</button><h3>💸 Tambah Expense</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="exTanggal"></div><div class="f-group"><label>Perusahaan</label><select id="exPerusahaanSelect" onchange="toggleCustomPerusahaan()"><option value="FCL">FCL</option><option value="FCL(SBY)">FCL(SBY)</option><option value="MTC">MTC</option><option value="KAI">KAI</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="exPerusahaanCustom" placeholder="Ketik nama perusahaan..." style="display:none; margin-top:6px;"></div></div><div class="form-row single"><div class="f-group"><label>Kategori</label><select id="exKategoriSelect" onchange="toggleCustomKategori()"><option value="Petty Cash Pinkpick">Petty Cash Pinkpick</option><option value="Pettycash">Pettycash</option><option value="Asset">Asset</option><option value="Welfare">Welfare</option><option value="Shipping Fee">Shipping Fee</option><option value="Maintenance Fee">Maintenance Fee</option><option value="PHL">PHL</option><option value="Consumable">Consumable</option><option value="Accommodation">Accommodation</option><option value="Internet">Internet</option><option value="Electricity">Electricity</option><option value="Transportation Fee">Transportation Fee</option><option value="Furniture">Furniture</option><option value="Car Rental">Car Rental</option><option value="Warehouse Rental">Warehouse Rental</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="exKategoriCustom" placeholder="Ketik nama kategori..." style="display:none; margin-top:6px;"></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="exKeterangan" placeholder="Keterangan pengeluaran"></div></div><div class="form-row single"><div class="f-group"><label>Nominal (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="exNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="form-row"><div class="f-group"><label>Nama Bank</label><input type="text" id="exBank" placeholder="Contoh: BCA, Mandiri"></div><div class="f-group"><label>Nomor Rekening</label><input type="text" id="exRekening" placeholder="No Rekening"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalExpense')">Batal</button><button class="btn btn-primary" onclick="submitExpense()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalExpense"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalExpense')">✕</button><h3>💸 Tambah Expense</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="exTanggal"></div><div class="col-md mb-2"><label class="form-label">Perusahaan</label><select class="form-select" id="exPerusahaanSelect" onchange="toggleCustomPerusahaan()"><option value="FCL">FCL</option><option value="FCL(SBY)">FCL(SBY)</option><option value="MTC">MTC</option><option value="KAI">KAI</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="exPerusahaanCustom" placeholder="Ketik nama perusahaan..." style="display:none; margin-top:6px;"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kategori</label><select class="form-select" id="exKategoriSelect" onchange="toggleCustomKategori()"><option value="Petty Cash Pinkpick">Petty Cash Pinkpick</option><option value="Pettycash">Pettycash</option><option value="Asset">Asset</option><option value="Welfare">Welfare</option><option value="Shipping Fee">Shipping Fee</option><option value="Maintenance Fee">Maintenance Fee</option><option value="PHL">PHL</option><option value="Consumable">Consumable</option><option value="Accommodation">Accommodation</option><option value="Internet">Internet</option><option value="Electricity">Electricity</option><option value="Transportation Fee">Transportation Fee</option><option value="Furniture">Furniture</option><option value="Car Rental">Car Rental</option><option value="Warehouse Rental">Warehouse Rental</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="exKategoriCustom" placeholder="Ketik nama kategori..." style="display:none; margin-top:6px;"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="exKeterangan" placeholder="Keterangan pengeluaran"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="exNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Bank</label><input type="text" class="form-control" id="exBank" placeholder="Contoh: BCA, Mandiri"></div><div class="col-md mb-2"><label class="form-label">Nomor Rekening</label><input type="text" class="form-control" id="exRekening" placeholder="No Rekening"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalExpense')">Batal</button><button class="btn btn-primary" onclick="submitExpense()">💾 Simpan</button></div></div></div>
 
-<div class="modal-overlay" id="modalLaporanKerja"><div class="modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="form-row"><div class="f-group"><label>Tanggal Laporan</label><input type="date" id="lapTanggal"></div><div class="f-group"><label>Divisi</label><select id="lapDivisi"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option><option value="KOL">🎥 KOL</option><option value="Inbound">📥 Inbound</option></select></div></div><div class="form-row single"><div class="f-group"><label>Nama Pelapor / Shift</label><input type="text" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div></div><div class="form-row"><div class="f-group"><label>Total Pekerja Utama</label><input type="number" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Admin</label><input type="number" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Orang Perbantuan (+)</label><input type="number" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Jam / Orang (Bantu)</label><input type="number" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Orang Pengurangan (-)</label><input type="number" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="form-row triple"><div class="f-group"><label>Jam / Orang (Kurang)</label><input type="number" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="f-group"><label>Total Pekerja Lembur</label><input type="number" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label>Lama Lembur (Jam)</label><input type="number" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div><div class="form-row"><div class="f-group"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="f-group"><label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label><input type="text" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="form-row single"><div class="f-group"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - ( Jam ) + (Org Lembur x Jam)</span></div></div><div class="form-row single"><div class="f-group"><label>Kendala Pekerjaan</label><textarea id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
-<div class="modal-overlay" id="modalDetailLaporan"><div class="modal" style="width: 520px;"><button class="modal-close" onclick="closeModal('modalDetailLaporan')">✕</button><h3 id="detailLapTitle">📋 Detail Laporan Kerja</h3><div id="detailLapContent" style="font-size:14px; line-height:1.8; color:var(--light);"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailLaporan')">Tutup</button></div></div></div>
+<div class="modal-overlay" id="modalLaporanKerja"><div class="custom-modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Laporan</label><input type="date" class="form-control" id="lapTanggal"></div><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lapDivisi"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option><option value="KOL">🎥 KOL</option><option value="Inbound">📥 Inbound</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Pelapor / Shift</label><input type="text" class="form-control" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Total Pekerja Utama</label><input type="number" class="form-control" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Admin</label><input type="number" class="form-control" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Orang Perbantuan (+)</label><input type="number" class="form-control" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Jam / Orang (Bantu)</label><input type="number" class="form-control" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Orang Pengurangan (-)</label><input type="number" class="form-control" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam / Orang (Kurang)</label><input type="number" class="form-control" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Pekerja Lembur</label><input type="number" class="form-control" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Lama Lembur (Jam)</label><input type="number" class="form-control" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" class="form-control" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label><input type="text" class="form-control" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" class="form-control" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - ( Jam ) + (Org Lembur x Jam)</span></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kendala Pekerjaan</label><textarea class="form-control" id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
+<div class="modal-overlay" id="modalDetailLaporan"><div class="custom-modal" style="width: 520px;"><button class="modal-close" onclick="closeModal('modalDetailLaporan')">✕</button><h3 id="detailLapTitle">📋 Detail Laporan Kerja</h3><div id="detailLapContent" style="font-size:14px; line-height:1.8; color:var(--light);"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailLaporan')">Tutup</button></div></div></div>
 
-<div class="modal-overlay" id="modalHandover"><div class="modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button><h3>📦 Input Laporan Hand Over</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="hoTanggal"></div><div class="f-group"><label>Nama PIC</label><input type="text" id="hoPic" placeholder="Nama pengurus"></div></div><div class="form-row single"><div class="f-group"><label>Nomor Resi</label><input type="text" id="hoResi" placeholder="Masukkan nomor resi"></div></div><div class="form-row single"><div class="f-group"><label>Pengerjaan</label><input type="text" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Tambahan</label><input type="text" id="hoKeterangan" placeholder="Opsional..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitHandover()">💾 Simpan Laporan</button></div></div></div>
-<div class="modal-overlay" id="modalKlaim"><div class="modal"><button class="modal-close" onclick="closeModal('modalKlaim')">✕</button><h3>⚠️ Input Laporan Klaim Paket</h3><div class="form-row"><div class="f-group"><label>Tanggal</label><input type="date" id="klTanggal"></div><div class="f-group"><label>Nama PIC</label><input type="text" id="klPic" placeholder="Nama pengurus"></div></div><div class="form-row single"><div class="f-group"><label>Nomor Resi</label><input type="text" id="klResi" placeholder="Masukkan nomor resi"></div></div><div class="form-row single"><div class="f-group"><label>Harga Paket (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="klHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Detail</label><input type="text" id="klKeterangan" placeholder="Penyebab klaim, dll."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKlaim')">Batal</button><button class="btn btn-primary" onclick="submitKlaim()">💾 Simpan Laporan</button></div></div></div>
+<div class="modal-overlay" id="modalHandover"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button><h3>📦 Input Laporan Hand Over</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="hoTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text" class="form-control" id="hoPic" placeholder="Nama pengurus"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nomor Resi</label><input type="text" class="form-control" id="hoResi" placeholder="Masukkan nomor resi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Pengerjaan</label><input type="text" class="form-control" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Tambahan</label><input type="text" class="form-control" id="hoKeterangan" placeholder="Opsional..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitHandover()">💾 Simpan Laporan</button></div></div></div>
+<div class="modal-overlay" id="modalKlaim"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalKlaim')">✕</button><h3>⚠️ Input Laporan Klaim Paket</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="klTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text" class="form-control" id="klPic" placeholder="Nama pengurus"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nomor Resi</label><input type="text" class="form-control" id="klResi" placeholder="Masukkan nomor resi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Harga Paket (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="klHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text" class="form-control" id="klKeterangan" placeholder="Penyebab klaim, dll."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKlaim')">Batal</button><button class="btn btn-primary" onclick="submitKlaim()">💾 Simpan Laporan</button></div></div></div>
 
 <div class="modal-overlay" id="modalTugasProject">
-  <div class="modal modal-task">
+  <div class="custom-modal modal-task">
     <button class="modal-close" onclick="closeModal('modalTugasProject')">✕</button>
     <h3 id="tugasModalTitle">📋 Buat Tugas Baru</h3>
     <input type="hidden" id="tpEditId">
-    <div class="form-row"><div class="f-group" style="grid-column:1/-1;"><label>Judul Tugas *</label><input type="text" id="tpJudul" placeholder="Contoh: Pengecekan Stok Bulanan Area A"></div></div>
-    <div class="form-row"><div class="f-group"><label>Assignee (Ditugaskan ke) *</label><select id="tpAssignee"><option value="">-- Pilih User --</option></select></div><div class="f-group"><label>Prioritas</label><select id="tpPriority"><option value="Sedang">Sedang</option><option value="Tinggi">Tinggi</option><option value="Rendah">Rendah</option></select></div></div>
-    <div class="form-row triple"><div class="f-group"><label>Tanggal Mulai *</label><input type="date" id="tpTanggalMulai" onchange="hitungDurasi('tanggal')"></div><div class="f-group"><label>Target Selesai *</label><input type="date" id="tpDeadline" onchange="hitungDurasi('tanggal')"></div><div class="f-group"><label>Target Hari Selesai</label><input type="number" id="tpTargetHari" min="1" placeholder="Otomatis / manual" oninput="hitungDurasi('hari')"></div></div>
+    <div class="row mb-3"><div class="f-group" style="grid-column:1/-1;"><label class="form-label">Judul Tugas *</label><input type="text" class="form-control" id="tpJudul" placeholder="Contoh: Pengecekan Stok Bulanan Area A"></div></div>
+    <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Assignee (Ditugaskan ke) *</label><select class="form-select" id="tpAssignee"><option value="">-- Pilih User --</option></select></div><div class="col-md mb-2"><label class="form-label">Prioritas</label><select class="form-select" id="tpPriority"><option value="Sedang">Sedang</option><option value="Tinggi">Tinggi</option><option value="Rendah">Rendah</option></select></div></div>
+    <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Mulai *</label><input type="date" class="form-control" id="tpTanggalMulai" onchange="hitungDurasi('tanggal')"></div><div class="col-md mb-2"><label class="form-label">Target Selesai *</label><input type="date" class="form-control" id="tpDeadline" onchange="hitungDurasi('tanggal')"></div><div class="col-md mb-2"><label class="form-label">Target Hari Selesai</label><input type="number" class="form-control" id="tpTargetHari" min="1" placeholder="Otomatis / manual" oninput="hitungDurasi('hari')"></div></div>
     <div class="duration-display" id="tpDurasiInfo">📅 Durasi: <span id="tpDurasiText"></span></div>
-    <div class="form-row"><div class="f-group"><label>Status</label><select id="tpStatus"><option value="Todo">📌 Todo</option><option value="In Progress">🔄 In Progress</option><option value="Review">👀 Review</option><option value="Done">✅ Done</option><option value="Dibatalkan">❌ Dibatalkan</option></select></div><div class="f-group"><label>Kategori / Area</label><input type="text" id="tpKategori" placeholder="Contoh: Inbound, Stok, Operasional"></div></div>
-    <div class="form-row single"><div class="f-group"><label>Deskripsi / Catatan</label><textarea id="tpDeskripsi" rows="3" placeholder="Jelaskan detail tugas yang harus diselesaikan..."></textarea></div></div>
+    <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Status</label><select class="form-select" id="tpStatus"><option value="Todo">📌 Todo</option><option value="In Progress">🔄 In Progress</option><option value="Review">👀 Review</option><option value="Done">✅ Done</option><option value="Dibatalkan">❌ Dibatalkan</option></select></div><div class="col-md mb-2"><label class="form-label">Kategori / Area</label><input type="text" class="form-control" id="tpKategori" placeholder="Contoh: Inbound, Stok, Operasional"></div></div>
+    <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Deskripsi / Catatan</label><textarea class="form-control" id="tpDeskripsi" rows="3" placeholder="Jelaskan detail tugas yang harus diselesaikan..."></textarea></div></div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalTugasProject')">Batal</button><button class="btn btn-primary" onclick="saveTugasProject()">💾 Simpan Tugas</button></div>
   </div>
 </div>
-<div class="modal-overlay" id="modalTugasDetail"><div class="modal task-detail-modal"><button class="modal-close" onclick="closeModal('modalTugasDetail')">✕</button><div id="tugasDetailContent"></div><div class="modal-footer" id="tugasDetailFooter"></div></div></div>
+<div class="modal-overlay" id="modalTugasDetail"><div class="custom-modal task-detail-modal"><button class="modal-close" onclick="closeModal('modalTugasDetail')">✕</button><div id="tugasDetailContent"></div><div class="modal-footer" id="tugasDetailFooter"></div></div></div>
 
-<div class="modal-overlay" id="modalKaryawan"><div class="modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="kNama" placeholder="Nama karyawan"></div><div class="f-group"><label>Jabatan</label><input type="text" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="form-row single"><div class="f-group"><label>Cabang Perusahaan</label><input type="text" id="kCabang" placeholder="Ketik atau pilih cabang..." list="listCabang"><datalist id="listCabang"><option value="Pusat"><option value="Cabang SBY"><option value="Cabang JKT"></datalist></div></div><div class="form-row"><div class="f-group"><label>Status Karyawan</label><select id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="f-group"><label>Tanggal Masuk</label><input type="date" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="f-group"><label>Tanggal Selesai Kontrak</label><input type="date" id="kTglSelesai"></div></div><div class="form-row"><div class="f-group"><label>Telepon</label><input type="text" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="f-group"><label>Email</label><input type="email" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalIjin"><div class="modal"><button class="modal-close" onclick="closeModal('modalIjin')">✕</button><h3>✉️ Form Pengajuan Ijin / Cuti</h3><div class="form-row"><div class="f-group"><label>Tanggal Mulai</label><input type="date" id="ijTanggal"></div><div class="f-group"><label>Nama Karyawan</label><input type="text" id="ijNama" placeholder="Nama Lengkap"></div></div><div class="form-row single"><div class="f-group"><label>Jenis Ijin / Cuti</label><select id="ijJenis" onchange="toggleBuktiIjin()"><option value="Sakit (Dengan Surat Dokter)">Sakit (Dengan Surat Dokter)</option><option value="Ijin">Ijin</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Cuti Keluarga Meninggal">Cuti Keluarga Meninggal</option><option value="Cuti Keluarga Meninggal (1 Rumah)">Cuti Keluarga Meninggal (1 Rumah)</option><option value="Cuti Keguguran">Cuti Keguguran</option><option value="Cuti Melahirkan">Cuti Melahirkan</option></select></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Lengkap</label><input type="text" id="ijKeterangan" placeholder="Alasan dan lama hari..."></div></div><div class="form-row single" id="ijBuktiWrap"><div class="f-group"><label>Surat Dokter / Bukti Pendukung</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ij','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ij','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="ij-panel-upload"><div class="file-drop-zone" id="ij-dropzone"><input type="file" id="ijFile" accept="image/*,.pdf" onchange="handleFileSelect('ij',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ij-preview"><span>📄</span><span class="file-preview-name" id="ij-fname">-</span><span class="file-preview-size" id="ij-fsize"></span><button class="file-remove" onclick="removeFile('ij')">✕</button></div><div class="upload-progress" id="ij-progress"><div class="upload-progress-bar" id="ij-pbar"></div></div></div><div class="file-tab-panel" id="ij-panel-url"><input type="url" id="ijBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalIjin')">Batal</button><button class="btn btn-primary" id="btnSaveIjin" onclick="submitIjin()">💾 Ajukan Ijin</button></div></div></div>
-<div class="modal-overlay" id="modalLembur"><div class="modal"><button class="modal-close" onclick="closeModal('modalLembur')">✕</button><h3>⏱️ Form Pengajuan Lembur</h3><div class="form-row"><div class="f-group"><label>Tanggal Lembur</label><input type="date" id="lbTanggal"></div><div class="f-group"><label>Nama Karyawan</label><input type="text" id="lbNama" placeholder="Nama Lengkap"></div></div><div class="form-row single"><div class="f-group"><label>Divisi</label><select id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div></div><div class="form-row"><div class="f-group"><label>Jam Mulai</label><input type="time" id="lbJamMulai" oninput="calcDurasiLembur()"></div><div class="f-group"><label>Jam Selesai</label><input type="time" id="lbJamSelesai" oninput="calcDurasiLembur()"></div></div><div id="lbDurasiWrap" style="font-size:13px; color:var(--teal); margin-top:-8px; margin-bottom:12px; display:none; font-weight:600;">⏱️ Durasi Lembur: <span id="lbDurasiText" style="color:var(--accent);">0 Jam</span></div><div class="form-row single"><div class="f-group"><label>Keterangan / Tugas Lembur</label><input type="text" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
+<div class="modal-overlay" id="modalKaryawan"><div class="custom-modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="kNama" placeholder="Nama karyawan"></div><div class="col-md mb-2"><label class="form-label">Jabatan</label><input type="text" class="form-control" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Cabang Perusahaan</label><input type="text" class="form-control" id="kCabang" placeholder="Ketik atau pilih cabang..." list="listCabang"><datalist id="listCabang"><option value="Pusat"><option value="Cabang SBY"><option value="Cabang JKT"></datalist></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Status Karyawan</label><select class="form-select" id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="col-md mb-2"><label class="form-label">Tanggal Masuk</label><input type="date" class="form-control" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="col-md mb-2"><label class="form-label">Tanggal Selesai Kontrak</label><input type="date" class="form-control" id="kTglSelesai"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Telepon</label><input type="text" class="form-control" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="col-md mb-2"><label class="form-label">Email</label><input type="email" class="form-control" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalIjin"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalIjin')">✕</button><h3>✉️ Form Pengajuan Ijin / Cuti</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Mulai</label><input type="date" class="form-control" id="ijTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Karyawan</label><input type="text" class="form-control" id="ijNama" placeholder="Nama Lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jenis Ijin / Cuti</label><select class="form-select" id="ijJenis" onchange="toggleBuktiIjin()"><option value="Sakit (Dengan Surat Dokter)">Sakit (Dengan Surat Dokter)</option><option value="Ijin">Ijin</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Cuti Keluarga Meninggal">Cuti Keluarga Meninggal</option><option value="Cuti Keluarga Meninggal (1 Rumah)">Cuti Keluarga Meninggal (1 Rumah)</option><option value="Cuti Keguguran">Cuti Keguguran</option><option value="Cuti Melahirkan">Cuti Melahirkan</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Lengkap</label><input type="text" class="form-control" id="ijKeterangan" placeholder="Alasan dan lama hari..."></div></div><div class="form-row single" id="ijBuktiWrap"><div class="col-md mb-2"><label class="form-label">Surat Dokter / Bukti Pendukung</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ij','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ij','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="ij-panel-upload"><div class="file-drop-zone" id="ij-dropzone"><input type="file" id="ijFile" accept="image/*,.pdf" onchange="handleFileSelect('ij',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ij-preview"><span>📄</span><span class="file-preview-name" id="ij-fname">-</span><span class="file-preview-size" id="ij-fsize"></span><button class="file-remove" onclick="removeFile('ij')">✕</button></div><div class="upload-progress" id="ij-progress"><div class="upload-progress-bar" id="ij-pbar"></div></div></div><div class="file-tab-panel" id="ij-panel-url"><input type="url" id="ijBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalIjin')">Batal</button><button class="btn btn-primary" id="btnSaveIjin" onclick="submitIjin()">💾 Ajukan Ijin</button></div></div></div>
+<div class="modal-overlay" id="modalLembur"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalLembur')">✕</button><h3>⏱️ Form Pengajuan Lembur</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Lembur</label><input type="date" class="form-control" id="lbTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Karyawan</label><input type="text" class="form-control" id="lbNama" placeholder="Nama Lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam Mulai</label><input type="time" class="form-control" id="lbJamMulai" oninput="calcDurasiLembur()"></div><div class="col-md mb-2"><label class="form-label">Jam Selesai</label><input type="time" class="form-control" id="lbJamSelesai" oninput="calcDurasiLembur()"></div></div><div id="lbDurasiWrap" style="font-size:13px; color:var(--teal); margin-top:-8px; margin-bottom:12px; display:none; font-weight:600;">⏱️ Durasi Lembur: <span id="lbDurasiText" style="color:var(--accent);">0 Jam</span></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text" class="form-control" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
 
 <!-- MODAL PENGAJUAN ASSET -->
-<div class="modal-overlay" id="modalAsset"><div class="modal" style="width:580px">
+<div class="modal-overlay" id="modalAsset"><div class="custom-modal" style="width:580px">
   <button class="modal-close" onclick="closeModal('modalAsset')">✕</button>
   <h3>📦 Form Pengajuan Asset</h3>
-  <div class="form-row">
-    <div class="f-group"><label>Tanggal Pengajuan</label><input type="date" id="assetTanggal"></div>
-    <div class="f-group"><label>Nama Pemohon</label><input type="text" id="assetNama" placeholder="Nama lengkap pemohon"></div>
+  <div class="row mb-3">
+    <div class="col-md mb-2"><label class="form-label">Tanggal Pengajuan</label><input type="date" class="form-control" id="assetTanggal"></div>
+    <div class="col-md mb-2"><label class="form-label">Nama Pemohon</label><input type="text" class="form-control" id="assetNama" placeholder="Nama lengkap pemohon"></div>
   </div>
-  <div class="form-row">
-    <div class="f-group"><label>Jenis Asset</label><select id="assetJenis">
+  <div class="row mb-3">
+    <div class="col-md mb-2"><label class="form-label">Jenis Asset</label><select class="form-select" id="assetJenis">
       <option value="Laptop / PC">💻 Laptop / PC</option>
       <option value="Printer / Scanner">🖨️ Printer / Scanner</option>
       <option value="Furnitur">🪑 Furnitur (Meja, Kursi, dll)</option>
@@ -853,19 +889,19 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
       <option value="Elektronik">📱 Elektronik Lainnya</option>
       <option value="Lainnya">📋 Lainnya</option>
     </select></div>
-    <div class="f-group"><label>Prioritas</label><select id="assetPrioritas">
+    <div class="col-md mb-2"><label class="form-label">Prioritas</label><select class="form-select" id="assetPrioritas">
       <option value="Normal">🟢 Normal</option>
       <option value="Mendesak">🟡 Mendesak</option>
       <option value="Kritis">🔴 Kritis</option>
     </select></div>
   </div>
-  <div class="form-row single"><div class="f-group"><label>Estimasi Harga (Rp)</label>
-    <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" id="assetHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
+  <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Estimasi Harga (Rp)</label>
+    <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="assetHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
   </div></div>
-  <div class="form-row single"><div class="f-group"><label>Deskripsi Kebutuhan</label>
-    <textarea id="assetDeskripsi" placeholder="Jelaskan kebutuhan asset secara detail: spesifikasi, tujuan penggunaan, jumlah yang diperlukan..." style="min-height:90px"></textarea>
+  <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Deskripsi Kebutuhan</label>
+    <textarea class="form-control" id="assetDeskripsi" placeholder="Jelaskan kebutuhan asset secara detail: spesifikasi, tujuan penggunaan, jumlah yang diperlukan..." style="min-height:90px"></textarea>
   </div></div>
-  <div class="form-row single"><div class="f-group"><label>Bukti / Referensi <span style="color:var(--gray);font-weight:400">(opsional)</span></label>
+  <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Bukti / Referensi <span style="color:var(--gray);font-weight:400">(opsional)</span></label>
     <div class="file-upload-wrap">
       <div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ast','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ast','url',this)">🔗 URL Link</button></div>
       <div class="file-tab-panel active" id="ast-panel-upload"><div class="file-drop-zone" id="ast-dropzone"><input type="file" id="astFile" accept="image/*,.pdf" onchange="handleFileSelect('ast',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ast-preview"><span>📄</span><span class="file-preview-name" id="ast-fname">-</span><span class="file-preview-size" id="ast-fsize"></span><button class="file-remove" onclick="removeFile('ast')">✕</button></div><div class="upload-progress" id="ast-progress"><div class="upload-progress-bar" id="ast-pbar"></div></div></div>
@@ -876,31 +912,31 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
   <div style="background:linear-gradient(135deg,#f59e0b11,#1a3a5c55);border:1px solid #f59e0b33;border-radius:10px;padding:12px 16px;margin-top:4px;">
     <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px;">📋 Alur Persetujuan</div>
     <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#a0b4c8;flex-wrap:wrap;">
-      <span style="background:#f59e0b22;color:#fcd34d;padding:2px 8px;border-radius:10px;">Pemohon</span>
-      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">HR</span>
-      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Team Leader</span>
-      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Vice SPV</span>
-      <span>→</span><span style="background:#0ea5e922;color:#7dd3fc;padding:2px 8px;border-radius:10px;">Supervisor</span>
-      <span>→</span><span style="background:#10b98122;color:#6ee7b7;padding:2px 8px;border-radius:10px;">✅ Disetujui</span>
+      <span style="background:#f59e0b22;color:var(--accent);padding:2px 8px;border-radius:10px;">Pemohon</span>
+      <span>→</span><span style="background:#0ea5e922;color:var(--teal);padding:2px 8px;border-radius:10px;">HR</span>
+      <span>→</span><span style="background:#0ea5e922;color:var(--teal);padding:2px 8px;border-radius:10px;">Team Leader</span>
+      <span>→</span><span style="background:#0ea5e922;color:var(--teal);padding:2px 8px;border-radius:10px;">Vice SPV</span>
+      <span>→</span><span style="background:#0ea5e922;color:var(--teal);padding:2px 8px;border-radius:10px;">Supervisor</span>
+      <span>→</span><span style="background:#10b98122;color:var(--green);padding:2px 8px;border-radius:10px;">✅ Disetujui</span>
     </div>
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalAsset')">Batal</button><button class="btn btn-primary" id="btnSaveAsset" onclick="submitAsset()">📤 Ajukan Asset</button></div>
 </div></div>
 
-<div class="modal-overlay" id="modalRiwayatApproval"><div class="modal" style="width: 500px;"><button class="modal-close" onclick="closeModal('modalRiwayatApproval')">✕</button><h3>📋 Riwayat Approval</h3><div id="riwayatContent" class="timeline"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRiwayatApproval')">Tutup</button></div></div></div>
+<div class="modal-overlay" id="modalRiwayatApproval"><div class="custom-modal" style="width: 500px;"><button class="modal-close" onclick="closeModal('modalRiwayatApproval')">✕</button><h3>📋 Riwayat Approval</h3><div id="riwayatContent" class="timeline"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRiwayatApproval')">Tutup</button></div></div></div>
 
-<div class="modal-overlay" id="modalOrg"><div class="modal"><input type="hidden" id="orgId"><button class="modal-close" onclick="closeModal('modalOrg')">✕</button><h3 id="orgModalTitle">🏗️ Tambah Anggota Organisasi</h3><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="orgNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Jabatan / Posisi</label><input type="text" id="orgJabatan" placeholder="Contoh: Kepala Gudang"></div></div><div class="form-row"><div class="f-group"><label>Atasan Langsung <span style="color:var(--gray);font-weight:400">(jabatan)</span></label><select id="orgAtasan"><option value="">— Tidak ada (Root / Pimpinan) —</option></select></div><div class="f-group"><label>Departemen</label><input type="text" id="orgDept" placeholder="Departemen / Divisi"></div></div><div class="form-row"><div class="f-group"><label>URL Foto</label><input type="url" id="orgFoto" placeholder="https://..."></div><div class="f-group"><label>Urutan Tampil</label><input type="number" id="orgUrutan" placeholder="1" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrg')">Batal</button><button class="btn btn-primary" onclick="submitOrg()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalSOP"><div class="modal" style="width:620px"><input type="hidden" id="sopId"><button class="modal-close" onclick="closeModal('modalSOP')">✕</button><h3 id="sopModalTitle">📋 Tambah SOP</h3><div class="form-row single"><div class="f-group"><label>Judul SOP</label><input type="text" id="sopJudul" placeholder="Judul SOP"></div></div><div class="form-row"><div class="f-group"><label>Kategori</label><select id="sopKategori"><option>Penerimaan Barang</option><option>Pengeluaran Barang</option><option>Penyimpanan</option><option>Keselamatan & K3</option><option>Administrasi</option><option>Lainnya</option></select></div></div><div class="form-row single"><div class="f-group"><label>Isi / Konten SOP</label><textarea id="sopKonten" placeholder="Tuliskan langkah-langkah atau isi SOP..." style="min-height:160px"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalSOP')">Batal</button><button class="btn btn-primary" onclick="submitSOP()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalUser"><div class="modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="form-row"><div class="f-group"><label>Username</label><input type="text" id="uUsername" placeholder="username"></div><div class="f-group"><label>Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="form-row"><div class="f-group"><label>Nama Lengkap</label><input type="text" id="uNama" placeholder="Nama lengkap"></div><div class="f-group"><label>Role</label><select id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label><input type="checkbox" value="dashboard"> Dashboard</label><label><input type="checkbox" value="kasGudang"> Kas Gudang</label><label><input type="checkbox" value="teamBuilding"> Team Building</label><label><input type="checkbox" value="expense"> Expense List</label><label><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label><input type="checkbox" value="handover"> Hand Over</label><label><input type="checkbox" value="klaim"> Klaim Paket</label><label><input type="checkbox" value="tugasProject"> Tugas Project</label><label><input type="checkbox" value="karyawan"> Data Karyawan</label><label><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label><input type="checkbox" value="pengajuanAsset"> 📦 Pengajuan Asset</label><label><input type="checkbox" value="organisasi"> Struktur Org.</label><label><input type="checkbox" value="sop"> SOP Gudang</label><label><input type="checkbox" value="stock"> Stock Barang</label><label><input type="checkbox" value="inbound"> Inbound</label><label><input type="checkbox" value="outbound"> Outbound</label><label><input type="checkbox" value="retur"> Retur</label><label><input type="checkbox" value="order"> Orderan</label><label><input type="checkbox" value="analisis"> Analisis Stok</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalOrg"><div class="custom-modal"><input type="hidden" id="orgId"><button class="modal-close" onclick="closeModal('modalOrg')">✕</button><h3 id="orgModalTitle">🏗️ Tambah Anggota Organisasi</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="orgNama" placeholder="Nama lengkap"></div><div class="col-md mb-2"><label class="form-label">Jabatan / Posisi</label><input type="text" class="form-control" id="orgJabatan" placeholder="Contoh: Kepala Gudang"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Atasan Langsung <span style="color:var(--gray);font-weight:400">(jabatan)</span></label><select class="form-select" id="orgAtasan"><option value="">— Tidak ada (Root / Pimpinan) —</option></select></div><div class="col-md mb-2"><label class="form-label">Departemen</label><input type="text" class="form-control" id="orgDept" placeholder="Departemen / Divisi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">URL Foto</label><input type="url" id="orgFoto" placeholder="https://..."></div><div class="col-md mb-2"><label class="form-label">Urutan Tampil</label><input type="number" class="form-control" id="orgUrutan" placeholder="1" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrg')">Batal</button><button class="btn btn-primary" onclick="submitOrg()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalSOP"><div class="custom-modal" style="width:620px"><input type="hidden" id="sopId"><button class="modal-close" onclick="closeModal('modalSOP')">✕</button><h3 id="sopModalTitle">📋 Tambah SOP</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Judul SOP</label><input type="text" class="form-control" id="sopJudul" placeholder="Judul SOP"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kategori</label><select class="form-select" id="sopKategori"><option>Penerimaan Barang</option><option>Pengeluaran Barang</option><option>Penyimpanan</option><option>Keselamatan & K3</option><option>Administrasi</option><option>Lainnya</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Isi / Konten SOP</label><textarea class="form-control" id="sopKonten" placeholder="Tuliskan langkah-langkah atau isi SOP..." style="min-height:160px"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalSOP')">Batal</button><button class="btn btn-primary" onclick="submitSOP()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalUser"><div class="custom-modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Username</label><input type="text" class="form-control" id="uUsername" placeholder="username"></div><div class="col-md mb-2"><label class="form-label">Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="uNama" placeholder="Nama lengkap"></div><div class="col-md mb-2"><label class="form-label">Role</label><select class="form-select" id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label class="form-label"><input type="checkbox" value="dashboard"> Dashboard</label><label class="form-label"><input type="checkbox" value="kasGudang"> Kas Gudang</label><label class="form-label"><input type="checkbox" value="teamBuilding"> Team Building</label><label class="form-label"><input type="checkbox" value="expense"> Expense List</label><label class="form-label"><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label class="form-label"><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label class="form-label"><input type="checkbox" value="handover"> Hand Over</label><label class="form-label"><input type="checkbox" value="klaim"> Klaim Paket</label><label class="form-label"><input type="checkbox" value="tugasProject"> Tugas Project</label><label class="form-label"><input type="checkbox" value="karyawan"> Data Karyawan</label><label class="form-label"><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label class="form-label"><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label class="form-label"><input type="checkbox" value="pengajuanAsset"> 📦 Pengajuan Asset</label><label class="form-label"><input type="checkbox" value="organisasi"> Struktur Org.</label><label class="form-label"><input type="checkbox" value="sop"> SOP Gudang</label><label class="form-label"><input type="checkbox" value="stock"> Stock Barang</label><label class="form-label"><input type="checkbox" value="inbound"> Inbound</label><label class="form-label"><input type="checkbox" value="outbound"> Outbound</label><label class="form-label"><input type="checkbox" value="retur"> Retur</label><label class="form-label"><input type="checkbox" value="order"> Orderan</label><label class="form-label"><input type="checkbox" value="analisis"> Analisis Stok</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
 
 
 
-<div class="modal-overlay" id="modalStock"><div class="modal" style="width:580px"><input type="hidden" id="stockId"><button class="modal-close" onclick="closeModal('modalStock')">✕</button><h3 id="stockModalTitle">📦 Tambah Barang</h3><div class="form-row"><div class="f-group"><label>SKU (Kode Barang)</label><input type="text" id="stSKU" placeholder="Kosongkan utk auto-generate"></div><div class="f-group"><label>Nama Barang</label><input type="text" id="stNama" placeholder="Nama barang"></div></div><div class="form-row"><div class="f-group"><label>Kategori</label><input type="text" id="stKategori" placeholder="Misal: Obat, Alat, Bahan"></div><div class="f-group"><label>Barcode</label><input type="text" id="stBarcode" placeholder="Scan atau ketik barcode"></div></div><div class="form-row"><div class="f-group"><label>Batch / Lot</label><input type="text" id="stBatch" placeholder="No. Batch"></div><div class="f-group"><label>Exp Date</label><input type="date" id="stExpDate"></div></div><div class="form-row"><div class="f-group"><label>Satuan</label><select id="stSatuan"><option>PCS</option><option>Box</option><option>Kg</option><option>Liter</option><option>Karton</option><option>Pack</option><option>Roll</option><option>Set</option></select></div><div class="f-group"><label>Lokasi Penyimpanan</label><input type="text" id="stLokasi" placeholder="Rak A-1, Gudang B, dsb."></div></div><div class="form-row"><div class="f-group"><label>Stok Awal</label><input type="number" id="stStok" placeholder="0" min="0"></div><div class="f-group"><label>Stok Minimum (Alert)</label><input type="number" id="stStokMin" placeholder="0" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalStock')">Batal</button><button class="btn btn-primary" onclick="submitStock()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalInbound"><div class="modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalInbound')">✕</button><h3>📥 Form Inbound Barang</h3><div class="form-row"><div class="f-group"><label>Tanggal Masuk</label><input type="date" id="inbTanggal"></div><div class="f-group"><label>Supplier Pengirim</label><input type="text" id="inbSupplier" placeholder="Nama Supplier"></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="inbKet" placeholder="Catatan tambahan (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Masuk</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('inbItems','inbound')">+ Tambah Baris</button></div><div id="inbItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalInbound')">Batal</button><button class="btn btn-primary" onclick="submitInbound()">💾 Simpan & Tambah Stok</button></div></div></div>
-<div class="modal-overlay" id="modalOutbound"><div class="modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalOutbound')">✕</button><h3>✂️ Form Pemotongan Stok Manual</h3><div class="form-row"><div class="f-group"><label>Tanggal Pemotongan</label><input type="date" id="outTanggal"></div><div class="f-group"><label>Alasan (Tujuan)</label><select id="outTujuan"><option value="Barang Rusak/Expired">Barang Rusak / Expired</option><option value="Selisih Stok Opname">Selisih Stok Opname</option><option value="Pemakaian Internal">Pemakaian Internal</option><option value="Lainnya">Lainnya</option></select></div></div><div class="form-row single"><div class="f-group"><label>Keterangan Detail</label><input type="text" id="outKet" placeholder="Jelaskan alasan pemotongan secara spesifik"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Dipotong</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('outItems','outbound')">+ Tambah Baris</button></div><div id="outItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOutbound')">Batal</button><button class="btn btn-danger" onclick="submitOutbound()">✂️ Konfirmasi Potong Stok</button></div></div></div>
-<div class="modal-overlay" id="modalRetur"><div class="modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalRetur')">✕</button><h3>↩️ Form Retur Barang</h3><div class="form-row"><div class="f-group"><label>Tanggal Retur</label><input type="date" id="retTanggal"></div><div class="f-group"><label>Alasan Retur</label><select id="retAlasan"><option value="Barang Salah Kirim">Barang Salah Kirim</option><option value="Barang Rusak">Barang Rusak / Cacat</option><option value="Kelebihan Pengiriman">Kelebihan Pengiriman</option><option value="Tidak Sesuai Pesanan">Tidak Sesuai Pesanan</option><option value="Lainnya">Lainnya</option></select></div></div><div class="form-row"><div class="f-group"><label>Sumber Retur <span style="color:var(--gray);font-weight:400">(Pelanggan / Toko)</span></label><input type="text" id="retSumber" placeholder="Nama pelanggan / toko yang meretur"></div><div class="f-group"><label>Keterangan Detail</label><input type="text" id="retKet" placeholder="Penjelasan tambahan (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Diretur</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('retItems','retur')">+ Tambah Baris</button></div><div id="retItems"></div></div><div style="background:#0ea5e912;border:1px solid #0ea5e922;border-radius:8px;padding:10px 14px;font-size:13px;color:#7dd3fc;margin-bottom:16px;">ℹ️ Barang yang diretur akan <strong>otomatis masuk kembali ke stok</strong> sesuai jumlah yang diinput.</div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRetur')">Batal</button><button class="btn btn-teal" onclick="submitRetur()">↩️ Konfirmasi Retur & Tambah Stok</button></div></div></div>
-<div class="modal-overlay" id="modalDetailSJ"><div class="modal" style="width:640px"><button class="modal-close" onclick="closeModal('modalDetailSJ')">✕</button><h3 id="detailSJTitle">Detail Surat Jalan</h3><div class="table-wrap" style="max-height:400px;overflow-y:auto;"><table><thead><tr><th>SKU</th><th>Nama</th><th>Qty</th><th>Satuan</th><th>Batch</th><th>Exp Date</th></tr></thead><tbody id="tblDetailSJ"></tbody></table></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailSJ')">Tutup</button></div></div></div>
-<div class="modal-overlay" id="modalOrder"><div class="modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalOrder')">✕</button><h3>🛒 Buat Orderan Baru</h3><div class="form-row"><div class="f-group"><label>Tanggal Order</label><input type="date" id="ordTanggal"></div><div class="f-group"><label>Nama Pelanggan</label><input type="text" id="ordPelanggan" placeholder="Nama pelanggan / customer"></div></div><div class="form-row single"><div class="f-group"><label>Alamat Pengiriman</label><input type="text" id="ordAlamat" placeholder="Alamat lengkap"></div></div><div class="form-row single"><div class="f-group"><label>Keterangan</label><input type="text" id="ordKet" placeholder="Catatan order (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Order</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('ordItems','order')">+ Tambah Baris</button></div><div id="ordItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrder')">Batal</button><button class="btn btn-primary" onclick="submitOrder()">💾 Simpan Order</button></div></div></div>
+<div class="modal-overlay" id="modalStock"><div class="custom-modal" style="width:580px"><input type="hidden" id="stockId"><button class="modal-close" onclick="closeModal('modalStock')">✕</button><h3 id="stockModalTitle">📦 Tambah Barang</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">SKU (Kode Barang)</label><input type="text" class="form-control" id="stSKU" placeholder="Kosongkan utk auto-generate"></div><div class="col-md mb-2"><label class="form-label">Nama Barang</label><input type="text" class="form-control" id="stNama" placeholder="Nama barang"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kategori</label><input type="text" class="form-control" id="stKategori" placeholder="Misal: Obat, Alat, Bahan"></div><div class="col-md mb-2"><label class="form-label">Barcode</label><input type="text" class="form-control" id="stBarcode" placeholder="Scan atau ketik barcode"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Batch / Lot</label><input type="text" class="form-control" id="stBatch" placeholder="No. Batch"></div><div class="col-md mb-2"><label class="form-label">Exp Date</label><input type="date" class="form-control" id="stExpDate"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Satuan</label><select class="form-select" id="stSatuan"><option>PCS</option><option>Box</option><option>Kg</option><option>Liter</option><option>Karton</option><option>Pack</option><option>Roll</option><option>Set</option></select></div><div class="col-md mb-2"><label class="form-label">Lokasi Penyimpanan</label><input type="text" class="form-control" id="stLokasi" placeholder="Rak A-1, Gudang B, dsb."></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Stok Awal</label><input type="number" class="form-control" id="stStok" placeholder="0" min="0"></div><div class="col-md mb-2"><label class="form-label">Stok Minimum (Alert)</label><input type="number" class="form-control" id="stStokMin" placeholder="0" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalStock')">Batal</button><button class="btn btn-primary" onclick="submitStock()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalInbound"><div class="custom-modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalInbound')">✕</button><h3>📥 Form Inbound Barang</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Masuk</label><input type="date" class="form-control" id="inbTanggal"></div><div class="col-md mb-2"><label class="form-label">Supplier Pengirim</label><input type="text" class="form-control" id="inbSupplier" placeholder="Nama Supplier"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="inbKet" placeholder="Catatan tambahan (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Masuk</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('inbItems','inbound')">+ Tambah Baris</button></div><div id="inbItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalInbound')">Batal</button><button class="btn btn-primary" onclick="submitInbound()">💾 Simpan & Tambah Stok</button></div></div></div>
+<div class="modal-overlay" id="modalOutbound"><div class="custom-modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalOutbound')">✕</button><h3>✂️ Form Pemotongan Stok Manual</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Pemotongan</label><input type="date" class="form-control" id="outTanggal"></div><div class="col-md mb-2"><label class="form-label">Alasan (Tujuan)</label><select class="form-select" id="outTujuan"><option value="Barang Rusak/Expired">Barang Rusak / Expired</option><option value="Selisih Stok Opname">Selisih Stok Opname</option><option value="Pemakaian Internal">Pemakaian Internal</option><option value="Lainnya">Lainnya</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text" class="form-control" id="outKet" placeholder="Jelaskan alasan pemotongan secara spesifik"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Dipotong</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('outItems','outbound')">+ Tambah Baris</button></div><div id="outItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOutbound')">Batal</button><button class="btn btn-danger" onclick="submitOutbound()">✂️ Konfirmasi Potong Stok</button></div></div></div>
+<div class="modal-overlay" id="modalRetur"><div class="custom-modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalRetur')">✕</button><h3>↩️ Form Retur Barang</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Retur</label><input type="date" class="form-control" id="retTanggal"></div><div class="col-md mb-2"><label class="form-label">Alasan Retur</label><select class="form-select" id="retAlasan"><option value="Barang Salah Kirim">Barang Salah Kirim</option><option value="Barang Rusak">Barang Rusak / Cacat</option><option value="Kelebihan Pengiriman">Kelebihan Pengiriman</option><option value="Tidak Sesuai Pesanan">Tidak Sesuai Pesanan</option><option value="Lainnya">Lainnya</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Sumber Retur <span style="color:var(--gray);font-weight:400">(Pelanggan / Toko)</span></label><input type="text" class="form-control" id="retSumber" placeholder="Nama pelanggan / toko yang meretur"></div><div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text" class="form-control" id="retKet" placeholder="Penjelasan tambahan (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Diretur</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('retItems','retur')">+ Tambah Baris</button></div><div id="retItems"></div></div><div style="background:#0ea5e912;border:1px solid #0ea5e922;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--teal);margin-bottom:16px;">ℹ️ Barang yang diretur akan <strong>otomatis masuk kembali ke stok</strong> sesuai jumlah yang diinput.</div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalRetur')">Batal</button><button class="btn btn-teal" onclick="submitRetur()">↩️ Konfirmasi Retur & Tambah Stok</button></div></div></div>
+<div class="modal-overlay" id="modalDetailSJ"><div class="custom-modal" style="width:640px"><button class="modal-close" onclick="closeModal('modalDetailSJ')">✕</button><h3 id="detailSJTitle">Detail Surat Jalan</h3><div class="table-wrap" style="max-height:400px;overflow-y:auto;"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama</th><th>Qty</th><th>Satuan</th><th>Batch</th><th>Exp Date</th></tr></thead><tbody id="tblDetailSJ"></tbody></table></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailSJ')">Tutup</button></div></div></div>
+<div class="modal-overlay" id="modalOrder"><div class="custom-modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalOrder')">✕</button><h3>🛒 Buat Orderan Baru</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Order</label><input type="date" class="form-control" id="ordTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Pelanggan</label><input type="text" class="form-control" id="ordPelanggan" placeholder="Nama pelanggan / customer"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Alamat Pengiriman</label><input type="text" class="form-control" id="ordAlamat" placeholder="Alamat lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="ordKet" placeholder="Catatan order (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Order</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('ordItems','order')">+ Tambah Baris</button></div><div id="ordItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrder')">Batal</button><button class="btn btn-primary" onclick="submitOrder()">💾 Simpan Order</button></div></div></div>
 
 <div id="toast"></div>
 
@@ -908,6 +944,26 @@ select option { background-color: #0f2040 !important; color: #f8fafc !important;
 <!-- FULL JAVASCRIPT LOGIC -->
 <!-- ============================================================ -->
 <script>
+
+const savedTheme = localStorage.getItem('fcl_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.documentElement.setAttribute('data-bs-theme', savedTheme);
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  document.documentElement.setAttribute('data-bs-theme', next);
+  localStorage.setItem('fcl_theme', next);
+  document.getElementById('themeIcon').className = next === 'dark' ? 'bi bi-moon-stars' : 'bi bi-brightness-high-fill';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if(document.getElementById('themeIcon')) {
+     document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'bi bi-moon-stars' : 'bi bi-brightness-high-fill';
+  }
+});
+
 let currentUser = null;
 let karyawanData = []; let orderDataList = []; let stockData = []; let laporanKerjaData = [];
 let chartInstances = { mp: null, dist: null, ret: null }; 
@@ -999,9 +1055,34 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => { if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active'); });
   document.getElementById('pageTitle').textContent = pageTitles[name] || name;
   if (pageLoaders[name]) pageLoaders[name]();
-  document.getElementById('sidebar').classList.remove('open');
+  
+  // Auto-hide sidebar after selection
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth >= 768) {
+    sidebar.classList.add('collapsed-desktop');
+  } else {
+    if (typeof bootstrap !== 'undefined') {
+      const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebar);
+      if (bsOffcanvas) bsOffcanvas.hide();
+    } else {
+      sidebar.classList.remove('show');
+    }
+  }
 }
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth >= 768) {
+    sidebar.classList.toggle('collapsed-desktop');
+  } else {
+    if (typeof bootstrap !== 'undefined') {
+      const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebar) || new bootstrap.Offcanvas(sidebar);
+      bsOffcanvas.toggle();
+    } else {
+      sidebar.classList.toggle('show');
+    }
+  }
+}
 
 // === APPROVAL ===
 function canApprove(status, role) {
@@ -1184,7 +1265,7 @@ function updateKaryawanStats() {
   const now=new Date(), in40=karyawanData.filter(d=>{if(d.status!=='Kontrak'||!d.tanggalSelesai)return false; const diff=(new Date(d.tanggalSelesai)-now)/86400000; return diff>=0&&diff<=40;});
   document.getElementById('statKontrakHabis').textContent = in40.length;
   const wrap=document.getElementById('kontrakWarningWrap'), list=document.getElementById('kontrakWarningList');
-  if(in40.length){ wrap.style.display='block'; list.innerHTML=''; in40.forEach(d=>list.innerHTML+=`<div style="display:flex;justify-content:space-between;background:#ef444415;padding:10px;border-radius:8px"><div><strong>${d.nama}</strong> <small>(${d.jabatan})</small></div><div style="text-align:right"><small style="color:#fca5a5">${formatDate(d.tanggalSelesai)}</small><br><strong style="color:var(--red)">${Math.ceil((new Date(d.tanggalSelesai)-now)/86400000)} hr lagi</strong></div></div>`); } else wrap.style.display='none';
+  if(in40.length){ wrap.style.display='block'; list.innerHTML=''; in40.forEach(d=>list.innerHTML+=`<div style="display:flex;justify-content:space-between;background:#ef444415;padding:10px;border-radius:8px"><div><strong>${d.nama}</strong> <small>(${d.jabatan})</small></div><div style="text-align:right"><small style="color:var(--red)">${formatDate(d.tanggalSelesai)}</small><br><strong style="color:var(--red)">${Math.ceil((new Date(d.tanggalSelesai)-now)/86400000)} hr lagi</strong></div></div>`); } else wrap.style.display='none';
   const jMap={}; karyawanData.forEach(d=>{jMap[d.jabatan]=(jMap[d.jabatan]||0)+1;});
   const jCont = document.getElementById('jabatanSummary'); jCont.innerHTML='';
   Object.entries(jMap).sort((a,b)=>b[1]-a[1]).forEach(([j,c])=> jCont.innerHTML+=`<div style="background:var(--navy2);padding:14px;border-radius:10px"><div style="font-size:12px;color:var(--gray)">${j}</div><div style="font-size:22px;font-weight:800;color:var(--accent)">${c}</div></div>`);
@@ -1194,7 +1275,7 @@ function updateKaryawanStats() {
 function renderKaryawan(data) {
   const tb = document.getElementById('tableKaryawan'); tb.innerHTML=''; if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;}
   const now=new Date(); data.forEach(d=>{
-    let sCell='-'; if(d.status==='Kontrak'&&d.tanggalSelesai){ const diff=Math.ceil((new Date(d.tanggalSelesai)-now)/86400000); sCell=`<span style="${diff<=40?'color:#fca5a5;font-weight:bold':''}">${formatDate(d.tanggalSelesai)} ${diff<=40&&diff>=0?`(${diff}hr)`:''}</span>`; }
+    let sCell='-'; if(d.status==='Kontrak'&&d.tanggalSelesai){ const diff=Math.ceil((new Date(d.tanggalSelesai)-now)/86400000); sCell=`<span style="${diff<=40?'color:var(--red);font-weight:bold':''}">${formatDate(d.tanggalSelesai)} ${diff<=40&&diff>=0?`(${diff}hr)`:''}</span>`; }
     tb.innerHTML+=`<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td><span class="badge-tb">${d.cabang||'-'}</span></td><td>${d.telepon||'-'}</td><td><span class="${d.status==='Tetap'?'badge-aktif':'badge-nonaktif'}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td>${sCell}</td><td><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
   });
 }
@@ -1457,7 +1538,7 @@ function viewTugasDetail(id) {
   let footer = `<button class="btn btn-ghost" onclick="closeModal('modalTugasDetail')">Tutup</button>`;
   if (currentUser.role === 'admin' || currentUser.username === d.assignee || currentUser.username === d.createdBy) {
      footer = `
-       <select id="dtStatusUpdate" style="padding:8px;background:#0f2040;color:#fff;border:1px solid #ffffff22;border-radius:6px;margin-right:auto;">
+       <select class="form-select" id="dtStatusUpdate" style="padding:8px;background:#0f2040;color:#fff;border:1px solid #ffffff22;border-radius:6px;margin-right:auto;">
          <option value="Todo" ${d.status==='Todo'?'selected':''}>📌 Todo</option><option value="In Progress" ${d.status==='In Progress'?'selected':''}>🔄 In Progress</option>
          <option value="Review" ${d.status==='Review'?'selected':''}>👀 Review</option><option value="Done" ${d.status==='Done'?'selected':''}>✅ Done</option><option value="Dibatalkan" ${d.status==='Dibatalkan'?'selected':''}>❌ Dibatalkan</option>
        </select>
@@ -1472,7 +1553,7 @@ function updateTugasStatus(id, st) { google.script.run.withSuccessHandler(res=>{
 function deleteTugasProject(id) { if(confirm('Hapus tugas ini?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadTugasProject();}}).deleteTugasProject(id); }
 
 // === SOP ===
-function loadSOP() { google.script.run.withSuccessHandler(res=>{if(res.success){ const list=document.getElementById('sopList'); list.innerHTML=''; if(!res.data.length){list.innerHTML='<div class="empty-state">Belum ada SOP</div>';return;} res.data.forEach(d=>list.innerHTML+=`<div class="sop-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1" onclick="toggleSOP('${d.id}')"><div class="sop-title">${d.judul}</div><div class="sop-cat">${d.kategori}</div></div><div><button class="btn btn-ghost btn-sm" onclick="delSOP('${d.id}')" style="color:#fca5a5">🗑️</button></div></div><div class="sop-body" id="sop-b-${d.id}">${escHtml(d.konten)}</div></div>`); }}).getSOP(); }
+function loadSOP() { google.script.run.withSuccessHandler(res=>{if(res.success){ const list=document.getElementById('sopList'); list.innerHTML=''; if(!res.data.length){list.innerHTML='<div class="empty-state">Belum ada SOP</div>';return;} res.data.forEach(d=>list.innerHTML+=`<div class="sop-item"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="flex:1" onclick="toggleSOP('${d.id}')"><div class="sop-title">${d.judul}</div><div class="sop-cat">${d.kategori}</div></div><div><button class="btn btn-ghost btn-sm" onclick="delSOP('${d.id}')" style="color:var(--red)">🗑️</button></div></div><div class="sop-body" id="sop-b-${d.id}">${escHtml(d.konten)}</div></div>`); }}).getSOP(); }
 function toggleSOP(id) { const b=document.getElementById('sop-b-'+id); b.style.display=b.style.display==='block'?'none':'block'; }
 function submitSOP(){ const j=v('sopJudul'), k=v('sopKategori'), kt=v('sopKonten'); if(!j||!kt)return toast('Judul & Konten wajib','error'); google.script.run.withSuccessHandler(res=>{if(res.success){toast('Berhasil');closeModal('modalSOP');loadSOP();resetForm(['sopJudul','sopKonten']);}}).addSOP(j,kt,k,currentUser.username); }
 function delSOP(id){ if(confirm('Hapus SOP?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadSOP();}}).deleteSOP(id); }
@@ -1528,7 +1609,7 @@ function doExportStock() {
 function getStockOptions() { let html='<option value="">Pilih Barang...</option>'; stockData.forEach(s=>html+=`<option value="${s.id}" data-sku="${s.sku}" data-sat="${s.satuan}">${s.sku} - ${s.nama}</option>`); return html; }
 function addItemRow(containerId, type) {
   const c = document.getElementById(containerId); const div = document.createElement('div'); div.className='item-row';
-  div.innerHTML = `<select onchange="handleItemSelect(this)">${getStockOptions()}</select> <input type="text" readonly placeholder="Nama Barang"> <input type="number" min="1" placeholder="Qty"> <input type="text" readonly placeholder="Satuan"> ${type!=='order'?`<input type="text" placeholder="Batch"> <input type="date" placeholder="Exp">`:''} <button class="btn-remove" onclick="removeItemRow(this)">✕</button>`;
+  div.innerHTML = `<select onchange="handleItemSelect(this)">${getStockOptions()}</select> <input type="text" class="form-control" readonly placeholder="Nama Barang"> <input type="number" class="form-control" min="1" placeholder="Qty"> <input type="text" class="form-control" readonly placeholder="Satuan"> ${type!=='order'?`<input type="text" class="form-control" placeholder="Batch"> <input type="date" class="form-control" placeholder="Exp">`:''} <button class="btn-remove" onclick="removeItemRow(this)">✕</button>`;
   c.appendChild(div);
 }
 function handleItemSelect(sel) {
@@ -1651,5 +1732,7 @@ function delAsset(id) {
     }).deleteAsset(id);
 }
 </script>
+<!-- JS Script Imports -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmxc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
