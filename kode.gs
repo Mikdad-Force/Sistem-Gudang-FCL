@@ -29,8 +29,11 @@ const CONFIG = {
     HANDOVER: 'Handover',
     KLAIM: 'Klaim',
     TUGAS_PROJECT: 'TugasProject',
-    ASSET: 'PengajuanAsset'
-  }
+    ASSET: 'PengajuanAsset',
+    STOCK_OPNAME: 'StockOpname',
+    PACKING_LIST: 'PackingList'
+  },
+  DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
 
 // ============================================================
@@ -64,7 +67,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.KAS_GUDANG, ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.EXPENSE, ['id', 'tanggal', 'perusahaan', 'kategori', 'keterangan', 'nominal', 'bank', 'rekening', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'departemenLama', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai']);
+  setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti']);
   setupSheet(ss, CONFIG.SHEETS.IJIN, ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history']);
   setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jamMulai', 'jamSelesai', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
   setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder']);
@@ -75,14 +78,16 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR, ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty']);
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
   setupSheet(ss, CONFIG.SHEETS.ASSET, ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history']);
+  setupSheet(ss, CONFIG.SHEETS.STOCK_OPNAME, ['id','tanggal','stockId','sku','nama','lokasi','batch','expDate','stokSistem','stokFisik','selisih','status','catatan','createdBy','createdAt','approvedBy','approvedAt']);
+  setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -251,7 +256,8 @@ function getPendingApprovals() {
        success: true, 
        ijin: getIjin(),
        lembur: getLembur(),
-       asset: getAsset()
+       asset: getAsset(),
+       stockOpname: getStockOpname()
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -303,6 +309,16 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
         });
         
         sheet.getRange(i + 1, historyCol).setValue(JSON.stringify(historyArr));
+        
+        // AUTO DEDUCT CUTI
+        if (tipe === 'ijin' && action === 'Approve' && newStatus === 'Disetujui') {
+          const jenis = String(data[i][3] || '').toLowerCase(); // Jenis ijin: index 3
+          const namaKaryawan = data[i][2]; // Nama karyawan: index 2
+          if (jenis.includes('cuti')) {
+            deductSisaCuti(namaKaryawan, 1);
+          }
+        }
+        
         return { success: true, newStatus: newStatus };
       }
     }
@@ -330,23 +346,39 @@ function getKaryawan() {
         tanggalMasuk: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6] || ''),
         status: data[i][7] || 'Tetap',
         createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8] || ''),
-        tanggalSelesai: data[i][9] instanceof Date ? Utilities.formatDate(data[i][9], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][9] || '')
+        tanggalSelesai: data[i][9] instanceof Date ? Utilities.formatDate(data[i][9], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][9] || ''),
+        sisaCuti: parseInt(data[i][10]) || 0
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addKaryawan(nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai) {
+function deductSisaCuti(nama, qty) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][1] === nama) {
+        let current = parseInt(data[i][10]) || 0;
+        sheet.getRange(i + 1, 11).setValue(Math.max(0, current - qty));
+        return true;
+      }
+    }
+  } catch(e) { Logger.log('Error deduct: ' + e.message); }
+  return false;
+}
+
+function addKaryawan(nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai, sisaCuti) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const id = generateId();
-    sheet.appendRow([id, nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '']);
+    sheet.appendRow([id, nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '', sisaCuti || 12]);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai) {
+function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk, status, tanggalSelesai, sisaCuti) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const data = sheet.getDataRange().getValues();
@@ -354,6 +386,7 @@ function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk,
       if (String(data[i][0]) === String(id)) {
         sheet.getRange(i + 1, 2, 1, 7).setValues([[nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status]]);
         sheet.getRange(i + 1, 10).setValue(tanggalSelesai || '');
+        sheet.getRange(i + 1, 11).setValue(sisaCuti || 0);
         return { success: true };
       }
     }
@@ -992,15 +1025,19 @@ function getOrders() {
     const sheet = getSheet(CONFIG.SHEETS.ORDER); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       if (!data[i][0]) continue;
+      // Index 11 is Column L (buktiPacking)
+      const bukti = data[i].length > 11 ? (data[i][11] || '') : '';
       result.push({
         id:data[i][0], noOrder:data[i][1],
         tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
         pelanggan:data[i][3], alamat:data[i][4], status:data[i][5], totalItem:parseFloat(data[i][6])||0, keterangan:data[i][7], createdBy:data[i][8],
         createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||''),
-        sentAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10]||'')
+        sentAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10]||''),
+        buktiPacking: bukti
       });
     }
-    return { success: true, data: result };
+    // Sort latest first
+    return { success: true, data: result.reverse() };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
@@ -1009,10 +1046,10 @@ function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy) {
     const noOrder = generateNoSJ('WHFCL'); const id = generateId();
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     const totalItem = parsedItems.reduce((s,x) => s + (parseFloat(x.qty)||0), 0);
-    getSheet(CONFIG.SHEETS.ORDER).appendRow([id, noOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, new Date().toISOString(), '']);
+    getSheet(CONFIG.SHEETS.ORDER).appendRow([id, noOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, new Date().toISOString(), '', '']);
     const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', 0]);
     });
     return { success: true, noOrder: noOrder };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1022,10 +1059,59 @@ function getOrderDetail(orderId) {
   try {
     const data = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]) === String(orderId)) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8]||'-', expDate:data[i][9]||'-' });
+      if (String(data[i][1]) === String(orderId)) {
+        result.push({ 
+          id:data[i][0], orderId:data[i][1], noOrder:data[i][2], stockId:data[i][3], 
+          sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, 
+          satuan:data[i][7], batch:data[i][8]||'-', expDate:data[i][9]||'-', 
+          packedQty:parseFloat(data[i][10])||0 
+        });
+      }
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
+}
+
+function uploadPackingFile(orderId, fileName, base64Data, mimeType) {
+  try {
+    const folderId = '1lE_NWzThv9MdODkmtYjScWz-Bb3N8ocA';
+    let folder;
+    try {
+      folder = DriveApp.getFolderById(folderId);
+    } catch(err) {
+      return { success: false, message: 'Gagal akses folder Drive. Pastikan Otorisasi di Editor Script sudah dilakukan.' };
+    }
+    
+    const decoded = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(decoded, mimeType, fileName);
+    const file = folder.createFile(blob);
+    
+    // Set file to be viewable by anyone with link (optional, depends on domain policy)
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(err) {
+      // Jika error karena kebijakan organisasi, abaikan dan lanjut ambil URL
+    }
+    
+    const url = file.getUrl();
+
+    const sheet = getSheet(CONFIG.SHEETS.ORDER);
+    const data = sheet.getDataRange().getValues();
+    let updated = false;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(orderId)) {
+        sheet.getRange(i+1, 12).setValue(url); // Col L (buktiPacking)
+        updated = true;
+        break;
+      }
+    }
+    
+    if (!updated) {
+      return { success: false, message: 'File masuk Drive, tapi gagal mencatat ke database (ID Order tidak ditemukan).' };
+    }
+
+    return { success: true, url: url };
+  } catch(e) { return { success: false, message: 'Drive Error: ' + e.message }; }
 }
 
 function deleteOrder(id) { return deleteRow(CONFIG.SHEETS.ORDER, id); }
@@ -1364,4 +1450,141 @@ function addAsset(tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas
 
 function deleteAsset(id) {
   return deleteRow(CONFIG.SHEETS.ASSET, id);
+}
+
+// ============================================================
+// STOCK OPNAME
+// ============================================================
+function getStockOpname() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME); const data = sheet.getDataRange().getValues(); const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id:data[i][0], tanggal:data[i][1] instanceof Date ? data[i][1].toISOString().split('T')[0] : String(data[i][1]||''), 
+        stockId:data[i][2], sku:data[i][3], nama:data[i][4], lokasi:data[i][5], batch:data[i][6], expDate:data[i][7],
+        stokSistem:data[i][8], stokFisik:data[i][9], selisih:data[i][10], status:data[i][11], catatan:data[i][12],
+        createdBy:data[i][13], createdAt:data[i][14], approvedBy:data[i][15], approvedAt:data[i][16]
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function submitStockOpname(tanggal, stockId, sku, nama, lokasi, batch, expDate, sistem, fisik, catatan, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME);
+    const selisih = parseFloat(fisik) - parseFloat(sistem);
+    sheet.appendRow([generateId(), tanggal, stockId, sku, nama, lokasi||'-', batch||'-', expDate||'-', sistem, fisik, selisih, 'Pending', catatan||'', createdBy, new Date().toISOString(), '', '']);
+    return { success: true };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function approveStockOpname(id, status, approvedBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME); const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        if (data[i][9] !== 'Pending') return { success: false, message: 'Sudah diproses' };
+        sheet.getRange(i+1, 10).setValue(status);
+        sheet.getRange(i+1, 14).setValue(approvedBy);
+        sheet.getRange(i+1, 15).setValue(new Date().toISOString());
+        
+        if (status === 'Approved') {
+          const stockId = data[i][2];
+          const fisik = data[i][7];
+          const stSheet = getSheet(CONFIG.SHEETS.STOCK);
+          const stData = stSheet.getDataRange().getValues();
+          for(let j=1; j<stData.length; j++) {
+            if(String(stData[j][0]) === String(stockId)) {
+              stSheet.getRange(j+1, 8).setValue(fisik); // Update master stok ke angka fisik
+              break;
+            }
+          }
+        }
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// PACKING LIST
+// ============================================================
+function getPackingList() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PACKING_LIST); const data = sheet.getDataRange().getValues(); const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({ 
+        id:data[i][0], 
+        tanggal:data[i][1] instanceof Date ? data[i][1].toISOString().split('T')[0] : String(data[i][1]||''), 
+        noPL:data[i][2], keterangan:data[i][3], fileUrl:data[i][4], createdBy:data[i][5], createdAt:data[i][6] 
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function addPackingList(tanggal, noPL, keterangan, fileUrl, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PACKING_LIST);
+    if (!sheet) {
+      const ss = getSpreadsheet();
+      setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
+    }
+    const finalSheet = getSheet(CONFIG.SHEETS.PACKING_LIST);
+    finalSheet.appendRow([generateId(), tanggal, noPL, keterangan, fileUrl, createdBy || 'User', new Date().toISOString()]);
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch(e) { return { success: false, message: 'Gagal Simpan ke Tabel: ' + e.message }; }
+}
+
+// UPLOAD HANDLER
+function uploadChunk(data, index, uploadId) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    if (!uploadId) uploadId = 'UP_' + new Date().getTime() + '_' + Math.random().toString(36).substring(7);
+    props.setProperty(uploadId + '_' + index, data);
+    return { success: true, uploadId: uploadId };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function finalizeChunkedUpload(uploadId, fileName, contentType, folderName) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let b64 = ''; let index = 0;
+    while (true) {
+      const chunk = props.getProperty(uploadId + '_' + index);
+      if (chunk === null) break;
+      b64 += chunk;
+      props.deleteProperty(uploadId + '_' + index);
+      index++;
+    }
+    const blob = Utilities.newBlob(Utilities.base64Decode(b64), contentType, fileName);
+    let folder;
+    try {
+      folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    } catch(e) {
+      // Fallback or specific subfolder if needed
+      folder = DriveApp.getRootFolder(); 
+    }
+    
+    // Create subfolder if needed
+    if (folderName) {
+      const subFolders = folder.getFoldersByName(folderName);
+      if (subFolders.hasNext()) folder = subFolders.next();
+      else folder = folder.createFolder(folderName);
+    }
+
+    const file = folder.createFile(blob);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(e) {
+      // Jika kebijakan admin melarang sharing publik, abaikan agar proses simpan tetap lanjut
+      Logger.log('Gagal set sharing: ' + e.message);
+    }
+    return { success: true, url: file.getUrl() };
+  } catch (e) { return { success: false, message: 'Gagal Unggah: ' + e.message }; }
 }
