@@ -76,7 +76,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR, ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
@@ -1012,7 +1012,7 @@ function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy) {
     getSheet(CONFIG.SHEETS.ORDER).appendRow([id, noOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, new Date().toISOString(), '']);
     const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan]);
+      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
     });
     return { success: true, noOrder: noOrder };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1022,7 +1022,7 @@ function getOrderDetail(orderId) {
   try {
     const data = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]) === String(orderId)) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7] });
+      if (String(data[i][1]) === String(orderId)) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8]||'-', expDate:data[i][9]||'-' });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1104,12 +1104,48 @@ function importOrdersBulk(jsonString, createdBy) {
     for(let i=0; i<orders.length; i++) {
       const o = orders[i];
       const mappedItems = o.items.map(item => {
+        let stId = ''; let stNama = item.sku; let stSatuan = 'PCS'; let stBatch = item.batch || ''; let stExp = item.expDate || '';
+        const found = stData.find(s => s.sku === item.sku && (!item.batch || s.batch === item.batch));
+        if(found) { stId = found.id; stNama = found.nama; stSatuan = found.satuan; stBatch = found.batch; stExp = found.expDate; }
+        return { stockId: stId, sku: item.sku, nama: stNama, qty: item.qty, satuan: stSatuan, batch: stBatch, expDate: stExp };
+      });
+      addOrder(o.tanggal, o.pelanggan, o.alamat, o.keterangan, mappedItems, createdBy);
+      count++;
+    }
+    return { success: true, count };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function importInboundBulk(jsonString, createdBy) {
+  try {
+    const inbounds = JSON.parse(jsonString); let count = 0; const stData = getStock().data || [];
+    for(let i=0; i<inbounds.length; i++) {
+      const b = inbounds[i];
+      const mappedItems = b.items.map(item => {
         let stId = ''; let stNama = item.sku; let stSatuan = 'PCS';
         const found = stData.find(s => s.sku === item.sku);
         if(found) { stId = found.id; stNama = found.nama; stSatuan = found.satuan; }
-        return { stockId: stId, sku: item.sku, nama: stNama, qty: item.qty, satuan: stSatuan };
+        return { stockId: stId, sku: item.sku, nama: stNama, qty: item.qty, satuan: stSatuan, batch: item.batch||'', expDate: item.expDate||'' };
       });
-      addOrder(o.tanggal, o.pelanggan, o.alamat, o.keterangan, mappedItems, createdBy);
+      addSuratJalanMasuk(b.tanggal, b.supplier, b.keterangan, mappedItems, createdBy);
+      count++;
+    }
+    return { success: true, count };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function importReturBulk(jsonString, createdBy) {
+  try {
+    const returns = JSON.parse(jsonString); let count = 0; const stData = getStock().data || [];
+    for(let i=0; i<returns.length; i++) {
+      const r = returns[i];
+      const mappedItems = r.items.map(item => {
+        let stId = ''; let stNama = item.sku; let stSatuan = 'PCS';
+        const found = stData.find(s => s.sku === item.sku);
+        if(found) { stId = found.id; stNama = found.nama; stSatuan = found.satuan; }
+        return { stockId: stId, sku: item.sku, nama: stNama, qty: item.qty, satuan: stSatuan, batch: item.batch||'', expDate: item.expDate||'' };
+      });
+      addRetur(r.tanggal, r.sumber, r.alasan, r.keterangan, mappedItems, createdBy);
       count++;
     }
     return { success: true, count };
