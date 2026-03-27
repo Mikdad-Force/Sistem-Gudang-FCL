@@ -64,14 +64,14 @@ select option { background-color: var(--bg-panel) !important; color: var(--text-
 #app { display:none; }
 
 /* ---- SIDEBAR ---- */
-.sidebar { width: var(--sidebar-w); background: var(--bg-panel); border-right: 1px solid var(--border-color); display:flex; flex-direction:column; z-index:1045; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; }
+.sidebar { width: var(--sidebar-w); background: var(--bg-panel); border: none !important; box-shadow: none !important; display:flex; flex-direction:column; z-index:1045; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; }
 .sidebar.collapsed-desktop { margin-left: calc(-1 * var(--sidebar-w)); }
-.sidebar-header { padding: 24px 20px 20px; border-bottom: 1px solid var(--border-color); }
+.sidebar-header { padding: 24px 20px 20px; border-bottom: none; }
 .sidebar-brand { display:flex; align-items:center; gap:12px; }
 .sidebar-brand .brand-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--accent),#f97316); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
 .sidebar-brand h2 { font-family:'Outfit',sans-serif; font-size:17px; font-weight:800; letter-spacing:-0.3px; }
 .sidebar-brand span { font-size:11px; color:var(--text-muted); display:block; }
-.sidebar-user { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display:flex; align-items:center; gap:10px; }
+.sidebar-user { padding: 16px 20px; border-bottom: none; display:flex; align-items:center; gap:10px; }
 .user-avatar { width:34px; height:34px; background:var(--input-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-weight:700; }
 .user-info .uname { font-size:13px; font-weight:500; }
 .user-info .urole { font-size:11px; color:var(--text-muted); }
@@ -81,18 +81,43 @@ select option { background-color: var(--bg-panel) !important; color: var(--text-
 .nav-item:hover { background:var(--input-bg); color:var(--accent); }
 .nav-item.active { background:rgba(245, 158, 11, 0.08); color:var(--accent); border-left-color:var(--accent); }
 .nav-item .icon { font-size:16px; width:20px; text-align:center; }
-.sidebar-footer { padding:16px 20px; border-top:1px solid var(--border-color); }
+.sidebar-footer { padding:16px 20px; border-top:none; }
 .btn-logout { width:100%; padding:10px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); border-radius:8px; color:var(--red); font-size:13px; cursor:pointer; transition:background 0.15s; font-family:inherit; }
 .btn-logout:hover { background: rgba(239, 68, 68, 0.15); }
 
 /* ---- MAIN CONTENT ---- */
-.topbar { background:var(--bg-panel); border-bottom:1px solid var(--border-color); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar { background:var(--bg-panel); border: none !important; box-shadow: none !important; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
 .topbar-left { display:flex; align-items:center; gap:16px; }
 .btn-toggle { background:var(--input-bg); border:1px solid var(--border-color); border-radius:8px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; color:var(--text-main); font-size:18px; cursor:pointer; transition:all 0.2s; }
 .btn-toggle:hover { background:var(--border-color); color:var(--accent); }
 .topbar h3 { font-family:'Outfit',sans-serif; font-size:18px; font-weight:700; letter-spacing:-0.2px; margin:0; }
 .topbar-right { display:flex; align-items:center; gap:12px; }
 .badge { background:var(--accent); color: #000; font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+
+/* ---- NOTIFICATIONS ---- */
+.notif-wrapper { position: relative; }
+.notif-btn { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: var(--text-main); font-size: 18px; cursor: pointer; transition: all 0.2s; position: relative; }
+.notif-btn:hover { background: var(--border-color); color: var(--accent); }
+.notif-badge { position: absolute; top: -5px; right: -5px; background: var(--red); color: white; font-size: 10px; font-weight: 800; padding: 2px 5px; border-radius: 10px; min-width: 18px; height: 18px; display: none; align-items: center; justify-content: center; border: 2px solid var(--bg-panel); }
+.notif-dropdown { position: absolute; top: 100%; right: 0; margin-top: 12px; width: 320px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); display: none; z-index: 1000; overflow: hidden; animation: notifFadeIn 0.2s ease; }
+@keyframes notifFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.notif-dropdown.show { display: block; }
+.notif-header { padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
+.notif-header h5 { margin: 0; font-size: 14px; font-weight: 700; font-family: 'Outfit', sans-serif; }
+.notif-header .mark-read { font-size: 11px; color: var(--accent); cursor: pointer; font-weight: 600; }
+.notif-list { max-height: 380px; overflow-y: auto; scrollbar-width: none; }
+.notif-list::-webkit-scrollbar { display: none; }
+.notif-item { padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; gap: 12px; cursor: pointer; transition: background 0.2s; position: relative; }
+.notif-item:hover { background: var(--bg-panel-light); }
+.notif-item.unread { background: rgba(245, 158, 11, 0.03); }
+.notif-item.unread::before { content: ''; position: absolute; right: 12px; top: 12px; width: 8px; height: 8px; background: var(--teal); border-radius: 50%; }
+.notif-item-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; background: var(--input-bg); }
+.notif-item-content { flex: 1; }
+.notif-item-title { font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 2px; }
+.notif-item-text { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+.notif-item-time { font-size: 10px; color: var(--gray); margin-top: 4px; font-weight: 600; }
+.notif-footer { padding: 10px; text-align: center; border-top: 1px solid var(--border-color); background: rgba(255,255,255,0.02); }
+.notif-footer a { font-size: 12px; color: var(--accent); font-weight: 600; text-decoration: none; }
 .content { padding:28px; flex:1; }
 
 /* ---- CARDS & STATS ---- */
@@ -108,6 +133,13 @@ select option { background-color: var(--bg-panel) !important; color: var(--text-
 .stat-value { font-family:'Outfit',sans-serif; font-size:26px; font-weight:800; letter-spacing:-0.5px; color:var(--text-main); }
 .stat-value.green { color:var(--green); } .stat-value.amber { color:var(--accent); } .stat-value.teal { color:var(--teal); } .stat-value.red { color:var(--red); }
 .stat-icon { position:absolute; top:18px; right:18px; font-size:28px; opacity:0.3; }
+
+/* Menghilangkan semua garis di sisi paling atas */
+html, body, #app, main, .main, .sidebar, .topbar, .content, .card, .stat-card, .offcanvas-header, .sidebar-header, .sidebar-user, .sidebar-footer { 
+  border-top: none !important; 
+  border-bottom: none !important; 
+  box-shadow: none !important; 
+}
 
 /* ---- TABLE ---- */
 .table-wrap { overflow-x:auto; border-radius:12px; border: 1px solid var(--border-color); background: transparent; }
@@ -160,7 +192,8 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 .sop-title { font-family:'Outfit',sans-serif; font-size:15px; font-weight:700; margin-bottom:4px; letter-spacing:-0.1px; }
 .sop-cat { font-size:12px; color:var(--teal); background:#0ea5e918; padding:3px 10px; border-radius:10px; display:inline-block; font-weight:500; }
 .sop-body { margin-top:12px; font-size:14px; line-height:1.8; color:var(--light); display:none; white-space:pre-wrap; }
-#toast { position:fixed; bottom:24px; right:24px; z-index:3000; background:var(--navy3); border:1px solid var(--border-color); padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+#toast { position:fixed; bottom:24px; right:24px; z-index:3000; background:var(--navy3); border:1px solid var(--border-color); padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5); cursor: default; }
+#toast.clickable:hover { border-color: var(--accent); background: var(--bg-panel-light); }
 #toast.show { transform:translateY(0); opacity:1; }
 #toast.success { border-left:4px solid var(--green); }
 #toast.error { border-left:4px solid var(--red); }
@@ -360,14 +393,10 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
   td { border-bottom: 1px solid #ddd; color: #000 !important; }
   canvas { filter: invert(100%); max-width: 100%; height: auto !important; }
   #companyExpenseStats { grid-template-columns: 1fr 1fr 1fr !important; }
-  @media print {
-    .card { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
-    .table-wrap { overflow: visible !important; }
-    .print-only { display: block !important; }
-  }
   .print-only { display: none; text-align: center; margin-bottom: 20px; }
   .positive { color: #10b981; }
   .negative { color: #ef4444; }
+}
 </style>
 </head>
 <body>
@@ -394,8 +423,8 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 
 <div id="app" style="display:none;">
   <div class="d-flex flex-nowrap min-vh-100">
-    <aside class="sidebar offcanvas-md offcanvas-start border-end border-secondary" tabindex="-1" id="sidebar">
-      <div class="offcanvas-header d-md-none border-bottom border-secondary">
+    <aside class="sidebar offcanvas-md offcanvas-start" tabindex="-1" id="sidebar">
+      <div class="offcanvas-header d-md-none">
         <h5 class="offcanvas-title" style="font-family:'Outfit',sans-serif;">🏭 Gudang FCL</h5>
         <button type="button" class="btn-close btn-close-white" onclick="toggleSidebar()"></button>
       </div>
@@ -435,6 +464,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
         <div class="nav-item" onclick="showPage('lembur')"><span class="icon">⏱️</span> Pengajuan Lembur</div>
         <div class="nav-item" onclick="showPage('pengajuanAsset')"><span class="icon">📦</span> Pengajuan Asset</div>
         <div class="nav-item" onclick="showPage('organisasi')"><span class="icon">🏗️</span> Struktur Organisasi</div>
+        <div class="nav-item" onclick="openModal('modalChangePassword')"><span class="icon">🔑</span> Ganti Password</div>
         
         <div class="nav-section">Dokumentasi</div>
         <div class="nav-item" onclick="showPage('sop')"><span class="icon">📋</span> SOP Gudang</div>
@@ -468,7 +498,27 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
         <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch Theme" style="padding:8px 12px; font-size:16px;">
           <i class="bi bi-moon-stars" id="themeIcon"></i>
         </button>
-           <span id="approvalBadge" class="badge" style="background:var(--red); color:#fff; display:none; cursor:pointer;" onclick="showPage('dashboard')">0 Approval</span>
+           <div class="notif-wrapper">
+  <button class="notif-btn" id="notifBtn" onclick="toggleNotifDropdown()">
+    <i class="bi bi-bell"></i>
+    <span class="notif-badge" id="notifBadge">0</span>
+  </button>
+  <div class="notif-dropdown" id="notifDropdown">
+    <div class="notif-header">
+      <h5>Pemberitahuan</h5>
+      <span class="mark-read" onclick="markAllNotifRead()">Tandai dibaca</span>
+    </div>
+    <div class="notif-list" id="notifList">
+      <div style="padding:30px; text-align:center; color:var(--gray);">
+        <i class="bi bi-bell-slash" style="font-size:32px; opacity:0.3;"></i>
+        <p style="margin-top:10px; font-size:13px;">Belum ada pemberitahuan</p>
+      </div>
+    </div>
+    <div class="notif-footer">
+      <a href="#" onclick="showPage('dashboard'); toggleNotifDropdown(); return false;">Lihat Semua Aktivitas</a>
+    </div>
+  </div>
+</div>
            <span class="badge">FCL</span>
         </div>
       </div>
@@ -594,8 +644,22 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
           </div>
 
           <div class="card">
-            <div class="card-header"><h4>📝 Riwayat Laporan Pengerjaan Orderan</h4><button class="btn btn-primary" onclick="openModal('modalLaporanKerja')">+ Buat Laporan</button></div>
-            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Admin</th><th>Jam Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>KPI</th><th>Aksi</th></tr></thead><tbody id="tableLaporanKerja"></tbody></table></div>
+            <div class="card-header">
+              <h4>📝 Riwayat Laporan Kerja (Harian)</h4>
+              <div style="display:flex; gap:8px;">
+                <select id="filterLapDivisi" class="form-select" onchange="renderLaporanTable()" style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit; font-size:12px; height: 32px;">
+                  <option value="">Semua Divisi</option>
+                  <option value="Marketplace">🛒 Marketplace</option>
+                  <option value="Distributor">📦 Distributor</option>
+                  <option value="Inbound">📥 Inbound</option>
+                  <option value="Return">↩️ Return</option>
+                  <option value="KOL">🎥 KOL</option>
+                </select>
+                <button class="btn btn-primary" onclick="openLaporanKerjaModal()">+ Buat Laporan</button>
+              </div>
+            </div>
+            <p style="font-size:11px; color:var(--gray); padding: 0 20px 10px;">*Tabel menampilkan akumulasi data seluruh shift dan divisi per tanggal.</p>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Divisi/Pic</th><th>Jam Kerja</th><th>Lembur</th><th>PHL</th><th>Total Order/PO/Inb</th><th>Qty</th><th>KPI</th><th>Aksi</th></tr></thead><tbody id="tableLaporanKerja"></tbody></table></div>
           </div>
         </div>
 
@@ -952,12 +1016,14 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 
 <div class="modal-overlay" id="modalExpense"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalExpense')">✕</button><h3>💸 Tambah Expense</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="exTanggal"></div><div class="col-md mb-2"><label class="form-label">Perusahaan</label><select class="form-select" id="exPerusahaanSelect" onchange="toggleCustomPerusahaan()"><option value="FCL">FCL</option><option value="FCL(SBY)">FCL(SBY)</option><option value="MTC">MTC</option><option value="KAI">KAI</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="exPerusahaanCustom" placeholder="Ketik nama perusahaan..." style="display:none; margin-top:6px;"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kategori</label><select class="form-select" id="exKategoriSelect" onchange="toggleCustomKategori()"><option value="Petty Cash Pinkpick">Petty Cash Pinkpick</option><option value="Pettycash">Pettycash</option><option value="Asset">Asset</option><option value="Welfare">Welfare</option><option value="Shipping Fee">Shipping Fee</option><option value="Maintenance Fee">Maintenance Fee</option><option value="PHL">PHL</option><option value="Consumable">Consumable</option><option value="Accommodation">Accommodation</option><option value="Internet">Internet</option><option value="Electricity">Electricity</option><option value="Transportation Fee">Transportation Fee</option><option value="Furniture">Furniture</option><option value="Car Rental">Car Rental</option><option value="Warehouse Rental">Warehouse Rental</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="exKategoriCustom" placeholder="Ketik nama kategori..." style="display:none; margin-top:6px;"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="exKeterangan" placeholder="Keterangan pengeluaran"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal (Rp)</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="exNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Bank</label><input type="text" class="form-control" id="exBank" placeholder="Contoh: BCA, Mandiri"></div><div class="col-md mb-2"><label class="form-label">Nomor Rekening</label><input type="text" class="form-control" id="exRekening" placeholder="No Rekening"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalExpense')">Batal</button><button class="btn btn-primary" onclick="submitExpense()">💾 Simpan</button></div></div></div>
 
-<div class="modal-overlay" id="modalLaporanKerja"><div class="custom-modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Laporan</label><input type="date" class="form-control" id="lapTanggal" onchange="checkLaporanExisting()"></div><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lapDivisi"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option><option value="KOL">🎥 KOL</option><option value="Inbound">📥 Inbound</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Pelapor / Shift</label><input type="text" class="form-control" id="lapPic" placeholder="Contoh: Shift Pagi (Andi)"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Total Pekerja Utama</label><input type="number" class="form-control" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Admin</label><input type="number" class="form-control" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Orang Perbantuan (+)</label><input type="number" class="form-control" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Jam / Orang (Bantu)</label><input type="number" class="form-control" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Orang Pengurangan (-)</label><input type="number" class="form-control" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam / Orang (Kurang)</label><input type="number" class="form-control" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Pekerja Lembur</label><input type="number" class="form-control" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Lama Lembur (Jam)</label><input type="number" class="form-control" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div>
+<div class="modal-overlay" id="modalChangePassword"><div class="custom-modal" style="width:400px;"><button class="modal-close" onclick="closeModal('modalChangePassword')">✕</button><h3>🔑 Ganti Password</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Password Baru</label><input type="password" class="form-control" id="newPass" placeholder="Masukkan password baru"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Konfirmasi Password</label><input type="password" class="form-control" id="confirmPass" placeholder="Ulangi password baru"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalChangePassword')">Batal</button><button class="btn btn-primary" onclick="submitChangePassword()">💾 Simpan Password</button></div></div></div>
+
+<div class="modal-overlay" id="modalLaporanKerja"><div class="custom-modal" style="width: 780px;"><button class="modal-close" onclick="closeModal('modalLaporanKerja')">✕</button><h3>📝 Input Laporan Pengerjaan Orderan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Laporan</label><input type="date" class="form-control" id="lapTanggal" onchange="checkLaporanExisting()"></div><div class="col-md mb-2"><label class="form-label">Shift</label><select class="form-select" id="lapShift"><option value="Pagi">☀️ Shift Pagi</option><option value="Malam">🌙 Shift Malam</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lapDivisi" onchange="updateLapFields()"><option value="Marketplace">🛒 Marketplace</option><option value="Distributor">📦 Distributor</option><option value="Return">↩️ Return</option><option value="KOL">🎥 KOL</option><option value="Inbound">📥 Inbound</option></select></div><div class="col-md mb-2"><label class="form-label">Nama Pelapor (PIC)</label><input type="text" class="form-control" id="lapPic" placeholder="Contoh: Andi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Total Pekerja Utama</label><input type="number" class="form-control" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Admin</label><input type="number" class="form-control" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Total PHL</label><input type="number" class="form-control" id="lapPhl" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Jam Kerja PHL (Per Orang)</label><input type="number" class="form-control" id="lapJamPhl" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Orang Perbantuan (+)</label><input type="number" class="form-control" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Jam / Orang (Bantu)</label><input type="number" class="form-control" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Orang Pengurangan (-)</label><input type="number" class="form-control" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam / Orang (Kurang)</label><input type="number" class="form-control" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Total Pekerja Lembur</label><input type="number" class="form-control" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label class="form-label">Lama Lembur (Jam)</label><input type="number" class="form-control" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()"></div></div>
 <div id="lapLemburNamesWrap" style="display:none; background:var(--bg-panel); border:1px solid var(--accent); border-radius:10px; padding:15px; margin-bottom:15px;">
   <label class="form-label" style="color:var(--accent); font-weight:700;">👥 Pilih Nama Personil yang Lembur:</label>
-  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px; max-height:150px; overflow-y:auto; padding:10px; background:#00000033; border-radius:8px;" id="lapLemburStaffList"></div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:8px; max-height:150px; overflow-y:auto; padding:10px; background:#00000033; border-radius:8px;" id="lapStaffLemburList"></div>
 </div>
-<div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--teal)">Total Order Didapat</label><input type="number" class="form-control" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label style="color:var(--green)">KPI (Total Order / Total Jam Kerja)</label><input type="text" class="form-control" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" class="form-control" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (Org Bantu x Jam) - ( Jam ) + (Org Lembur x Jam)</span></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kendala Pekerjaan</label><textarea class="form-control" id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
+<div class="row mb-3" id="wrapLapOrder"><div class="col-md mb-2"><label id="labelLapOrder" style="color:var(--teal)">Total Order Didapat</label><input type="number" class="form-control" id="lapOrder" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3" id="wrapLapDistributor" style="display:none;"><div class="col-md mb-2"><label style="color:var(--teal)">Total PO</label><input type="number" class="form-control" id="lapPo" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label style="color:var(--teal)">Total Qty (Pcs)</label><input type="number" class="form-control" id="lapQty" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3" id="wrapLapInbound" style="display:none;"><div class="col-md mb-2"><label style="color:var(--teal)">Total Inbound (SJ)</label><input type="number" class="form-control" id="lapInbound" placeholder="0" min="0" oninput="calcJamKerja()"></div><div class="col-md mb-2"><label style="color:var(--teal)">Total Qty (Inbound)</label><input type="number" class="form-control" id="lapQtyInb" placeholder="0" min="0" oninput="calcJamKerja()"></div></div><div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--green)">KPI (Total Output / Total Jam Kerja)</label><input type="text" class="form-control" id="lapKPI" readonly placeholder="Otomatis" value="0"></div></div><div class="row mb-3"><div class="col-md mb-2"><label style="color:var(--accent)">Total Keseluruhan Jam Kerja</label><input type="text" class="form-control" id="lapTotalJam" readonly placeholder="Otomatis" value="0"><span style="font-size:11px;color:var(--gray);margin-top:4px;">*Rumus: ((Utama + Admin) x 8) + (PHL x Jam) + (Bantu x Jam) - ( Kurang x Jam ) + (Lembur x Jam)</span></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kendala Pekerjaan</label><textarea class="form-control" id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..." style="min-height: 80px;"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLaporanKerja')">Batal</button><button class="btn btn-primary" onclick="submitLaporanKerja()">💾 Simpan Laporan</button></div></div></div>
 <div class="modal-overlay" id="modalDetailLaporan"><div class="custom-modal" style="width: 520px;"><button class="modal-close" onclick="closeModal('modalDetailLaporan')">✕</button><h3 id="detailLapTitle">📋 Detail Laporan Kerja</h3><div id="detailLapContent" style="font-size:14px; line-height:1.8; color:var(--light);"></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailLaporan')">Tutup</button></div></div></div>
 
 <div class="modal-overlay" id="modalHandover"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button><h3>📦 Input Laporan Hand Over</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="hoTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text" class="form-control" id="hoPic" placeholder="Nama pengurus"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nomor Resi</label><input type="text" class="form-control" id="hoResi" placeholder="Masukkan nomor resi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Pengerjaan</label><input type="text" class="form-control" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Tambahan</label><input type="text" class="form-control" id="hoKeterangan" placeholder="Opsional..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitHandover()">💾 Simpan Laporan</button></div></div></div>
@@ -1223,6 +1289,56 @@ let karyawanData = []; let orderDataList = []; let stockData = []; let laporanKe
 let chartInstances = { mp: null, dist: null, ret: null }; 
 let expenseData = []; let usersData = []; let ijinDataAll = []; let lemburDataAll = []; let tugasData = [];
 
+// === NOTIFICATION SYSTEM ===
+let notifications = [];
+function toggleNotifDropdown() {
+  const drop = document.getElementById('notifDropdown');
+  if(!drop) return;
+  drop.classList.toggle('show');
+  if (drop.classList.contains('show')) renderNotifications();
+}
+window.addEventListener('click', e => {
+  const wrapper = document.querySelector('.notif-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    document.getElementById('notifDropdown')?.classList.remove('show');
+  }
+});
+function addNotification(title, text, type = 'info', page = 'dashboard', id = null) {
+  const exists = notifications.find(n => n.title === title && n.text === text);
+  if (exists) return;
+  const notif = { id: id || Date.now(), title, text, type, page, time: new Date(), unread: true };
+  notifications.unshift(notif);
+  if (notifications.length > 20) notifications.pop();
+  updateNotifBadge();
+}
+function updateNotifBadge() {
+  const unreadCount = notifications.filter(n => n.unread).length;
+  const badge = document.getElementById('notifBadge');
+  if(!badge) return;
+  if (unreadCount > 0) { badge.style.display = 'flex'; badge.textContent = unreadCount; }
+  else { badge.style.display = 'none'; }
+}
+function renderNotifications() {
+  const list = document.getElementById('notifList'); if (!list) return;
+  if (notifications.length === 0) { list.innerHTML = `<div style="padding:30px; text-align:center; color:var(--gray);"><i class="bi bi-bell-slash" style="font-size:32px; opacity:0.3;"></i><p style="margin-top:10px; font-size:13px;">Belum ada pemberitahuan</p></div>`; return; }
+  list.innerHTML = notifications.map(n => {
+    let icon = 'bi-info-circle', color = 'var(--accent)';
+    if (n.type === 'warning') { icon = 'bi-exclamation-triangle'; color = 'var(--orange)'; }
+    else if (n.type === 'danger') { icon = 'bi-exclamation-octagon'; color = 'var(--red)'; }
+    else if (n.type === 'success') { icon = 'bi-check-circle'; color = 'var(--green)'; }
+    return `<div class="notif-item ${n.unread ? 'unread' : ''}" onclick="clickNotif('${n.id}', '${n.page}')"><div class="notif-item-icon" style="color:${color}; background:${color}15;"><i class="bi ${icon}"></i></div><div class="notif-item-content"><div class="notif-item-title">${n.title}</div><div class="notif-item-text">${n.text}</div><div class="notif-item-time">${timeAgo(n.time)}</div></div></div>`;
+  }).join('');
+}
+function clickNotif(id, page) { const notif = notifications.find(n => n.id == id); if (notif) notif.unread = false; updateNotifBadge(); showPage(page); document.getElementById('notifDropdown')?.classList.remove('show'); }
+function markAllNotifRead() { notifications.forEach(n => n.unread = false); updateNotifBadge(); renderNotifications(); }
+function timeAgo(date) {
+  const s = Math.floor((new Date() - date) / 1000);
+  if (s < 60) return 'Baru saja';
+  const m = Math.floor(s / 60); if (m < 60) return m + 'm lalu';
+  const h = Math.floor(m / 60); if (h < 24) return h + 'j lalu';
+  return Math.floor(h / 24) + ' hari lalu';
+}
+
 // === UTILS ===
 const v = id => document.getElementById(id)?.value || '';
 const setVal = (id, val) => { if(document.getElementById(id)) document.getElementById(id).value = val; };
@@ -1232,7 +1348,25 @@ const formatRpInput = el => { let raw = el.value.replace(/[^\d]/g, ''); if(!raw)
 const getRpValue = id => { const raw = v(id); return parseFloat(raw.replace(/[^\d]/g, '')) || 0; };
 const formatRp = n => 'Rp ' + (parseFloat(n)||0).toLocaleString('id-ID');
 const formatDate = d => { if(!d) return '-'; try{const dt = new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;} };
-let toastTimer; const toast = (msg, type='success') => { const el=document.getElementById('toast'); el.textContent=(type==='success'?'✅ ':'❌ ')+msg; el.className='show '+type; clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className='',3000); };
+let toastTimer; 
+const toast = (msg, type='success', callback=null) => { 
+  const el=document.getElementById('toast'); 
+  if(!el) return;
+  el.textContent=(type==='success'?'✅ ':'❌ ')+msg; 
+  el.className='show '+type; 
+  if(callback) {
+    el.classList.add('clickable');
+    el.style.cursor = 'pointer';
+    el.onclick = () => { callback(); el.className=''; };
+  } else {
+    el.classList.remove('clickable');
+    el.style.cursor = 'default';
+    el.onclick = null;
+  }
+  clearTimeout(toastTimer); 
+  toastTimer=setTimeout(()=>el.className='', callback ? 6000 : 3000); 
+};
+
 const resetForm = ids => ids.forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
 function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -1257,6 +1391,25 @@ window.onload = function() {
     if(lp) lp.style.display = 'flex';
   }
 };
+
+function submitChangePassword() {
+  const p1 = v('newPass'), p2 = v('confirmPass');
+  if(!p1 || !p2) return toast('Lengkapi form', 'error');
+  if(p1 !== p2) return toast('Password tidak cocok', 'error');
+  if(p1.length < 5) return toast('Password minimal 5 karakter', 'error');
+  
+  const btn = document.querySelector('#modalChangePassword .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳ Memproses...';
+  
+  google.script.run.withSuccessHandler(res => {
+    btn.disabled = false; btn.textContent = '💾 Simpan Password';
+    if(res.success) {
+      toast('Password berhasil diganti');
+      closeModal('modalChangePassword');
+      resetForm(['newPass', 'confirmPass']);
+    } else toast(res.message, 'error');
+  }).changePassword(p1, currentUser.id);
+}
 
 function initApp() {
   document.getElementById('loadingScreen').style.display = 'none'; document.getElementById('loginPage').style.display = 'none';
@@ -1297,7 +1450,7 @@ function initApp() {
   if(typeof checkPendingApprovals === 'function') checkPendingApprovals(); 
   if(typeof loadUsersDropdown === 'function') loadUsersDropdown();
 }
-function checkPendingApprovals() { console.log("Checking pending approvals..."); }
+// checkPendingApprovals original implementation is below
 
 function setToday() {
   const t = new Date().toISOString().split('T')[0];
@@ -1343,7 +1496,7 @@ const pageLoaders = {
   karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan, 
   handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
   pengajuanAsset: loadAsset,
-  organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
+  organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, laporanKerja: loadLaporanKerja
 };
 
 function showPage(name) {
@@ -1397,7 +1550,9 @@ function checkPendingApprovals() {
         let status = d.status === 'Pending' ? 'Pending HR' : d.status;
         if (canApprove(status, currentUser.role)) {
            pendingCount++;
-           if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${tipe}</span></td><td><strong>${d.nama}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${tipe === 'Ijin' ? 'ijin' : tipe === 'Lembur' ? 'lembur' : 'pengajuanAsset'}')">Lihat</button></td></tr>`;
+           const page = tipe === 'Ijin' ? 'ijin' : (tipe === 'Lembur' ? 'lembur' : 'pengajuanAsset');
+           if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${tipe}</span></td><td><strong>${d.nama}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${page}')">Lihat</button></td></tr>`;
+           addNotification(`Approval ${tipe}`, `${d.nama} menunggu approval ${status}`, 'info', page);
         }
      };
      if (res.ijin && res.ijin.success) { ijinDataAll = res.ijin.data; ijinDataAll.forEach(d => processItem(d, 'Ijin')); }
@@ -1408,12 +1563,14 @@ function checkPendingApprovals() {
          if (d.status === 'Pending' && (currentUser.role === 'admin' || currentUser.role === 'Supervisor')) {
            pendingCount++;
            if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">Stock Opname</span></td><td><strong>${d.sku}</strong></td><td><span class="badge-pending">⏳ Pending</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('stockOpname')">Lihat</button></td></tr>`;
+           addNotification(`Approval Stock Opname`, `SKU ${d.sku} menunggu approval`, 'warning', 'stockOpname');
          }
        });
      }
-     const badge = document.getElementById('approvalBadge');
-     if (pendingCount > 0) { badge.style.display = 'inline-block'; badge.textContent = `${pendingCount} Approval`; document.getElementById('dashApprovalWrap').style.display = 'block'; } 
-     else { badge.style.display = 'none'; document.getElementById('dashApprovalWrap').style.display = 'none'; if(dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>'; }
+     if (pendingCount > 0) { 
+        document.getElementById('dashApprovalWrap').style.display = 'block'; 
+     } 
+     else { document.getElementById('dashApprovalWrap').style.display = 'none'; if(dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>'; }
   }).getPendingApprovals();
 }
 function processApproval(tipe, id, action) {
@@ -1903,26 +2060,122 @@ function submitOrg(){ const n=v('orgNama'), j=v('orgJabatan'), a=v('orgAtasan'),
 function delOrg(id){ if(confirm('Hapus anggota ini?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadOrg();}else toast(res.message,'error');}).deleteOrganisasi(id); }
 
 // === OPERASIONAL & LAPORAN KERJA ===
+function updateLapFields() {
+  const div = v('lapDivisi');
+  const wOrd = document.getElementById('wrapLapOrder');
+  const wDist = document.getElementById('wrapLapDistributor');
+  const wInb = document.getElementById('wrapLapInbound');
+  const labelOrd = document.getElementById('labelLapOrder');
+  
+  // Reset visibility
+  wOrd.style.display = 'none';
+  wDist.style.display = 'none';
+  wInb.style.display = 'none';
+  
+  if (div === 'Marketplace' || div === 'Return' || div === 'KOL') {
+    wOrd.style.display = 'block';
+    labelOrd.textContent = (div === 'Marketplace') ? 'Total Order Marketplace' : (div === 'Return' ? 'Total Order Return' : 'Total Order KOL');
+  } else if (div === 'Distributor') {
+    wDist.style.display = 'block';
+  } else if (div === 'Inbound') {
+    wInb.style.display = 'block';
+  }
+  calcJamKerja();
+}
+
 function calcJamKerja() {
-  const oU = parseInt(v('lapOrang'))||0, a = parseInt(v('lapAdmin'))||0, oB = parseInt(v('lapOrangBantu'))||0, jB = parseFloat(v('lapJamBantu'))||0;
-  const oK = parseInt(v('lapOrangKurang'))||0, jK = parseFloat(v('lapJamKurang'))||0, oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
-  const ord = parseInt(v('lapOrder'))||0, tot = ((oU+a)*8) + (oB*jB) - (jK) + (oL*jL);
-  setVal('lapTotalJam', tot>0?tot:0); setVal('lapKPI', tot>0?(ord/tot).toFixed(3):0);
+  const oU = parseInt(v('lapOrang'))||0, a = parseInt(v('lapAdmin'))||0, oPhl = parseInt(v('lapPhl'))||0, jPhl = parseFloat(v('lapJamPhl'))||0;
+  const oB = parseInt(v('lapOrangBantu'))||0, jB = parseFloat(v('lapJamBantu'))||0;
+  const oK = parseInt(v('lapOrangKurang'))||0, jK = parseFloat(v('lapJamKurang'))||0;
+  const oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
+  
+  const div = v('lapDivisi');
+  let output = 0;
+  if(div === 'Distributor') output = parseInt(v('lapPo')) || 0;
+  else if(div === 'Inbound') output = parseInt(v('lapInbound')) || 0;
+  else output = parseInt(v('lapOrder')) || 0;
+
+  // Rumus: ((Utama + Admin) * 8) + (PHL * Jam) + (Bantu * Jam) - (Kurang * Jam) + (Lembur * Jam)
+  const tot = ((oU+a)*8) + (oPhl*jPhl) + (oB*jB) - (oK*jK) + (oL*jL);
+  setVal('lapTotalJam', tot>0?tot:0); 
+  
+  const kpiInput = document.getElementById('lapKPI');
+  if (div === 'Inbound' || div === 'Return' || div === 'KOL') {
+    setVal('lapKPI', '-');
+    if(kpiInput) kpiInput.style.opacity = '0.3';
+  } else {
+    setVal('lapKPI', tot>0?(output/tot).toFixed(3):0);
+    if(kpiInput) kpiInput.style.opacity = '1';
+  }
   
   const lWrap = document.getElementById('lapLemburNamesWrap');
   if(oL > 0) {
     lWrap.style.display='block';
-    if(!document.getElementById('lapLemburStaffList').children.length) populateLemburStaffList();
+    populateLemburStaffList();
   } else {
     lWrap.style.display='none';
   }
 }
+function openLaporanKerjaModal() {
+  // Reset fields
+  resetForm(['lapOrang','lapAdmin','lapPhl','lapJamPhl', 'lapOrangBantu', 'lapJamBantu', 'lapOrangKurang', 'lapJamKurang', 'lapOrangLembur', 'lapLembur', 'lapOrder', 'lapPo', 'lapQty', 'lapInbound', 'lapQtyInb', 'lapKendala']);
+  setVal('lapTotalJam', 0);
+  setVal('lapKPI', 0);
+  setVal('lapPic', currentUser ? currentUser.nama : '');
+  setVal('lapTanggal', new Date().toISOString().split('T')[0]);
+  
+  // Ensure staff list is populated immediately
+  populateLemburStaffList();
+  
+  // Hide lembur wrap initially
+  document.getElementById('lapLemburNamesWrap').style.display = 'none';
+  
+  // Uncheck all checkboxes
+  document.querySelectorAll('input[name="staffLembur"]').forEach(cb => cb.checked = false);
+  
+  updateLapFields();
+  openModal('modalLaporanKerja');
+}
+
 function populateLemburStaffList() {
-  const cont = document.getElementById('lapLemburStaffList'); cont.innerHTML='';
-  karyawanData.sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(k => {
-    cont.innerHTML += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--white);">
-      <input type="checkbox" name="staffLembur" value="${k.nama}" onchange="syncLemburCount()" style="accent-color:var(--accent);"> ${k.nama}
-    </label>`;
+  const cont = document.getElementById('lapStaffLemburList'); 
+  if (!cont) return;
+  
+  if (!karyawanData || karyawanData.length === 0) {
+    cont.innerHTML = '<div style="color:var(--gray); grid-column: 1/-1; text-align:center; padding:10px;">⏳ Memuat data karyawan...</div>';
+    google.script.run.withSuccessHandler(res => {
+      if (res.success) {
+        karyawanData = res.data;
+        populateLemburStaffList();
+      }
+    }).getKaryawan();
+    return;
+  }
+
+  // Group by Level/Jabatan for "langsung muncul semua level"
+  const grouped = {};
+  karyawanData.forEach(k => {
+    const level = k.jabatan || 'Lainnya';
+    if (!grouped[level]) grouped[level] = [];
+    grouped[level].push(k);
+  });
+
+  cont.innerHTML = '';
+  // Sort levels alphabetically or by importance if needed
+  Object.keys(grouped).sort().forEach(level => {
+    // Label for the level
+    const levelHeader = document.createElement('div');
+    levelHeader.style.cssText = 'grid-column: 1/-1; margin-top:10px; padding-bottom:4px; border-bottom:1px solid #ffffff10; color:var(--accent); font-size:11px; font-weight:800; text-transform:uppercase;';
+    levelHeader.textContent = level;
+    cont.appendChild(levelHeader);
+
+    // Employees in this level
+    grouped[level].sort((a,b) => a.nama.localeCompare(b.nama)).forEach(k => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--white); padding:4px 0;';
+      label.innerHTML = `<input type="checkbox" name="staffLembur" value="${k.nama}" onchange="syncLemburCount()" style="accent-color:var(--accent);"> ${k.nama}`;
+      cont.appendChild(label);
+    });
   });
 }
 function syncLemburCount() {
@@ -1931,19 +2184,124 @@ function syncLemburCount() {
   calcJamKerja();
 }
 function loadLaporanKerja() {
+  // Ensure karyawanData is loaded for overtime selection
+  if (!karyawanData || karyawanData.length === 0) {
+    google.script.run.withSuccessHandler(res => { if(res.success) karyawanData = res.data; }).getKaryawan();
+  }
+  
   google.script.run.withSuccessHandler(res => {
-    laporanKerjaData = res.data || []; const tb = document.getElementById('tableLaporanKerja'); tb.innerHTML='';
-    if (!res.success || !res.data.length) { 
-      tb.innerHTML='<tr><td colspan="11" class="empty-state">Belum ada laporan</td></tr>';
-      document.getElementById('lapLemburSummaryList').innerHTML = '<div style="color:var(--gray)">Tidak ada data lembur</div>';
-      return; 
-    }
-    res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d => {
-      let ic='🛒', co='var(--accent)'; if(d.divisi==='Distributor'){ic='📦';co='var(--teal)';} if(d.divisi==='Return'){ic='↩️';co='var(--red)';}
-      tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong style="color:${co}">${ic} ${d.divisi}</strong></td><td>${d.pic||'-'}</td><td align="center">${d.totalOrang}</td><td align="center">${d.totalAdmin||0}</td><td align="center"><span style="color:var(--green)">+${d.perbantuan}</span> / <span style="color:var(--red)">-${d.pengurangan}</span></td><td align="center" style="color:var(--accent)">${d.jamLembur} Jam</td><td align="center"><strong>${d.totalJamKerja} Jam</strong></td><td align="center" style="color:var(--teal)"><strong>${(d.totalOrder||0).toLocaleString('id-ID')}</strong></td><td align="center" style="color:var(--green)"><strong>${d.totalJamKerja>0?((d.totalOrder||0)/d.totalJamKerja).toFixed(3):0}</strong></td><td><button class="btn btn-ghost btn-sm" onclick="showDetailLaporan('${d.id}')">📋</button> <button class="btn btn-danger btn-sm" onclick="delLaporanKerja('${d.id}')">🗑️</button></td></tr>`;
-    });
-    renderLemburSummaryDashboard();
+    laporanKerjaData = res.data || []; renderLaporanTable(); renderLemburSummaryDashboard();
   }).getLaporanKerja();
+}
+
+function renderLaporanTable() {
+  const tb = document.getElementById('tableLaporanKerja'); tb.innerHTML='';
+  if (!laporanKerjaData.length) { 
+    tb.innerHTML='<tr><td colspan="11" class="empty-state">Belum ada laporan</td></tr>';
+    document.getElementById('lapLemburSummaryList').innerHTML = '<div style="color:var(--gray)">Tidak ada data lembur harian</div>';
+    return; 
+  }
+
+  const grouped = {};
+  const filterDiv = document.getElementById('filterLapDivisi')?.value;
+  
+  laporanKerjaData.forEach(d => {
+    if (filterDiv && d.divisi !== filterDiv) return;
+    const t = d.tanggal;
+    if (!grouped[t]) {
+      grouped[t] = {
+        tanggal: t,
+        divisi: new Set(),
+        pic: new Set(),
+        totalJamKerja: 0,
+        jamLembur: 0,
+        totalPHL: 0,
+        totalOrder: 0,
+        totalPO: 0,
+        totalInbound: 0,
+        totalQty: 0,
+        ids: []
+      };
+    }
+    const g = grouped[t];
+    g.divisi.add(d.divisi);
+    g.pic.add(d.pic);
+    g.totalJamKerja += (d.totalJamKerja || 0);
+    g.jamLembur += (d.jamLembur || 0);
+    g.totalPHL += (d.totalPHL || 0);
+    g.totalOrder += (d.totalOrder || 0);
+    g.totalPO += (d.totalPO || 0);
+    g.totalInbound += (d.totalInbound || 0);
+    g.totalQty += (d.totalQty || (d.totalQtyInb || 0) || 0);
+    g.ids.push(d.id);
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
+  
+  sortedDates.forEach(t => {
+    const g = grouped[t];
+    const divList = Array.from(g.divisi);
+    const divStr = divList.join(', ');
+    const picStr = Array.from(g.pic).join(', ');
+    const totalOutput = g.totalOrder + g.totalPO + g.totalInbound;
+    
+    // Sembunyikan KPI jika semua divisi dalam grup adalah Inbound/Return/KOL
+    const hideKPI = divList.every(d => ['Inbound', 'Return', 'KOL'].includes(d));
+    const kpi = (g.totalJamKerja > 0 && !hideKPI) ? (totalOutput / g.totalJamKerja).toFixed(3) : '-';
+    
+    tb.innerHTML += `<tr>
+      <td>${formatDate(t)}</td>
+      <td>
+        <div style="font-weight:700; color:var(--accent);">${divStr}</div>
+        <div style="font-size:11px; color:var(--text-muted);">${picStr}</div>
+      </td>
+      <td align="center"><strong>${g.totalJamKerja.toFixed(1)}</strong></td>
+      <td align="center" style="color:var(--orange)">${g.jamLembur.toFixed(1)}</td>
+      <td align="center">${g.totalPHL} Org</td>
+      <td align="center">
+        <div style="color:var(--teal); font-weight:700;">${totalOutput.toLocaleString('id-ID')}</div>
+        <div style="font-size:10px; color:var(--gray)">${g.totalOrder>0?'Ord:'+g.totalOrder:''} ${g.totalPO>0?'PO:'+g.totalPO:''} ${g.totalInbound>0?'Inb:'+g.totalInbound:''}</div>
+      </td>
+      <td align="center">${g.totalQty.toLocaleString('id-ID')}</td>
+      <td align="center"><span class="badge" style="background:var(--green)22; color:var(--green);">${kpi}</span></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="showDailyDetail('${t}')" title="Detail Harian">📋</button>
+      </td>
+    </tr>`;
+  });
+}
+
+function showDailyDetail(tanggal) {
+  const reports = laporanKerjaData.filter(d => d.tanggal === tanggal);
+  if(!reports.length) return;
+  
+  document.getElementById('detailLapTitle').textContent = `Laporan Harian - ${formatDate(tanggal)}`;
+  let html = `<div style="display:flex; flex-direction:column; gap:15px;">`;
+  
+  reports.forEach(r => {
+    html += `<div style="background:var(--navy2); padding:15px; border-radius:10px; border:1px solid #ffffff15;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <strong style="color:var(--accent)">${r.divisi} (${r.shift})</strong>
+        <small style="color:var(--gray)">PIC: ${r.pic}</small>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
+        <div>Pekerja: ${r.totalOrang} | Admin: ${r.totalAdmin||0}</div>
+        <div>PHL: ${r.totalPHL||0} | Lembur: ${r.jamLembur} Jam</div>
+        <div style="grid-column: span 2; border-top:1px solid #ffffff0a; padding-top:5px; margin-top:5px;">
+          Output: <b>${r.totalOrder || r.totalPO || r.totalInbound || 0}</b> 
+          ${!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja>0?((r.totalOrder || r.totalPO || r.totalInbound || 0)/r.totalJamKerja).toFixed(3):0}</b>` : ''}
+        </div>
+      </div>
+      ${r.kendala ? `<div style="margin-top:10px; font-size:11px; color:var(--amber); font-style:italic;">Kendala: ${r.kendala}</div>` : ''}
+      <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+         <button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:10px;" onclick="delLaporanKerja('${r.id}')">🗑️ Hapus Per Shift</button>
+      </div>
+    </div>`;
+  });
+  
+  html += `</div>`;
+  document.getElementById('detailLapContent').innerHTML = html;
+  openModal('modalDetailLaporan');
 }
 function renderLemburSummaryDashboard() {
   const sumList = document.getElementById('lapLemburSummaryList');
@@ -1973,32 +2331,34 @@ function renderLemburSummaryDashboard() {
   }
 }
 function submitLaporanKerja() {
-  const t = v('lapTanggal'), d = v('lapDivisi'), pic = v('lapPic');
-  const utama = v('lapOrang'), admin = v('lapAdmin');
+  const t = v('lapTanggal'), d = v('lapDivisi'), pic = v('lapPic'), shf = v('lapShift');
+  const utama = v('lapOrang'), admin = v('lapAdmin'), phl = v('lapPhl'), jPhl = v('lapJamPhl');
   const oB = parseInt(v('lapOrangBantu'))||0, jB = parseFloat(v('lapJamBantu'))||0;
   const oK = parseInt(v('lapOrangKurang'))||0, jK = parseFloat(v('lapJamKurang'))||0;
   const oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
-  const ord = v('lapOrder'), tot = v('lapTotalJam'); let ken = v('lapKendala');
+  
+  const ord = v('lapOrder'), po = v('lapPo'), qty = v('lapQty'), inb = v('lapInbound'), qtyInb = v('lapQtyInb');
+  const tot = v('lapTotalJam'); let ken = v('lapKendala');
   
   const selectedStaffArr = Array.from(document.querySelectorAll('input[name="staffLembur"]:checked')).map(el => el.value);
   const selectedStaff = selectedStaffArr.join(',');
   
-  const det = `[Bantu: ${oB}orgx${jB}j | Kurang: ${jK}j | Lembur: ${oL}orgx${jL}j]`;
-  ken = (ken ? ken + '\n' : '') + det;
+  const det = `[Bantu: ${oB}orgx${jB}j | Kurang: ${oK}orgx${jK}j | Lembur: ${oL}orgx${jL}j | Shift: ${shf} | PHL: ${phl}org]`;
+  const finalKen = (ken ? ken + '\n' : '') + det;
   
   if(!t||!pic) return toast('Lengkapi data', 'error');
   if(oL > 0 && selectedStaff === '') return toast('Pilih minimal 1 personil lembur', 'error');
   if(oL !== selectedStaffArr.length) return toast(`Jumlah Lembur (${oL}) tidak sesuai dengan jumlah nama yang diceklis (${selectedStaffArr.length})!`, 'error');
   
-  const btn = document.querySelector('#modalLaporanKerja .btn-primary'); btn.disabled=true; btn.textContent='⏳...';
+  const btn = document.querySelector('#modalLaporanKerja .btn-primary'); btn.disabled=true; btn.textContent='⏳ Memproses...';
   google.script.run.withSuccessHandler(res => { 
     btn.disabled=false;btn.textContent='💾 Simpan Laporan'; 
     if(res.success){
-      toast('Disimpan'); closeModal('modalLaporanKerja'); loadLaporanKerja(); loadDashboard();
-      // Clear checkboxes
+      toast('Laporan Berhasil Disimpan'); closeModal('modalLaporanKerja'); loadLaporanKerja(); loadDashboard();
+      resetForm(['lapPic','lapKendala','lapOrder','lapPo','lapQty','lapInbound','lapQtyInb']);
       document.querySelectorAll('input[name="staffLembur"]').forEach(c => c.checked = false);
-    } else toast(res.message,'error'); 
-  }).addLaporanKerja(t, d, pic, utama, oB*jB, jK, oL*jL, tot, ken, utama, admin, ord, currentUser.username, 0, selectedStaff);
+    } else toast(res.message, 'error'); 
+  }).addLaporanKerja(t, d, pic, utama, oB*jB, oK*jK, oL*jL, tot, finalKen, utama, admin, ord, currentUser.username, 0, selectedStaff, shf, phl, jPhl, po, qty, inb);
 }
 function checkLaporanExisting() {
   // Fungsi placeholder untuk menangani event onchange di input tanggal modal laporan kerja
@@ -2008,7 +2368,7 @@ function delLaporanKerja(id){ if(confirm('Hapus?')) google.script.run.withSucces
 function showDetailLaporan(id) {
   const d=laporanKerjaData.find(x=>x.id===id); if(!d)return;
   document.getElementById('detailLapTitle').textContent = `Laporan ${d.divisi} - ${formatDate(d.tanggal)}`;
-  document.getElementById('detailLapContent').innerHTML = `<b>PIC:</b> ${d.pic}<br><b>Pekerja Utama:</b> ${d.totalOrang} | <b>Admin:</b> ${d.totalAdmin||0}<br><b>Total Jam Kerja:</b> ${d.totalJamKerja} Jam<br><b>Total Order:</b> ${d.totalOrder} | <b>KPI:</b> ${d.totalJamKerja>0?(d.totalOrder/d.totalJamKerja).toFixed(3):0}<br><b>Kendala & Detail:</b><br><pre style="white-space:pre-wrap;background:#0f2040;padding:10px;border-radius:8px;border:1px solid #ffffff15;margin-top:5px;font-family:inherit;">${d.kendala||'-'}</pre>`;
+  document.getElementById('detailLapContent').innerHTML = `<b>PIC:</b> ${d.pic}<br><b>Pekerja Utama:</b> ${d.totalOrang} | <b>Admin:</b> ${d.totalAdmin||0}<br><b>Total Jam Kerja:</b> ${d.totalJamKerja} Jam<br><b>Total Order:</b> ${d.totalOrder} ${!['Inbound', 'Return', 'KOL'].includes(d.divisi) ? `| <b>KPI:</b> ${d.totalJamKerja>0?(d.totalOrder/d.totalJamKerja).toFixed(3):0}` : ''}<br><b>Kendala & Detail:</b><br><pre style="white-space:pre-wrap;background:#0f2040;padding:10px;border-radius:8px;border:1px solid #ffffff15;margin-top:5px;font-family:inherit;">${d.kendala||'-'}</pre>`;
   openModal('modalDetailLaporan');
 }
 
@@ -2034,7 +2394,11 @@ function filterGrafik() {
   const summary = { Marketplace:{rep:0,p:0,l:0,j:0,o:0}, Distributor:{rep:0,p:0,l:0,j:0,o:0}, Return:{rep:0,p:0,l:0,j:0,o:0}, KOL:{rep:0,p:0,l:0,j:0,o:0}, Inbound:{rep:0,p:0,l:0,j:0,o:0} };
   filtered.forEach(d=>{ if(summary[d.divisi]){ summary[d.divisi].rep++; summary[d.divisi].p+=(d.totalOrang+(d.totalAdmin||0)); summary[d.divisi].l+=d.jamLembur; summary[d.divisi].j+=d.totalJamKerja; summary[d.divisi].o+=(d.totalOrder||0); } });
   const tb = document.getElementById('tableRingkasanGrafik'); tb.innerHTML='';
-  Object.keys(summary).forEach(k => { const s=summary[k]; tb.innerHTML+=`<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep>0?Math.round(s.p/s.rep):0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${s.o.toLocaleString('id-ID')}</strong></td><td style="color:var(--green)"><strong>${s.j>0?(s.o/s.j).toFixed(3):0}</strong></td></tr>`; });
+  Object.keys(summary).forEach(k => { 
+    const s=summary[k]; 
+    const kpi = (s.j>0 && !['Inbound', 'Return', 'KOL'].includes(k)) ? (s.o/s.j).toFixed(3) : '-';
+    tb.innerHTML+=`<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep>0?Math.round(s.p/s.rep):0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${s.o.toLocaleString('id-ID')}</strong></td><td style="color:var(--green)"><strong>${kpi}</strong></td></tr>`; 
+  });
 }
 function createChart(id, instKey, labels, dOrd, dKpi, color) {
   const ctx = document.getElementById(id); if(chartInstances[instKey]) chartInstances[instKey].destroy();
@@ -2201,7 +2565,17 @@ function delUser(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler
 function doChangePass(){ const o=v('oldPass'), n=v('newPass'); if(!o||!n)return toast('Isi password','error'); google.script.run.withSuccessHandler(res=>{if(res.success){toast('Password diganti');resetForm(['oldPass','newPass']);}else toast(res.message,'error')}).changePassword(currentUser.username,o,n); }
 
 // === INVENTORY CORE (Stock, In/Out/Retur, Order) ===
-function loadStock() { google.script.run.withSuccessHandler(res=>{if(res.success){stockData=res.data; renderStock(stockData); updateStockStats();} }).getStock(); }
+function loadStock() { google.script.run.withSuccessHandler(res=>{
+  if(res.success){
+    stockData=res.data; renderStock(stockData); updateStockStats();
+    // Pemicu Notifikasi Stok Rendah
+    stockData.forEach(s => {
+      if(s.stok <= (s.stokMin || 0) && s.stokMin > 0) {
+        addNotification(`Stok Rendah!`, `${s.sku} - ${s.nama} sisa ${s.stok} ${s.satuan}`, 'danger', 'stock');
+      }
+    });
+  }
+}).getStock(); }
 function updateStockStats() {
   document.getElementById('statTotalSKU').textContent=stockData.length; document.getElementById('statTotalStok').textContent=stockData.reduce((s,d)=>s+d.stok,0);
   document.getElementById('statStokRendah').textContent=stockData.filter(d=>d.stok<=d.stokMin).length;
@@ -2800,6 +3174,24 @@ function handleUploadPacking() {
 function printOrderData(id) {
   showDetailOrder(id);
   setTimeout(() => { window.print(); }, 800);
+}
+
+// Global modal overrides & registrations
+const originalOpenModal = typeof openModal === 'function' ? openModal : (id) => { document.getElementById(id).style.display = 'flex'; };
+const originalCloseModal = typeof closeModal === 'function' ? closeModal : (id) => { document.getElementById(id).style.display = 'none'; };
+
+window.openModal = function(id) {
+  originalOpenModal(id);
+  if(id === 'modalLaporanKerja') updateLapFields();
+};
+
+window.closeModal = function(id) {
+  originalCloseModal(id);
+};
+
+// Ensure Laporan Kerja loader is registered if missed during previous edits
+if(typeof pageLoaders !== 'undefined' && !pageLoaders.laporanKerja) {
+  pageLoaders.laporanKerja = loadLaporanKerja;
 }
 </script>
 <!-- JS Script Imports -->
