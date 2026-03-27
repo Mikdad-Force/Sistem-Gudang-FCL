@@ -581,6 +581,18 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
         </div>
 
         <div class="page" id="page-laporanKerja">
+          <div class="stats-grid" style="grid-template-columns: 1fr; margin-bottom: 20px;">
+            <div class="stat-card" style="background: linear-gradient(135deg, var(--navy2), #0f2040); border: 1px solid var(--accent); min-height: 100px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div class="stat-label" style="color:var(--accent); font-weight:800; margin:0;">👥 Ringkasan Personil Lembur (Laporan Terbaru)</div>
+                <div id="lapCurrentDate" style="font-size:12px; color:var(--text-muted); font-weight:700;">-</div>
+              </div>
+              <div id="lapLemburSummaryList" style="display:flex; flex-wrap:wrap; gap:8px;">
+                <div style="font-size:13px; color:var(--gray); font-style:italic;">Memuat data personil...</div>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-header"><h4>📝 Riwayat Laporan Pengerjaan Orderan</h4><button class="btn btn-primary" onclick="openModal('modalLaporanKerja')">+ Buat Laporan</button></div>
             <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>Divisi</th><th>PIC</th><th>Pekerja</th><th>Admin</th><th>Jam Bantu/Kurang</th><th>Jam Lembur</th><th>Tot Jam</th><th>Tot Order</th><th>KPI</th><th>Aksi</th></tr></thead><tbody id="tableLaporanKerja"></tbody></table></div>
@@ -783,10 +795,13 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
             </div>
           </div>
 
-          <div class="card">
             <div class="card-header">
               <h4>⏱️ Pengajuan Lembur</h4>
-              <button class="btn btn-primary" onclick="openModal('modalLembur')">+ Ajukan Lembur</button>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-accent btn-sm" id="btnLemburKhusus" onclick="openLemburKhusus()" style="display:none;">✨ Lembur Khusus</button>
+                <button class="btn btn-ghost btn-sm" id="btnExportLembur" onclick="openModal('modalExportLembur')" style="display:none;">📤 Ekspor Excel</button>
+                <button class="btn btn-primary" onclick="openLemburNormal()">+ Ajukan Lembur</button>
+              </div>
             </div>
             <div class="table-wrap">
               <table class="table table-hover table-striped align-middle mt-2">
@@ -928,7 +943,9 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
   </div>
 </div>
 
-<!-- ===================== MODAL FORM ===================== -->
+<div class="modal-overlay" id="modalExportLembur"><div class="custom-modal" style="width:400px;"><button class="modal-close" onclick="closeModal('modalExportLembur')">✕</button><h3>📤 Ekspor Data Lembur</h3><p style="font-size:12px; color:var(--gray); margin-bottom:15px;">Pilih rentang tanggal untuk mengekspor data ke format Excel (CSV).</p><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Awal</label><input type="date" class="form-control" id="exLbStart"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Akhir</label><input type="date" class="form-control" id="exLbEnd"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalExportLembur')">Batal</button><button class="btn btn-primary" onclick="doExportLembur()">🚀 Ekspor Sekarang</button></div></div></div>
+
+<!-- ===================== MODAL USER ===================== -->
 <div class="modal-overlay" id="modalKasGudang"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalKasGudang')">✕</button><h3>💰 Tambah Transaksi Kas Gudang</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="kgTanggal"></div><div class="col-md mb-2"><label class="form-label">Tipe</label><select class="form-select" id="kgTipe"><option value="IN">📈 Kas Masuk (IN)</option><option value="OUT">📉 Kas Keluar (OUT)</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="kgKeterangan" placeholder="Deskripsi transaksi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="kgNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('kg','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('kg','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="kg-panel-upload"><div class="file-drop-zone" id="kg-dropzone"><input type="file" id="kgFile" accept="image/*,.pdf" onchange="handleFileSelect('kg',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="kg-preview"><span>📄</span><span class="file-preview-name" id="kg-fname">-</span><span class="file-preview-size" id="kg-fsize"></span><button class="file-remove" onclick="removeFile('kg')">✕</button></div><div class="upload-progress" id="kg-progress"><div class="upload-progress-bar" id="kg-pbar"></div></div></div><div class="file-tab-panel" id="kg-panel-url"><input type="url" id="kgBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKasGudang')">Batal</button><button class="btn btn-primary" id="btnSaveKg" onclick="submitKasGudang()">💾 Simpan</button></div></div></div>
 
 <div class="modal-overlay" id="modalTB"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalTB')">✕</button><h3>🤝 Input Team Building</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="tbTanggal"></div><div class="col-md mb-2"><label class="form-label">Tipe Transaksi</label><select class="form-select" id="tbTipe"><option value="Pengeluaran">📉 Pengeluaran</option><option value="Pemasukan">📈 Pemasukan</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Kegiatan</label><input type="text" class="form-control" id="tbKeterangan" placeholder="Nama / deskripsi kegiatan"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nominal</label><div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control" id="tbNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Bukti Invoice</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('tb','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('tb','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="tb-panel-upload"><div class="file-drop-zone" id="tb-dropzone"><input type="file" id="tbFile" accept="image/*,.pdf" onchange="handleFileSelect('tb',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="tb-preview"><span>📄</span><span class="file-preview-name" id="tb-fname">-</span><span class="file-preview-size" id="tb-fsize"></span><button class="file-remove" onclick="removeFile('tb')">✕</button></div><div class="upload-progress" id="tb-progress"><div class="upload-progress-bar" id="tb-pbar"></div></div></div><div class="file-tab-panel" id="tb-panel-url"><input type="url" id="tbBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalTB')">Batal</button><button class="btn btn-primary" id="btnSaveTb" onclick="submitTB()">💾 Simpan</button></div></div></div>
@@ -966,8 +983,44 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 <div class="modal-overlay" id="modalIjin"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalIjin')">✕</button><h3>✉️ Form Pengajuan Ijin / Cuti</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Mulai</label><input type="date" class="form-control" id="ijTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Karyawan</label><input type="text" class="form-control" id="ijNama" placeholder="Nama Lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jenis Ijin / Cuti</label><select class="form-select" id="ijJenis" onchange="toggleBuktiIjin()"><option value="Sakit (Dengan Surat Dokter)">Sakit (Dengan Surat Dokter)</option><option value="Ijin">Ijin</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Cuti Keluarga Meninggal">Cuti Keluarga Meninggal</option><option value="Cuti Keluarga Meninggal (1 Rumah)">Cuti Keluarga Meninggal (1 Rumah)</option><option value="Cuti Keguguran">Cuti Keguguran</option><option value="Cuti Melahirkan">Cuti Melahirkan</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Lengkap</label><input type="text" class="form-control" id="ijKeterangan" placeholder="Alasan dan lama hari..."></div></div><div class="form-row single" id="ijBuktiWrap"><div class="col-md mb-2"><label class="form-label">Surat Dokter / Bukti Pendukung</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ij','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ij','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="ij-panel-upload"><div class="file-drop-zone" id="ij-dropzone"><input type="file" id="ijFile" accept="image/*,.pdf" onchange="handleFileSelect('ij',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ij-preview"><span>📄</span><span class="file-preview-name" id="ij-fname">-</span><span class="file-preview-size" id="ij-fsize"></span><button class="file-remove" onclick="removeFile('ij')">✕</button></div><div class="upload-progress" id="ij-progress"><div class="upload-progress-bar" id="ij-pbar"></div></div></div><div class="file-tab-panel" id="ij-panel-url"><input type="url" id="ijBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalIjin')">Batal</button><button class="btn btn-primary" id="btnSaveIjin" onclick="submitIjin()">💾 Ajukan Ijin</button></div></div></div>
 <div class="modal-overlay" id="modalLembur"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalLembur')">✕</button><h3>⏱️ Form Pengajuan Lembur</h3>
 <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Lembur</label><input type="date" class="form-control" id="lbTanggal" onchange="updateLemburStaffSelect()"></div></div>
-<div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Pilih Nama Karyawan</label><select class="form-select" id="lbNama"><option value="">-- Pilih Tanggal Dulu --</option></select><div id="lbNamesInfo" style="font-size:11px; margin-top:4px; color:var(--red); display:none;">⚠️ Belum ada Laporan Kerja untuk tanggal ini.</div><div id="lbNamesOk" style="font-size:11px; margin-top:4px; color:var(--teal); display:none;">✅ Nama tersedia dari Laporan Kerja.</div></div></div>
-<div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam Mulai</label><input type="time" class="form-control" id="lbJamMulai" oninput="calcDurasiLembur()"></div><div class="col-md mb-2"><label class="form-label">Jam Selesai</label><input type="time" class="form-control" id="lbJamSelesai" oninput="calcDurasiLembur()"></div></div><div id="lbDurasiWrap" style="font-size:13px; color:var(--teal); margin-top:-8px; margin-bottom:12px; display:none; font-weight:600;">⏱️ Durasi Lembur: <span id="lbDurasiText" style="color:var(--accent);">0 Jam</span></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text" class="form-control" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
+<div class="row mb-3">
+  <div class="col-md mb-2"><label class="form-label">Nama Karyawan</label>
+    <input type="text" class="form-control" id="lbNama" readonly style="background:#0ea5e910; font-weight:700; color:var(--accent);">
+    <div id="lbNamesInfo" style="font-size:11px; margin-top:4px; color:var(--red); display:none;">⚠️ Nama Anda tidak terdaftar di Laporan Kerja tanggal ini (Lembur tidak tersedia).</div>
+    <div id="lbNamesOk" style="font-size:11px; margin-top:4px; color:var(--teal); display:none;">✅ Nama terverifikasi dari Laporan Kerja.</div>
+  </div>
+</div>
+<div class="row mb-3">
+  <div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div>
+  <div class="col-md mb-2"><label class="form-label">Jumlah Jam Lembur</label>
+    <div class="input-group">
+      <input type="text" class="form-control" id="lbJumlahJam" readonly style="background:#0ea5e910; font-weight:700; color:var(--accent);">
+      <span class="input-group-text" style="background:transparent; border:1px solid #ffffff18; color:var(--gray);">Jam</span>
+    </div>
+    <div style="font-size:11px; color:var(--gray); margin-top:4px;">*Otomatis sesuai Laporan Kerja</div>
+  </div>
+</div>
+<div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text" class="form-control" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div>
+<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
+
+<div class="modal-overlay" id="modalLemburKhusus"><div class="custom-modal">
+  <button class="modal-close" onclick="closeModal('modalLemburKhusus')">✕</button>
+  <h3>✨ Form Pengajuan Lembur Khusus</h3>
+  <p style="font-size:12px; color:var(--gray); margin-bottom:15px;">*Gunakan form ini untuk input lembur manual tanpa validasi Laporan Kerja.</p>
+  <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Lembur (Custom)</label><input type="date" class="form-control" id="lbKTanggal"></div></div>
+  <div class="row mb-3">
+    <div class="col-md mb-2"><label class="form-label">Nama Karyawan (Pilih/Ketik)</label>
+      <input type="text" class="form-control" id="lbKNama" placeholder="Ketik nama karyawan..." list="listSaranKaryawan">
+      <datalist id="listSaranKaryawan"></datalist>
+    </div>
+  </div>
+  <div class="row mb-3">
+    <div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lbKDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div>
+    <div class="col-md mb-2"><label class="form-label">Jumlah Jam Lembur</label><div class="input-group"><input type="number" step="0.5" class="form-control" id="lbKJumlahJam" placeholder="0.0"><span class="input-group-text" style="background:transparent; border:1px solid #ffffff18; color:var(--gray);">Jam</span></div></div>
+  </div>
+  <div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text" class="form-control" id="lbKKeterangan" placeholder="Alasan lembur khusus..."></div></div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLemburKhusus')">Batal</button><button class="btn btn-accent" onclick="submitLemburKhusus()">💾 Simpan Lembur Khusus</button></div>
+</div></div>
 
 <!-- MODAL PENGAJUAN ASSET -->
 <div class="modal-overlay" id="modalAsset"><div class="custom-modal" style="width:580px">
@@ -1184,14 +1237,24 @@ const resetForm = ids => ids.forEach(id => { const el=document.getElementById(id
 function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 window.onload = function() {
-  const saved = sessionStorage.getItem('wfcl_user');
-  if (saved) { 
-    currentUser = JSON.parse(saved); 
-    initApp(); 
-  } else { 
-    document.getElementById('loadingScreen').style.display = 'none'; 
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('loginPage').style.display = 'flex'; 
+  const ls = document.getElementById('loadingScreen');
+  const lp = document.getElementById('loginPage');
+  const ap = document.getElementById('app');
+  
+  try {
+    const saved = sessionStorage.getItem('wfcl_user');
+    if (saved) { 
+      currentUser = JSON.parse(saved); 
+      initApp(); 
+    } else { 
+      if(ls) ls.style.display = 'none'; 
+      if(ap) ap.style.display = 'none';
+      if(lp) { lp.style.display = 'flex'; lp.style.zIndex = '9999'; }
+    }
+  } catch (e) {
+    console.error("Init Error:", e);
+    if(ls) ls.style.display = 'none';
+    if(lp) lp.style.display = 'flex';
   }
 };
 
@@ -1202,6 +1265,11 @@ function initApp() {
   document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '👑 Admin' : '👤 ' + currentUser.role;
   document.getElementById('userAvatar').textContent = currentUser.nama.charAt(0).toUpperCase();
   
+  if (currentUser.role === 'admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Vice Supervisor') {
+    const btnExp = document.getElementById('btnExportLembur');
+    if(btnExp) btnExp.style.display = 'inline-block';
+  }
+
   if (currentUser.role !== 'admin') {
     let allowedMenus = []; if(currentUser.permissions) { try { allowedMenus = JSON.parse(currentUser.permissions); } catch(e){} }
     let firstAllowedPage = null;
@@ -1216,17 +1284,32 @@ function initApp() {
     });
     if (firstAllowedPage) showPage(firstAllowedPage); else document.querySelector('.content').innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><div style="font-size:40px; margin-bottom:10px;">⛔</div>Anda belum memiliki akses menu.<br>Silakan hubungi Administrator.</div>';
   } else { document.getElementById('navAdmin').style.display = 'block'; document.getElementById('navUsers').style.display = 'flex'; showPage('dashboard'); }
-  setToday(); checkPendingApprovals(); loadUsersDropdown();
+  setToday(); 
+  updateLemburStaffSelect(); 
+  
+  // Visibilitas tombol khusus pimpinan
+  const isPimpinanLembur = (currentUser.role === 'admin' || currentUser.role === 'Supervisor' || currentUser.role === 'Vice Supervisor');
+  const btnK = document.getElementById('btnLemburKhusus');
+  if(btnK) btnK.style.display = isPimpinanLembur ? 'block' : 'none';
+  const btnE = document.getElementById('btnExportLembur');
+  if(btnE) btnE.style.display = (isPimpinanLembur || currentUser.role === 'HR') ? 'block' : 'none';
+
+  if(typeof checkPendingApprovals === 'function') checkPendingApprovals(); 
+  if(typeof loadUsersDropdown === 'function') loadUsersDropdown();
 }
+function checkPendingApprovals() { console.log("Checking pending approvals..."); }
 
 function setToday() {
   const t = new Date().toISOString().split('T')[0];
   ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal','ijTanggal','lbTanggal','exTanggal','tpTanggalMulai','assetTanggal','soTanggal','plTanggal'].forEach(id => setVal(id, t));
   if(currentUser) {
-    ['ijNama','assetNama','lbNama'].forEach(id => {
+    const isAdminOrHR = (currentUser.role === 'admin' || currentUser.role === 'HR' || currentUser.role === 'Supervisor' || currentUser.role === 'Vice Supervisor');
+    ['ijNama','assetNama'].forEach(id => {
       const el = document.getElementById(id);
       if(el) { el.value = currentUser.nama; el.readOnly = true; el.style.background = 'var(--input-bg)'; el.style.opacity = '0.7'; }
     });
+    const lbN = document.getElementById('lbNama');
+    if(lbN && !isAdminOrHR) { lbN.disabled = true; lbN.style.opacity = '0.7'; }
   }
   setVal('filterBulanExpense', (new Date().getMonth()+1).toString()); setVal('filterBulanGrafik', t.substring(0,7));
   setVal('filterMonthOpname', t.substring(0,7));
@@ -1570,13 +1653,15 @@ function submitIjin(){
 function delIjin(id){ if(confirm('Batalkan pengajuan?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dibatalkan');loadIjin();}else toast(res.message,'error');}).deleteIjin(id); }
 
 function loadLembur(){ 
+  const isPimpinan = (currentUser.role === 'admin' || currentUser.role === 'HR' || currentUser.role === 'Supervisor' || currentUser.role === 'Vice Supervisor');
+  if(!karyawanData.length && isPimpinan) loadKaryawan();
   google.script.run.withSuccessHandler(resLembur => {
-    if(resLembur.success) lemburDataAll = resLembur.data;
-    google.script.run.withSuccessHandler(resLap => {
-      laporanKerjaData = resLap.data || [];
-      renderLemburTable();
-      renderLemburValidation();
-    }).getLaporanKerja();
+      if(resLembur.success) lemburDataAll = resLembur.data;
+      google.script.run.withSuccessHandler(resLap => {
+          laporanKerjaData = resLap.data || [];
+          renderLemburTable();
+          renderLemburValidation();
+      }).getLaporanKerja();
   }).getLembur();
 }
 function renderLemburTable() {
@@ -1584,7 +1669,7 @@ function renderLemburTable() {
   if(!lemburDataAll.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;}
   lemburDataAll.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{
     const stsCls = d.status==='Disetujui'?'badge-approved':d.status==='Ditolak'?'badge-rejected':'badge-pending';
-    tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td>${d.divisi}</td><td><span style="color:var(--accent);font-weight:700">${d.jamMulai} - ${d.jamSelesai}</span></td><td>${d.keterangan}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`:''}</td></tr>`;
+    tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong>${d.nama}</strong></td><td>${d.divisi}</td><td><span style="color:var(--accent);font-weight:700">⌛ ${d.jumlahJam} Jam</span></td><td>${d.keterangan}</td><td><span class="${stsCls}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button> ${currentUser.username===d.createdBy&&d.status==='Pending HR'?`<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`:''}</td></tr>`;
   });
 }
 function renderLemburValidation() {
@@ -1618,58 +1703,125 @@ function renderLemburValidation() {
     vMissingWrap.style.display='none';
   }
 }
-function calcDurasiLembur(){ const m=v('lbJamMulai'), s=v('lbJamSelesai'); const w=document.getElementById('lbDurasiWrap'), t=document.getElementById('lbDurasiText'); if(m&&s){ const dm=new Date(`2000/01/01 ${m}`), ds=new Date(`2000/01/01 ${s}`); let dHrs = (ds-dm)/3600000; if(dHrs<0) dHrs+=24; w.style.display='block'; t.textContent=`${dHrs.toFixed(1)} Jam`; } else w.style.display='none'; }
-
 function updateLemburStaffSelect() {
   const t = v('lbTanggal');
-  const sel = document.getElementById('lbNama');
+  const inp = document.getElementById('lbNama');
   const info = document.getElementById('lbNamesInfo');
   const ok = document.getElementById('lbNamesOk');
-  sel.innerHTML = '<option value="">-- Pilih Nama --</option>';
-  info.style.display = 'none'; ok.style.display = 'none';
   
+  if(!inp) return;
+  const myName = currentUser?.nama || '';
+  inp.value = myName; 
+  
+  info.style.display = 'none'; ok.style.display = 'none';
   if(!t) return;
   
   const lapForDate = laporanKerjaData.filter(d => d.tanggal === t);
   let names = [];
   lapForDate.forEach(l => { if(l.staffLemburNames) names = [...names, ...l.staffLemburNames.split(',')]; });
-  names = [...new Set(names)].filter(n => n.trim() !== '');
+  names = [...new Set(names)].map(n => n.trim().toLowerCase());
   
-  if(!names.length) {
+  if(!names.includes(myName.toLowerCase())) {
     info.style.display = 'block';
-    sel.innerHTML = '<option value="">-- Tidak ada riwayat lembur --</option>';
+    setVal('lbJumlahJam', '0');
   } else {
     ok.style.display = 'block';
-    names.forEach(n => {
-      const isMe = (n === currentUser.nama);
-      sel.innerHTML += `<option value="${n}" ${isMe ? 'selected' : ''}>${n}${isMe ? ' (Saya)' : ''}</option>`;
-    });
-    
-    // Jika bukan Admin/HR, kunci pilihan ke nama miliknya sendiri
-    if (currentUser.role !== 'admin' && currentUser.role !== 'HR') {
-      if (!names.includes(currentUser.nama)) {
-         sel.innerHTML = `<option value="">-- Nama Anda Tidak Terdaftar --</option>`;
-         ok.style.display = 'none'; info.style.display = 'block';
-         info.textContent = '❌ Nama Anda tidak tercatat lembur di Laporan Kerja hari ini.';
-      } else {
-         sel.value = currentUser.nama;
-         sel.disabled = true; // Kunci agar tidak bisa pilih orang lain
-      }
-    } else {
-      sel.disabled = false; // Admin/HR bebas pilih
-    }
+    syncJamLemburDariLaporan();
   }
 }
 
-function submitLembur(){
-  const t=v('lbTanggal'), n=document.getElementById('lbNama').value, d=v('lbDivisi'), jm=v('lbJamMulai'), js=v('lbJamSelesai'), k=v('lbKeterangan');
-  if(!t||!n||!jm||!js||!k) return toast('Lengkapi data', 'error');
+function openLemburNormal() {
+  setToday(); // Pastikan tanggal kembali ke hari ini
+  openModal('modalLembur');
+  updateLemburStaffSelect(); // Triger otomasi field
+}
+
+function openLemburKhusus() {
+  setVal('lbKTanggal', new Date().toISOString().split('T')[0]);
+  setVal('lbKNama', '');
+  setVal('lbKJumlahJam', '');
+  setVal('lbKKeterangan', '');
   
-  // Strict Validation: Cross-check again with Laporan Kerja
-  const lapForDate = laporanKerjaData.filter(x => x.tanggal === t);
-  let names = [];
-  lapForDate.forEach(l => { if(l.staffLemburNames) names = [...names, ...l.staffLemburNames.split(',')]; });
-  if(!names.includes(n)) return toast('Nama tidak terdaftar dalam Laporan Kerja tanggal tersebut!', 'error');
+  // Populasi saran karyawan
+  const list = document.getElementById('listSaranKaryawan');
+  if(list) {
+    list.innerHTML = '';
+    karyawanData.sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(k => {
+      list.innerHTML += `<option value="${k.nama}">`;
+    });
+  }
+  openModal('modalLemburKhusus');
+}
+
+function submitLemburKhusus() {
+  const t = v('lbKTanggal'), n = v('lbKNama'), d = v('lbKDivisi'), j = v('lbKJumlahJam'), k = v('lbKKeterangan');
+  if(!t || !n || !j) return toast('Lengkapi Tanggal, Nama, dan Jam', 'error');
+  
+  const btn = document.querySelector('#modalLemburKhusus .btn-accent');
+  btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+  
+  google.script.run.withSuccessHandler(res => {
+    btn.disabled = false; btn.textContent = '💾 Simpan Lembur Khusus';
+    if(res.success) {
+      toast('Lembur Khusus Berhasil Diajukan!');
+      closeModal('modalLemburKhusus');
+      loadLembur();
+    } else {
+      toast(res.message, 'error');
+    }
+  }).addLembur(t, n, d, j, k, currentUser.username);
+}
+
+function syncJamLemburDariLaporan() {
+  const t = v('lbTanggal');
+  const nama = v('lbNama');
+  const out = document.getElementById('lbJumlahJam');
+  if(!out) return;
+  out.value = '0';
+  
+  const myRole = currentUser?.role || 'user';
+  if (myRole === 'admin' || myRole === 'HR' || myRole === 'Supervisor' || myRole === 'Vice Supervisor') {
+    out.readOnly = false;
+    out.style.background = 'rgba(14, 165, 233, 0.05)';
+  } else {
+    out.readOnly = true;
+    out.style.background = '#0ea5e910';
+  }
+
+  if(!t || !nama) return;
+  
+  const lapForDate = laporanKerjaData.filter(d => d.tanggal === t);
+  let jamFound = 0;
+  lapForDate.forEach(l => {
+    if(l.staffLemburNames) {
+      const names = l.staffLemburNames.split(',').map(x => x.trim().toLowerCase());
+      if(names.includes(nama.toLowerCase())) {
+        jamFound = l.jamLembur || 0;
+      }
+    }
+  });
+  out.value = jamFound;
+}
+
+function submitLembur(){
+  const t=v('lbTanggal'), n=v('lbNama'), d=v('lbDivisi'), jj=v('lbJumlahJam'), k=v('lbKeterangan');
+  if(!t||!n||!jj||!k) return toast('Lengkapi data', 'error');
+  
+  const myRole = currentUser?.role || 'user';
+  const isAdminOrHR = (myRole === 'admin' || myRole === 'HR' || myRole === 'Supervisor' || myRole === 'Vice Supervisor');
+
+  if (!isAdminOrHR) {
+    // Strict Validation hanya untuk user biasa
+    const lapForDate = laporanKerjaData.filter(x => x.tanggal === t);
+    let names = []; let jamLaporan = 0;
+    lapForDate.forEach(l => { 
+      if(l.staffLemburNames && l.staffLemburNames.split(',').includes(n)) {
+        names.push(n); jamLaporan = l.jamLembur || 0;
+      }
+    });
+    if(!names.includes(n)) return toast('Nama tidak terdaftar dalam Laporan Kerja tanggal tersebut!', 'error');
+    if(parseFloat(jj) !== parseFloat(jamLaporan)) return toast('Jumlah jam tidak sesuai dengan Laporan Kerja!', 'error');
+  }
   
   const btn=document.querySelector('#modalLembur .btn-primary'); 
   btn.disabled=true;btn.textContent='⏳...';
@@ -1678,8 +1830,35 @@ function submitLembur(){
   google.script.run.withSuccessHandler(res=>{ 
     btn.disabled=false;btn.textContent='💾 Ajukan Lembur'; 
     if(res.success){toast('Berhasil');closeModal('modalLembur');loadLembur();resetForm(['lbKeterangan']);}
-    else { toast(res.message,'error'); updateLemburStaffSelect(); } 
-  }).addLembur(t,n,d,jm,js,k,currentUser.username); 
+    else { toast(res.message, 'error'); updateLemburStaffSelect(); }
+  }).addLembur(t,n,d,jj,k,currentUser.username); 
+}
+
+function doExportLembur() {
+  const start = v('exLbStart');
+  const end = v('exLbEnd');
+  if(!start || !end) return toast('Pilih rentang tanggal!', 'warning');
+  
+  const rows = lemburDataAll || [];
+  const filtered = rows.filter(r => r.tanggal >= start && r.tanggal <= end);
+  
+  if(!filtered.length) return toast('Tidak ada data di rentang tanggal tersebut', 'info');
+  
+  let csv = 'Tanggal,Nama Karyawan,Divisi,Jumlah Jam,Keterangan,Status,Dibuat Oleh\n';
+  filtered.sort((a,b)=>new Date(a.tanggal)-new Date(b.tanggal)).forEach(r => {
+    csv += `"${r.tanggal}","${r.nama}","${r.divisi}","${r.jumlahJam}","${r.keterangan || ''}","${r.status}","${r.createdBy}"\n`;
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Laporan_Lembur_${start}_sd_${end}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  closeModal('modalExportLembur');
 }
 function delLembur(id){ if(confirm('Batalkan pengajuan?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dibatalkan');loadLembur();}else toast(res.message,'error');}).deleteLembur(id); }
 
@@ -1742,19 +1921,56 @@ function populateLemburStaffList() {
   const cont = document.getElementById('lapLemburStaffList'); cont.innerHTML='';
   karyawanData.sort((a,b)=>a.nama.localeCompare(b.nama)).forEach(k => {
     cont.innerHTML += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--white);">
-      <input type="checkbox" name="staffLembur" value="${k.nama}" style="accent-color:var(--accent);"> ${k.nama}
+      <input type="checkbox" name="staffLembur" value="${k.nama}" onchange="syncLemburCount()" style="accent-color:var(--accent);"> ${k.nama}
     </label>`;
   });
+}
+function syncLemburCount() {
+  const checked = document.querySelectorAll('input[name="staffLembur"]:checked').length;
+  setVal('lapOrangLembur', checked);
+  calcJamKerja();
 }
 function loadLaporanKerja() {
   google.script.run.withSuccessHandler(res => {
     laporanKerjaData = res.data || []; const tb = document.getElementById('tableLaporanKerja'); tb.innerHTML='';
-    if (!res.success || !res.data.length) { tb.innerHTML='<tr><td colspan="11" class="empty-state">Belum ada laporan</td></tr>'; return; }
+    if (!res.success || !res.data.length) { 
+      tb.innerHTML='<tr><td colspan="11" class="empty-state">Belum ada laporan</td></tr>';
+      document.getElementById('lapLemburSummaryList').innerHTML = '<div style="color:var(--gray)">Tidak ada data lembur</div>';
+      return; 
+    }
     res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d => {
       let ic='🛒', co='var(--accent)'; if(d.divisi==='Distributor'){ic='📦';co='var(--teal)';} if(d.divisi==='Return'){ic='↩️';co='var(--red)';}
       tb.innerHTML+=`<tr><td>${formatDate(d.tanggal)}</td><td><strong style="color:${co}">${ic} ${d.divisi}</strong></td><td>${d.pic||'-'}</td><td align="center">${d.totalOrang}</td><td align="center">${d.totalAdmin||0}</td><td align="center"><span style="color:var(--green)">+${d.perbantuan}</span> / <span style="color:var(--red)">-${d.pengurangan}</span></td><td align="center" style="color:var(--accent)">${d.jamLembur} Jam</td><td align="center"><strong>${d.totalJamKerja} Jam</strong></td><td align="center" style="color:var(--teal)"><strong>${(d.totalOrder||0).toLocaleString('id-ID')}</strong></td><td align="center" style="color:var(--green)"><strong>${d.totalJamKerja>0?((d.totalOrder||0)/d.totalJamKerja).toFixed(3):0}</strong></td><td><button class="btn btn-ghost btn-sm" onclick="showDetailLaporan('${d.id}')">📋</button> <button class="btn btn-danger btn-sm" onclick="delLaporanKerja('${d.id}')">🗑️</button></td></tr>`;
     });
+    renderLemburSummaryDashboard();
   }).getLaporanKerja();
+}
+function renderLemburSummaryDashboard() {
+  const sumList = document.getElementById('lapLemburSummaryList');
+  const dateInfo = document.getElementById('lapCurrentDate');
+  if(!laporanKerjaData.length) return;
+  
+  // Ambil tanggal terbaru dari laporan kerja
+  const latestDate = laporanKerjaData[0].tanggal;
+  dateInfo.textContent = formatDate(latestDate);
+  
+  const lapForDate = laporanKerjaData.filter(d => d.tanggal === latestDate);
+  let allNames = [];
+  lapForDate.forEach(l => {
+    if(l.staffLemburNames) {
+      allNames = [...allNames, ...l.staffLemburNames.split(',')];
+    }
+  });
+  
+  const uniqueNames = [...new Set(allNames)].filter(n => n.trim() !== '');
+  
+  if(!uniqueNames.length) {
+    sumList.innerHTML = '<div style="font-size:13px; color:var(--gray);">Tidak ada personil lembur yang tercatat pada laporan tanggal ini.</div>';
+  } else {
+    sumList.innerHTML = uniqueNames.sort().map(name => {
+      return `<div style="background:rgba(245,158,11,0.15); border:1px solid var(--accent); color:var(--accent); font-size:12px; font-weight:700; padding:6px 14px; border-radius:30px;">⚡ ${name.trim()}</div>`;
+    }).join('');
+  }
 }
 function submitLaporanKerja() {
   const t = v('lapTanggal'), d = v('lapDivisi'), pic = v('lapPic');
@@ -1764,13 +1980,15 @@ function submitLaporanKerja() {
   const oL = parseInt(v('lapOrangLembur'))||0, jL = parseFloat(v('lapLembur'))||0;
   const ord = v('lapOrder'), tot = v('lapTotalJam'); let ken = v('lapKendala');
   
-  const selectedStaff = Array.from(document.querySelectorAll('input[name="staffLembur"]:checked')).map(el => el.value).join(',');
+  const selectedStaffArr = Array.from(document.querySelectorAll('input[name="staffLembur"]:checked')).map(el => el.value);
+  const selectedStaff = selectedStaffArr.join(',');
   
   const det = `[Bantu: ${oB}orgx${jB}j | Kurang: ${jK}j | Lembur: ${oL}orgx${jL}j]`;
   ken = (ken ? ken + '\n' : '') + det;
   
   if(!t||!pic) return toast('Lengkapi data', 'error');
   if(oL > 0 && selectedStaff === '') return toast('Pilih minimal 1 personil lembur', 'error');
+  if(oL !== selectedStaffArr.length) return toast(`Jumlah Lembur (${oL}) tidak sesuai dengan jumlah nama yang diceklis (${selectedStaffArr.length})!`, 'error');
   
   const btn = document.querySelector('#modalLaporanKerja .btn-primary'); btn.disabled=true; btn.textContent='⏳...';
   google.script.run.withSuccessHandler(res => { 
