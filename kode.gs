@@ -69,7 +69,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.EXPENSE, ['id', 'tanggal', 'perusahaan', 'kategori', 'keterangan', 'nominal', 'bank', 'rekening', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti']);
   setupSheet(ss, CONFIG.SHEETS.IJIN, ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history']);
-  setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jamMulai', 'jamSelesai', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
+  setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jumlahJam', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
   setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames']);
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
@@ -453,30 +453,81 @@ function getLembur() {
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
         nama: data[i][2],
         divisi: data[i][3],
-        jamMulai: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], Session.getScriptTimeZone(), 'HH:mm') : String(data[i][4]),
-        jamSelesai: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'HH:mm') : String(data[i][5]),
-        keterangan: data[i][6],
-        status: data[i][7],
-        createdBy: data[i][8],
-        createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]),
-        history: data[i][10] || '[]'
+        jumlahJam: data[i][4],
+        keterangan: data[i][5],
+        status: data[i][6],
+        createdBy: data[i][7],
+        createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8]),
+        history: data[i][9] || '[]'
       });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function addLembur(tanggal, nama, divisi, jamMulai, jamSelesai, keterangan, createdBy) {
+function addLembur(tanggal, nama, divisi, jumlahJam, keterangan, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
     const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending HR', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, divisi, jamMulai, jamSelesai, keterangan, 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    sheet.appendRow([generateId(), tanggal, nama, divisi, jumlahJam, keterangan, 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    formatSheetLembur(); // Rapihkan setelah tambah
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
 function deleteLembur(id) { 
-  return deleteRow(CONFIG.SHEETS.LEMBUR, id); 
+  const res = deleteRow(CONFIG.SHEETS.LEMBUR, id);
+  if (res.success) formatSheetLembur(); // Rapihkan setelah hapus
+  return res;
+}
+
+function formatSheetLembur() {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.LEMBUR);
+    if (!sheet) return;
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow === 0) return;
+
+    // 1. Format Header
+    const headerRange = sheet.getRange(1, 1, 1, lastCol);
+    headerRange.setFontWeight('bold')
+               .setBackground('#1e293b')
+               .setFontColor('#ffffff')
+               .setHorizontalAlignment('center')
+               .setVerticalAlignment('middle');
+
+    // 2. Auto Resize Columns
+    for (let i = 1; i <= lastCol; i++) {
+      sheet.autoResizeColumn(i);
+    }
+
+    // 3. Border & Alignment untuk Data
+    if (lastRow > 1) {
+      const dataRange = sheet.getRange(2, 1, lastRow - 1, lastCol);
+      dataRange.setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+      dataRange.setVerticalAlignment('middle');
+      
+      // Tengah untuk kolom tertentu (ID, Tanggal, Jam, Status)
+      sheet.getRange(2, 1, lastRow - 1, 1).setHorizontalAlignment('center'); // ID
+      sheet.getRange(2, 2, lastRow - 1, 1).setHorizontalAlignment('center'); // Tanggal
+      sheet.getRange(2, 5, lastRow - 1, 1).setHorizontalAlignment('center'); // Jam
+      sheet.getRange(2, 7, lastRow - 1, 1).setHorizontalAlignment('center'); // Status
+    }
+
+    // 4. Aktifkan Filter jika belum ada
+    const filter = sheet.getFilter();
+    if (filter) filter.remove();
+    sheet.getRange(1, 1, lastRow, lastCol).createFilter();
+
+    // 5. Freeze Header
+    sheet.setFrozenRows(1);
+
+  } catch (e) {
+    Logger.log('Error formatSheetLembur: ' + e.message);
+  }
 }
 
 // ============================================================
