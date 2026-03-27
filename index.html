@@ -160,7 +160,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 .sop-title { font-family:'Outfit',sans-serif; font-size:15px; font-weight:700; margin-bottom:4px; letter-spacing:-0.1px; }
 .sop-cat { font-size:12px; color:var(--teal); background:#0ea5e918; padding:3px 10px; border-radius:10px; display:inline-block; font-weight:500; }
 .sop-body { margin-top:12px; font-size:14px; line-height:1.8; color:var(--light); display:none; white-space:pre-wrap; }
-#toast { position:fixed; bottom:24px; right:24px; z-index:999; background:var(--navy3); border:1px solid var(--border-color); padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; }
+#toast { position:fixed; bottom:24px; right:24px; z-index:3000; background:var(--navy3); border:1px solid var(--border-color); padding:14px 20px; border-radius:10px; font-size:14px; transform:translateY(100px); opacity:0; transition:all 0.3s; max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
 #toast.show { transform:translateY(0); opacity:1; }
 #toast.success { border-left:4px solid var(--green); }
 #toast.error { border-left:4px solid var(--red); }
@@ -168,6 +168,18 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .loading-screen { position:fixed; inset:0; background:var(--navy); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
 .menu-toggle { display:none; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  #modalDetailOrder, #modalDetailOrder * { visibility: visible !important; }
+  #modalDetailOrder { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; border: none !important; box-shadow: none !important; background: white !important; color: black !important; }
+  #modalDetailOrder .modal-close, #modalDetailOrder .modal-footer, #modalDetailOrder .btn, #modalDetailOrder .header-actions { display: none !important; }
+  .custom-modal { border: none !important; box-shadow: none !important; background: white !important; padding: 0 !important; }
+  .table-wrap { overflow: visible !important; max-height: none !important; }
+  .table { color: black !important; border-color: #000 !important; font-size: 14px !important; }
+  .table th { background: #eee !important; color: black !important; border: 1px solid #000 !important; }
+  .table td { border: 1px solid #000 !important; }
+}
 @media (max-width:768px) {
   .menu-toggle { display:flex; align-items:center; justify-content:center; width:38px; height:38px; background:var(--border-color); border-radius:8px; border:none; color:var(--white); font-size:18px; cursor:pointer; }
   .stats-grid { grid-template-columns:1fr 1fr; }
@@ -298,6 +310,19 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 .task-detail-modal { width:680px; }
 .task-detail-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px; }
 .task-detail-body { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* ---- PACKING TASK STYLES ---- */
+.packing-item { background:var(--bg-panel-light); border-radius:12px; padding:14px; margin-bottom:12px; border:2px solid var(--border-color); transition:all 0.2s; }
+.packing-item.done { border-color:var(--green); background:rgba(16,185,129,0.05); }
+.packing-item.active { border-color:var(--accent); box-shadow:0 0 15px rgba(245,158,11,0.2); }
+.packing-progress-container { height:10px; background:var(--border-color); border-radius:10px; margin-top:10px; overflow:hidden; position:relative; }
+.packing-progress-bar { height:100%; background:var(--teal); transition:width 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+.packing-qty-badge { font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; padding:4px 12px; border-radius:20px; }
+.packing-qty-badge.pending { background:var(--accent); color:var(--navy); }
+.packing-qty-badge.complete { background:var(--green); color:var(--white); }
+.scan-glow { animation: scanGlow 1.5s infinite alternate; }
+@keyframes scanGlow { from { box-shadow:0 0 5px var(--accent); } to { box-shadow:0 0 20px var(--accent); } }
+
 .detail-field { display:flex; flex-direction:column; gap:4px; }
 .detail-label { font-size:11px; color:var(--gray); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
 .detail-value { font-size:14px; color:var(--white); font-weight:500; }
@@ -325,7 +350,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 /* ---- PRINT CSS ---- */
 @media print {
   body { background: #fff !important; color: #000 !important; }
-  .sidebar, .topbar, .btn, .nav-item { display: none !important; }
+  .sidebar, .topbar, .btn, .nav-item, .no-print { display: none !important; }
   .main { margin-left: 0 !important; padding: 0 !important; }
   .content { padding: 0 !important; }
   .card { border: none !important; box-shadow: none !important; background: transparent !important; color: #000 !important; padding: 0 !important;}
@@ -335,7 +360,14 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
   td { border-bottom: 1px solid #ddd; color: #000 !important; }
   canvas { filter: invert(100%); max-width: 100%; height: auto !important; }
   #companyExpenseStats { grid-template-columns: 1fr 1fr 1fr !important; }
-}
+  @media print {
+    .card { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+    .table-wrap { overflow: visible !important; }
+    .print-only { display: block !important; }
+  }
+  .print-only { display: none; text-align: center; margin-bottom: 20px; }
+  .positive { color: #10b981; }
+  .negative { color: #ef4444; }
 </style>
 </head>
 <body>
@@ -406,6 +438,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
         
         <div class="nav-section">Dokumentasi</div>
         <div class="nav-item" onclick="showPage('sop')"><span class="icon">📋</span> SOP Gudang</div>
+        <div class="nav-item" onclick="showPage('packingList')"><span class="icon">📁</span> Packing List</div>
         
         <div class="nav-section">Inventory</div>
         <div class="nav-item" onclick="showPage('stock')"><span class="icon">📦</span> Stock Barang</div>
@@ -413,6 +446,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
         <div class="nav-item" onclick="showPage('outbound')"><span class="icon">✂️</span> Potong Stok Manual</div>
         <div class="nav-item" onclick="showPage('retur')"><span class="icon">↩️</span> Retur Barang</div>
         <div class="nav-item" onclick="showPage('order')"><span class="icon">🛒</span> Orderan</div>
+        <div class="nav-item" onclick="showPage('stockOpname')"><span class="icon">⚖️</span> Stock Opname</div>
         <div class="nav-item" onclick="showPage('analisis')"><span class="icon">📉</span> Analisis Stok</div>
         
         <div class="nav-section" id="navAdmin" style="display:none">Admin</div>
@@ -652,11 +686,21 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 
         <div class="page" id="page-karyawan">
           <!-- DASHBOARD KARYAWAN -->
-          <div class="stats-grid" style="grid-template-columns:repeat(4, 1fr); margin-bottom:20px;">
+          <div class="stats-grid" style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:20px;">
             <div class="stat-card teal"><div class="stat-label">Total Karyawan</div><div class="stat-value teal" id="statTotalKar">0</div><div class="stat-icon">👥</div></div>
-            <div class="stat-card green"><div class="stat-label">Karyawan Tetap</div><div class="stat-value green" id="statTetap">0</div><div class="stat-icon">💼</div></div>
-            <div class="stat-card amber"><div class="stat-label">Karyawan Kontrak</div><div class="stat-value amber" id="statKontrak">0</div><div class="stat-icon">📝</div></div>
-            <div class="stat-card red"><div class="stat-label">Habis Kontrak (≤40 hr)</div><div class="stat-value red" id="statKontrakHabis">0</div><div class="stat-icon">⚠️</div></div>
+            <div class="stat-card green"><div class="stat-label">Tetap</div><div class="stat-value green" id="statTetap">0</div><div class="stat-icon">💼</div></div>
+            <div class="stat-card amber"><div class="stat-label">Kontrak</div><div class="stat-value amber" id="statKontrak">0</div><div class="stat-icon">📝</div></div>
+            <div class="stat-card red"><div class="stat-label">Habis Kontrak</div><div class="stat-value red" id="statKontrakHabis">0</div><div class="stat-icon">⚠️</div></div>
+            <div class="stat-card blue"><div class="stat-label">Ijin Hari Ini</div><div class="stat-value blue" id="statIjinToday">0</div><div class="stat-icon">🚻</div></div>
+            <div class="stat-card orange"><div class="stat-label">Cuti Hari Ini</div><div class="stat-value orange" id="statCutiToday">0</div><div class="stat-icon">🏡</div></div>
+            <div class="stat-card red"><div class="stat-label">Sakit Hari Ini</div><div class="stat-value red" id="statSakitToday">0</div><div class="stat-icon">🏥</div></div>
+          </div>
+
+          <div id="ijinTodayWrap" style="display:none; margin-bottom:20px;">
+            <div class="card" style="border-color:var(--accent); background:linear-gradient(135deg, #0ea5e911, #1e293b55);">
+              <div class="card-header" style="margin-bottom:12px;"><h4 style="color:var(--accent);">ℹ️ Karyawan Tidak Hadir Hari Ini</h4></div>
+              <div id="ijinTodayList" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;"></div>
+            </div>
           </div>
           
           <div id="kontrakWarningWrap" style="display:none; margin-bottom:20px;">
@@ -683,7 +727,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
               </div>
             </div>
             <div class="table-wrap">
-              <table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Nama</th><th>Jabatan</th><th>Cabang</th><th>Telepon</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
+              <table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Nama</th><th>Jabatan</th><th>Cabang</th><th>Telepon</th><th>Sisa Cuti</th><th>Status Karyawan</th><th>Tgl Masuk</th><th>Selesai Kontrak</th><th>Aksi</th></tr></thead><tbody id="tableKaryawan"></tbody></table>
             </div>
           </div>
         </div>
@@ -832,6 +876,40 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
           </div>
         </div>
 
+        <div class="page" id="page-stockOpname">
+          <div class="print-only">
+            <h2 style="margin:0">LAPORAN HASIL STOCK OPNAME</h2>
+            <h4 id="opnamePrintSubtitle" style="margin:5px 0 20px 0; font-weight:normal">Periode: -</h4>
+          </div>
+          <div class="card">
+            <div class="card-header no-print" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center;">
+              <h4>⚖️ Riwayat Stock Opname</h4>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input type="month" id="filterMonthOpname" class="form-control form-control-sm" style="width:140px" onchange="filterStockOpname()">
+                <button class="btn btn-teal btn-sm" onclick="printStockOpname()">🖨️ Cetak</button>
+                <div class="btn-group" style="display:flex; flex-wrap:wrap; gap:4px;">
+                  <button class="btn btn-primary btn-sm" onclick="openModal('modalStockOpname')">+ Opname Manual</button>
+                  <button class="btn btn-accent btn-sm" onclick="openSoSelection()">📋 Pilih Barang</button>
+                  <button class="btn btn-danger btn-sm" onclick="startAllSoQueue()">🔍 Seluruh Gudang</button>
+                </div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table table-hover table-striped align-middle mt-2">
+                <thead><tr><th>Tanggal</th><th>SKU / Nama</th><th>Lokasi</th><th>Batch</th><th>Exp</th><th>Sistem</th><th>Fisik</th><th>Selisih</th><th>Status</th><th>PIC</th><th class="no-print">Aksi</th></tr></thead>
+                <tbody id="tableStockOpname"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="page-packingList">
+          <div class="card">
+            <div class="card-header"><h4>📋 Packing List Dokumentasi</h4><button class="btn btn-primary" onclick="openModal('modalPackingList')">+ Tambah Dokumen</button></div>
+            <div class="table-wrap"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>Tanggal</th><th>No. Packing List</th><th>Keterangan</th><th>Input By</th><th>File</th><th>Aksi</th></tr></thead><tbody id="tablePackingList"></tbody></table></div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -866,7 +944,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 </div>
 <div class="modal-overlay" id="modalTugasDetail"><div class="custom-modal task-detail-modal"><button class="modal-close" onclick="closeModal('modalTugasDetail')">✕</button><div id="tugasDetailContent"></div><div class="modal-footer" id="tugasDetailFooter"></div></div></div>
 
-<div class="modal-overlay" id="modalKaryawan"><div class="custom-modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="kNama" placeholder="Nama karyawan"></div><div class="col-md mb-2"><label class="form-label">Jabatan</label><input type="text" class="form-control" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Cabang Perusahaan</label><input type="text" class="form-control" id="kCabang" placeholder="Ketik atau pilih cabang..." list="listCabang"><datalist id="listCabang"><option value="Pusat"><option value="Cabang SBY"><option value="Cabang JKT"></datalist></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Status Karyawan</label><select class="form-select" id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="col-md mb-2"><label class="form-label">Tanggal Masuk</label><input type="date" class="form-control" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="col-md mb-2"><label class="form-label">Tanggal Selesai Kontrak</label><input type="date" class="form-control" id="kTglSelesai"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Telepon</label><input type="text" class="form-control" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="col-md mb-2"><label class="form-label">Email</label><input type="email" class="form-control" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalKaryawan"><div class="custom-modal"><input type="hidden" id="karyawanId"><button class="modal-close" onclick="closeModal('modalKaryawan')">✕</button><h3 id="karyawanModalTitle">👤 Tambah Karyawan</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="kNama" placeholder="Nama karyawan"></div><div class="col-md mb-2"><label class="form-label">Jabatan</label><input type="text" class="form-control" id="kJabatan" placeholder="Jabatan/posisi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Cabang Perusahaan</label><input type="text" class="form-control" id="kCabang" placeholder="Ketik atau pilih cabang..." list="listCabang"><datalist id="listCabang"><option value="Pusat"><option value="Cabang SBY"><option value="Cabang JKT"></datalist></div><div class="col-md mb-2"><label class="form-label">Sisa Cuti (Tahunan)</label><input type="number" class="form-control" id="kSisaCuti" placeholder="12" min="0"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Status Karyawan</label><select class="form-select" id="kStatus" onchange="toggleTglSelesai()"><option value="Kontrak">Kontrak</option><option value="Tetap">Tetap</option></select></div><div class="col-md mb-2"><label class="form-label">Tanggal Masuk</label><input type="date" class="form-control" id="kTglMasuk"></div></div><div class="form-row single" id="wrapTglSelesai"><div class="col-md mb-2"><label class="form-label">Tanggal Selesai Kontrak</label><input type="date" class="form-control" id="kTglSelesai"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Telepon</label><input type="text" class="form-control" id="kTelepon" placeholder="08xx-xxxx-xxxx"></div><div class="col-md mb-2"><label class="form-label">Email</label><input type="email" class="form-control" id="kEmail" placeholder="email@domain.com"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalKaryawan')">Batal</button><button class="btn btn-primary" onclick="submitKaryawan()">💾 Simpan</button></div></div></div>
 <div class="modal-overlay" id="modalIjin"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalIjin')">✕</button><h3>✉️ Form Pengajuan Ijin / Cuti</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Mulai</label><input type="date" class="form-control" id="ijTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Karyawan</label><input type="text" class="form-control" id="ijNama" placeholder="Nama Lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jenis Ijin / Cuti</label><select class="form-select" id="ijJenis" onchange="toggleBuktiIjin()"><option value="Sakit (Dengan Surat Dokter)">Sakit (Dengan Surat Dokter)</option><option value="Ijin">Ijin</option><option value="Cuti Tahunan">Cuti Tahunan</option><option value="Cuti Menikah">Cuti Menikah</option><option value="Cuti Keluarga Meninggal">Cuti Keluarga Meninggal</option><option value="Cuti Keluarga Meninggal (1 Rumah)">Cuti Keluarga Meninggal (1 Rumah)</option><option value="Cuti Keguguran">Cuti Keguguran</option><option value="Cuti Melahirkan">Cuti Melahirkan</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Lengkap</label><input type="text" class="form-control" id="ijKeterangan" placeholder="Alasan dan lama hari..."></div></div><div class="form-row single" id="ijBuktiWrap"><div class="col-md mb-2"><label class="form-label">Surat Dokter / Bukti Pendukung</label><div class="file-upload-wrap"><div class="file-upload-tabs"><button class="file-tab active" onclick="switchTab('ij','upload',this)">📁 Upload File</button><button class="file-tab" onclick="switchTab('ij','url',this)">🔗 URL Link</button></div><div class="file-tab-panel active" id="ij-panel-upload"><div class="file-drop-zone" id="ij-dropzone"><input type="file" id="ijFile" accept="image/*,.pdf" onchange="handleFileSelect('ij',this)"><div class="file-drop-icon">📎</div><div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span style="font-size:11px">JPG, PNG, PDF (maks. 5MB)</span></div></div><div class="file-preview" id="ij-preview"><span>📄</span><span class="file-preview-name" id="ij-fname">-</span><span class="file-preview-size" id="ij-fsize"></span><button class="file-remove" onclick="removeFile('ij')">✕</button></div><div class="upload-progress" id="ij-progress"><div class="upload-progress-bar" id="ij-pbar"></div></div></div><div class="file-tab-panel" id="ij-panel-url"><input type="url" id="ijBukti" placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div></div></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalIjin')">Batal</button><button class="btn btn-primary" id="btnSaveIjin" onclick="submitIjin()">💾 Ajukan Ijin</button></div></div></div>
 <div class="modal-overlay" id="modalLembur"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalLembur')">✕</button><h3>⏱️ Form Pengajuan Lembur</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Lembur</label><input type="date" class="form-control" id="lbTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Karyawan</label><input type="text" class="form-control" id="lbNama" placeholder="Nama Lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select" id="lbDivisi"><option value="Market Place">Market Place</option><option value="KOL">KOL</option><option value="Return">Return</option><option value="Inbound">Inbound</option><option value="Admin">Admin</option><option value="Distributor">Distributor</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Jam Mulai</label><input type="time" class="form-control" id="lbJamMulai" oninput="calcDurasiLembur()"></div><div class="col-md mb-2"><label class="form-label">Jam Selesai</label><input type="time" class="form-control" id="lbJamSelesai" oninput="calcDurasiLembur()"></div></div><div id="lbDurasiWrap" style="font-size:13px; color:var(--teal); margin-top:-8px; margin-bottom:12px; display:none; font-weight:600;">⏱️ Durasi Lembur: <span id="lbDurasiText" style="color:var(--accent);">0 Jam</span></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text" class="form-control" id="lbKeterangan" placeholder="Target penyelesaian..."></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalLembur')">Batal</button><button class="btn btn-primary" onclick="submitLembur()">💾 Ajukan Lembur</button></div></div></div>
 
@@ -927,7 +1005,7 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 
 <div class="modal-overlay" id="modalOrg"><div class="custom-modal"><input type="hidden" id="orgId"><button class="modal-close" onclick="closeModal('modalOrg')">✕</button><h3 id="orgModalTitle">🏗️ Tambah Anggota Organisasi</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="orgNama" placeholder="Nama lengkap"></div><div class="col-md mb-2"><label class="form-label">Jabatan / Posisi</label><input type="text" class="form-control" id="orgJabatan" placeholder="Contoh: Kepala Gudang"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Atasan Langsung <span style="color:var(--gray);font-weight:400">(jabatan)</span></label><select class="form-select" id="orgAtasan"><option value="">— Tidak ada (Root / Pimpinan) —</option></select></div><div class="col-md mb-2"><label class="form-label">Departemen</label><input type="text" class="form-control" id="orgDept" placeholder="Departemen / Divisi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">URL Foto</label><input type="url" id="orgFoto" placeholder="https://..."></div><div class="col-md mb-2"><label class="form-label">Urutan Tampil</label><input type="number" class="form-control" id="orgUrutan" placeholder="1" min="0"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrg')">Batal</button><button class="btn btn-primary" onclick="submitOrg()">💾 Simpan</button></div></div></div>
 <div class="modal-overlay" id="modalSOP"><div class="custom-modal" style="width:620px"><input type="hidden" id="sopId"><button class="modal-close" onclick="closeModal('modalSOP')">✕</button><h3 id="sopModalTitle">📋 Tambah SOP</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Judul SOP</label><input type="text" class="form-control" id="sopJudul" placeholder="Judul SOP"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Kategori</label><select class="form-select" id="sopKategori"><option>Penerimaan Barang</option><option>Pengeluaran Barang</option><option>Penyimpanan</option><option>Keselamatan & K3</option><option>Administrasi</option><option>Lainnya</option></select></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Isi / Konten SOP</label><textarea class="form-control" id="sopKonten" placeholder="Tuliskan langkah-langkah atau isi SOP..." style="min-height:160px"></textarea></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalSOP')">Batal</button><button class="btn btn-primary" onclick="submitSOP()">💾 Simpan</button></div></div></div>
-<div class="modal-overlay" id="modalUser"><div class="custom-modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Username</label><input type="text" class="form-control" id="uUsername" placeholder="username"></div><div class="col-md mb-2"><label class="form-label">Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="uNama" placeholder="Nama lengkap"></div><div class="col-md mb-2"><label class="form-label">Role</label><select class="form-select" id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label class="form-label"><input type="checkbox" value="dashboard"> Dashboard</label><label class="form-label"><input type="checkbox" value="kasGudang"> Kas Gudang</label><label class="form-label"><input type="checkbox" value="teamBuilding"> Team Building</label><label class="form-label"><input type="checkbox" value="expense"> Expense List</label><label class="form-label"><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label class="form-label"><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label class="form-label"><input type="checkbox" value="handover"> Hand Over</label><label class="form-label"><input type="checkbox" value="klaim"> Klaim Paket</label><label class="form-label"><input type="checkbox" value="tugasProject"> Tugas Project</label><label class="form-label"><input type="checkbox" value="karyawan"> Data Karyawan</label><label class="form-label"><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label class="form-label"><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label class="form-label"><input type="checkbox" value="pengajuanAsset"> 📦 Pengajuan Asset</label><label class="form-label"><input type="checkbox" value="organisasi"> Struktur Org.</label><label class="form-label"><input type="checkbox" value="sop"> SOP Gudang</label><label class="form-label"><input type="checkbox" value="stock"> Stock Barang</label><label class="form-label"><input type="checkbox" value="inbound"> Inbound</label><label class="form-label"><input type="checkbox" value="outbound"> Outbound</label><label class="form-label"><input type="checkbox" value="retur"> Retur</label><label class="form-label"><input type="checkbox" value="order"> Orderan</label><label class="form-label"><input type="checkbox" value="analisis"> Analisis Stok</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
+<div class="modal-overlay" id="modalUser"><div class="custom-modal" style="width: 650px;"><input type="hidden" id="uId"><button class="modal-close" onclick="closeModal('modalUser')">✕</button><h3 id="userModalTitle">⚙️ Tambah User</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Username</label><input type="text" class="form-control" id="uUsername" placeholder="username"></div><div class="col-md mb-2"><label class="form-label">Password</label><input type="password" id="uPassword" placeholder="Kosongkan jika tidak diubah"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text" class="form-control" id="uNama" placeholder="Nama lengkap"></div><div class="col-md mb-2"><label class="form-label">Role</label><select class="form-select" id="uRole" onchange="togglePermissions(); toggleCustomRole();"><option value="user">User / Staff (Biasa)</option><option value="HR">HR</option><option value="Team Leader">Team Leader</option><option value="Vice Supervisor">Vice Supervisor</option><option value="Supervisor">Supervisor</option><option value="admin">Admin</option><option value="Lainnya">Lainnya (Custom)...</option></select><input type="text" class="form-control" id="uRoleCustom" placeholder="Ketik nama role custom..." style="display:none; margin-top:6px;"></div></div><div id="uPermissionsWrap" style="margin-top:16px;"><label style="font-size:13px; color:#a0b4c8; font-weight:600; margin-bottom:8px; display:block;">Hak Akses Menu (Pilih menu yang diizinkan untuk Role Terbatas)</label><div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; background:#ffffff05; padding:16px; border-radius:8px; border:1px solid #ffffff10;" id="uPermissionsGrid"><label class="form-label"><input type="checkbox" value="dashboard"> Dashboard</label><label class="form-label"><input type="checkbox" value="kasGudang"> Kas Gudang</label><label class="form-label"><input type="checkbox" value="teamBuilding"> Team Building</label><label class="form-label"><input type="checkbox" value="expense"> Expense List</label><label class="form-label"><input type="checkbox" value="laporanKerja"> Laporan Kerja</label><label class="form-label"><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label><label class="form-label"><input type="checkbox" value="handover"> Hand Over</label><label class="form-label"><input type="checkbox" value="klaim"> Klaim Paket</label><label class="form-label"><input type="checkbox" value="tugasProject"> Tugas Project</label><label class="form-label"><input type="checkbox" value="karyawan"> Data Karyawan</label><label class="form-label"><input type="checkbox" value="ijin"> Pengajuan Ijin</label><label class="form-label"><input type="checkbox" value="lembur"> Pengajuan Lembur</label><label class="form-label"><input type="checkbox" value="pengajuanAsset"> 📦 Pengajuan Asset</label><label class="form-label"><input type="checkbox" value="organisasi"> Struktur Org.</label><label class="form-label"><input type="checkbox" value="sop"> SOP Gudang</label><label class="form-label"><input type="checkbox" value="stock"> Stock Barang</label><label class="form-label"><input type="checkbox" value="inbound"> Inbound</label><label class="form-label"><input type="checkbox" value="outbound"> Outbound</label><label class="form-label"><input type="checkbox" value="retur"> Retur</label><label class="form-label"><input type="checkbox" value="order"> Orderan</label><label class="form-label"><input type="checkbox" value="analisis"> Analisis Stok</label><label class="form-label"><input type="checkbox" value="stockOpname"> Stock Opname</label><label class="form-label"><input type="checkbox" value="packingList"> Packing List</label></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalUser')">Batal</button><button class="btn btn-primary" onclick="submitUser()">💾 Simpan</button></div></div></div>
 
 
 
@@ -962,6 +1040,82 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 <div class="modal-overlay" id="modalDetailSJ"><div class="custom-modal" style="width:640px"><button class="modal-close" onclick="closeModal('modalDetailSJ')">✕</button><h3 id="detailSJTitle">Detail Surat Jalan</h3><div class="table-wrap" style="max-height:400px;overflow-y:auto;"><table class="table table-hover table-striped align-middle mt-2"><thead><tr><th>SKU</th><th>Nama</th><th>Qty</th><th>Satuan</th><th>Batch</th><th>Exp Date</th></tr></thead><tbody id="tblDetailSJ"></tbody></table></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalDetailSJ')">Tutup</button></div></div></div>
 <div class="modal-overlay" id="modalOrder"><div class="custom-modal" style="width:680px"><button class="modal-close" onclick="closeModal('modalOrder')">✕</button><h3>🛒 Buat Orderan Baru</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal Order</label><input type="date" class="form-control" id="ordTanggal"></div><div class="col-md mb-2"><label class="form-label">Nama Pelanggan</label><input type="text" class="form-control" id="ordPelanggan" placeholder="Nama pelanggan / customer"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Alamat Pengiriman</label><input type="text" class="form-control" id="ordAlamat" placeholder="Alamat lengkap"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text" class="form-control" id="ordKet" placeholder="Catatan order (opsional)"></div></div><div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Order</label><button class="btn btn-ghost btn-sm" onclick="addItemRow('ordItems','order')">+ Tambah Baris</button></div><div id="ordItems"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalOrder')">Batal</button><button class="btn btn-primary" onclick="submitOrder()">💾 Simpan Order</button></div></div></div>
 
+<div class="modal-overlay" id="modalUploadPacking"><div class="custom-modal" style="width:480px"><button class="modal-close" onclick="closeModal('modalUploadPacking')">✕</button>
+  <div style="text-align:center; margin-bottom:20px;">
+    <div style="font-size:40px; margin-bottom:10px;">📤</div>
+    <h3 style="margin:0">Upload Bukti Packing</h3>
+    <p id="upNoOrder" style="color:var(--accent); font-weight:800; font-size:16px; margin-top:4px;"></p>
+  </div>
+  
+  <div style="background:var(--bg-panel-light); border:1px dashed var(--border-color); border-radius:12px; padding:30px; text-align:center; margin-bottom:20px;">
+    <input type="file" id="upFileInput" accept="image/*,application/pdf" style="display:none;" onchange="handleFileSelect(this)">
+    <div id="upDropZone" onclick="document.getElementById('upFileInput').click()" style="cursor:pointer;">
+      <i class="bi bi-cloud-arrow-up" style="font-size:48px; color:var(--accent);"></i>
+      <p style="margin-top:10px; font-weight:600;">Klik untuk Pilih File Foto / PDF</p>
+      <p style="font-size:12px; color:var(--text-muted);">Maksimal 5MB</p>
+    </div>
+    <div id="upFilePreview" style="display:none; margin-top:15px; text-align:left; background:var(--bg-panel); padding:10px; border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span id="upFileName" style="font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;"></span>
+        <button class="btn btn-danger btn-sm" onclick="clearFileSelection()">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modalUploadPacking')">Batal</button>
+    <button class="btn btn-primary" id="btnDoUpload" disabled onclick="handleUploadPacking()">🚀 Mulai Upload</button>
+  </div>
+</div></div>
+
+
+</div></div>
+
+<div class="modal-overlay" id="modalStockOpname"><div class="custom-modal"><button class="modal-close" onclick="closeModal('modalStockOpname')">✕</button><h3>⚖️ Pengajuan Stock Opname</h3>
+<div id="soQueueInfo" style="display:none; background:var(--accent); color:#000; padding:12px; border-radius:10px; font-weight:800; text-align:center; margin-bottom:16px; font-size:16px; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+  📌 Audit Item <span id="soQueueCurrent">1</span> dari <span id="soQueueTotal">1</span>
+</div>
+<div class="row mb-3" id="soScanWrap" style="background:var(--accent-dim); padding:10px; border-radius:8px; margin-bottom:16px; border:1px solid var(--accent);">
+  <div class="col-md"><label class="form-label" style="color:var(--accent); font-weight:800;">🔍 SCAN BARCODE / SKU</label>
+    <input type="text" class="form-control" id="soScan" placeholder="Klik di sini & Scan (Tekan Enter)..." onkeydown="if(event.key==='Enter') handleSoScan(this)" style="background:var(--bg-panel); border-color:var(--accent); color:#fff; font-size:16px;">
+  </div>
+</div>
+<div class="row mb-3" id="soTglWrap" style="display:none"><div class="col-md mb-2"><label class="form-label">Tanggal Opname</label><input type="date" class="form-control" id="soTanggal"></div></div>
+<div class="row mb-3" id="soSelectWrap"><div class="col-md mb-2"><label class="form-label">Atau Pilih Manual</label><select class="form-select" id="soStockId" onchange="handleSoSelect(this)">${getStockOptions()}</select></div></div>
+
+<div id="soInfoBarang" style="display:none; background:var(--navy3); border:2px solid var(--accent); border-radius:12px; padding:16px; margin-bottom:18px;">
+  <div style="margin-bottom:12px; border-bottom:1px solid var(--border-light); padding-bottom:8px;">
+    <small style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:11px; font-weight:800;">📍 Lokasi Penyimpanan</small>
+    <div id="soLokasi" style="font-size:28px; font-weight:900; color:var(--accent); letter-spacing:1px;"></div>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+    <div style="grid-column: span 2;"><small class="text-muted">Nama Barang:</small><div id="soNama" style="font-size:16px; font-weight:700;"></div><div id="soSKU" style="color:var(--teal); font-weight:700;"></div></div>
+    <div><small class="text-muted">Batch:</small><div id="soBatch" style="font-weight:600"></div></div>
+    <div><small class="text-muted">Exp Date:</small><div id="soExp" style="font-weight:600; color:var(--red)"></div></div>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md mb-2"><label class="form-label">Stok Sistem</label><input type="number" class="form-control" id="soSistem" readonly style="background:var(--border-color); font-weight:700; color:var(--gray)"></div>
+  <div class="col-md mb-2"><label class="form-label">Jumlah Fisik (QTY)</label><input type="number" class="form-control" id="soFisik" placeholder="0" oninput="calcSoSelisih()" inputmode="numeric" style="font-size:24px; font-weight:800; height:60px; border:2px solid var(--teal); text-align:center;"></div>
+</div>
+<div id="soSelisihWrap" style="font-size:16px; margin-bottom:16px; font-weight:800; display:none; text-align:center; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05);">Selisih: <span id="soSelisihText">0</span></div>
+<div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Catatan Admin/PDA</label><input type="text" class="form-control" id="soCatatan" placeholder="Ketik keterangan (opsional)..."></div></div>
+<div class="modal-footer" id="soFooterSingle"><button class="btn btn-ghost" onclick="closeModal('modalStockOpname')">Batal</button><button class="btn btn-primary" onclick="submitStockOpname()">💾 Ajukan Opname</button></div>
+<div class="modal-footer" id="soFooterQueue" style="display:none;"><button class="btn btn-ghost" onclick="finishSoQueue()">🏁 Batal</button><button class="btn btn-accent" onclick="skipSoQueue()">⏭️ Lewati</button><button class="btn btn-primary" id="btnNextSo" onclick="submitStockOpname(true)" style="padding:12px 30px; font-size:16px;">♻️ Simpan & Lanjut</button></div></div></div>
+
+<div class="modal-overlay" id="modalSoSelection"><div class="custom-modal" style="width:750px"><button class="modal-close" onclick="closeModal('modalSoSelection')">✕</button><h3>📋 Pilih Barang untuk di-Audit</h3><div class="mb-3 search-box"><i class="bi bi-search"></i><input type="text" class="form-control" id="searchSoSelect" placeholder="Cari SKU atau Nama Barang..." onkeyup="renderSoSelectionList()"></div><div class="table-wrap" style="max-height:400px;overflow-y:auto;"><table class="table table-hover align-middle"><thead><tr><th style="width:40px"><input type="checkbox" id="checkAllSo" onchange="toggleAllSo(this)"></th><th>SKU / Nama</th><th>Batch</th><th>Lokasi</th><th>Stok</th></tr></thead><tbody id="tblSoSelection"></tbody></table></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalSoSelection')">Batal</button><button class="btn btn-accent" id="btnStartSoQueue" onclick="startSoQueueFromSelection()">🏁 Mulai Sesi Opname (0 Terpilih)</button></div></div></div>
+
+<div class="modal-overlay" id="modalPackingList"><div class="custom-modal" style="width:580px"><button class="modal-close" onclick="closeModal('modalPackingList')">✕</button><h3>📋 Tambah Packing List Dokumen</h3><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="plTanggal"></div><div class="col-md mb-2"><label class="form-label">No. Packing List</label><input type="text" class="form-control" id="plNo" placeholder="No. Dokumen / Resi"></div></div><div class="row mb-3"><div class="col-md mb-2"><label class="form-label">Keterangan Dokumen</label><input type="text" class="form-control" id="plKet" placeholder="Contoh: Packing List Gudang Utama"></div></div>
+
+<div class="file-upload-tabs"><div class="file-tab active" onclick="switchTab('pl','upload',this)">📁 Upload File</div><div class="file-tab" onclick="switchTab('pl','url',this)">🔗 Masukkan Link</div></div>
+
+<div id="pl-panel-upload" class="file-panel active"><div class="dropzone" id="pl-dropzone" onclick="document.getElementById('plFile').click()">📤 Klik atau Drag file ke sini<input type="file" id="plFile" style="display:none" onchange="handleFileSelect('pl',this)"></div><div class="file-preview" id="pl-preview"><div class="file-info"><div class="file-icon">📄</div><div><div id="pl-fname" style="font-weight:700">filename.pdf</div><div id="pl-fsize" style="font-size:11px;color:var(--gray)">0 MB</div></div></div><button class="btn btn-danger btn-sm" onclick="removeFile('pl')">Hapus</button></div><div class="upload-progress" id="pl-progress"><div class="u-bar"><div class="u-fill" id="pl-pbar" style="width:0%"></div></div><div style="font-size:11px;color:var(--teal);margin-top:4px">Mengunggah ke Google Drive...</div></div></div>
+
+<div id="pl-panel-url" class="file-panel"><div class="mb-3"><label class="form-label">URL Dokumen (Link Luar)</label><input type="url" class="form-control" id="plUrl" placeholder="https://drive.google.com/..."></div></div>
+
+<div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalPackingList')">Batal</button><button class="btn btn-primary" id="btnSavePl" onclick="submitPackingList()">💾 Simpan Dokumen</button></div></div></div>
+
 <div id="toast"></div>
 
 <!-- ============================================================ -->
@@ -970,6 +1124,8 @@ tr:hover td { background: rgba(245, 158, 11, 0.05) !important; }
 <script>
 
 const savedTheme = localStorage.getItem('fcl_theme') || 'dark';
+let stockOpnameDataAll = [];
+let opnameQueue = []; let currentOpnameIndex = 0;
 document.documentElement.setAttribute('data-theme', savedTheme);
 document.documentElement.setAttribute('data-bs-theme', savedTheme);
 
@@ -1038,8 +1194,15 @@ function initApp() {
 
 function setToday() {
   const t = new Date().toISOString().split('T')[0];
-  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal','ijTanggal','lbTanggal','exTanggal','tpTanggalMulai','assetTanggal'].forEach(id => setVal(id, t));
+  ['kgTanggal','tbTanggal','kTglMasuk','inbTanggal','outTanggal','ordTanggal','retTanggal','lapTanggal','hoTanggal','klTanggal','ijTanggal','lbTanggal','exTanggal','tpTanggalMulai','assetTanggal','soTanggal','plTanggal'].forEach(id => setVal(id, t));
+  if(currentUser) {
+    ['ijNama','assetNama','lbNama'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) { el.value = currentUser.nama; el.readOnly = true; el.style.background = 'var(--input-bg)'; el.style.opacity = '0.7'; }
+    });
+  }
   setVal('filterBulanExpense', (new Date().getMonth()+1).toString()); setVal('filterBulanGrafik', t.substring(0,7));
+  setVal('filterMonthOpname', t.substring(0,7));
 }
 
 function doLogin() {
@@ -1061,7 +1224,8 @@ const pageTitles = {
   handover: '📦 Laporan Hand Over', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
   ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', pengajuanAsset: '📦 Pengajuan Asset',
   organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
-  users: '⚙️ Manajemen User', stock: '📦 Stock Barang', inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
+  users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Packing List Dokumentasi',
+  inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
   retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
 };
 const pageLoaders = {
@@ -1069,7 +1233,7 @@ const pageLoaders = {
   karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan, 
   handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
   pengajuanAsset: loadAsset,
-  organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
+  organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis
 };
 
 function showPage(name) {
@@ -1129,6 +1293,14 @@ function checkPendingApprovals() {
      if (res.ijin && res.ijin.success) { ijinDataAll = res.ijin.data; ijinDataAll.forEach(d => processItem(d, 'Ijin')); }
      if (res.lembur && res.lembur.success) { lemburDataAll = res.lembur.data; lemburDataAll.forEach(d => processItem(d, 'Lembur')); }
      if (res.asset && res.asset.success) { res.asset.data.forEach(d => processItem(d, 'Asset')); }
+     if (res.stockOpname && res.stockOpname.success) { 
+       res.stockOpname.data.forEach(d => {
+         if (d.status === 'Pending' && (currentUser.role === 'admin' || currentUser.role === 'Supervisor')) {
+           pendingCount++;
+           if(dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">Stock Opname</span></td><td><strong>${d.sku}</strong></td><td><span class="badge-pending">⏳ Pending</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('stockOpname')">Lihat</button></td></tr>`;
+         }
+       });
+     }
      const badge = document.getElementById('approvalBadge');
      if (pendingCount > 0) { badge.style.display = 'inline-block'; badge.textContent = `${pendingCount} Approval`; document.getElementById('dashApprovalWrap').style.display = 'block'; } 
      else { badge.style.display = 'none'; document.getElementById('dashApprovalWrap').style.display = 'none'; if(dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>'; }
@@ -1180,16 +1352,16 @@ function uploadFileAndProceed(prefix, file, folder, callback, btn) {
       const sendChunk = () => {
          document.getElementById(`${prefix}-pbar`).style.width = ((cIdx/chunks.length)*100)+'%';
          if(cIdx < chunks.length) {
-            google.script.run.withSuccessHandler(res => { if(res.success){uId=res.uploadId; cIdx++; sendChunk();} else {toast(res.message,'error');if(btn){btn.disabled=false;btn.textContent='💾 Simpan';}} }).uploadChunk(chunks[cIdx], cIdx, uId);
+            google.script.run.withSuccessHandler(res => { if(res.success){uId=res.uploadId; cIdx++; sendChunk();} else {toast(res.message, 'error'); if(btn){btn.disabled=false; btn.textContent=btn.getAttribute('data-orig') || '💾 Simpan';}} }).uploadChunk(chunks[cIdx], cIdx, uId);
          } else {
-            google.script.run.withSuccessHandler(res => { if(res.success) callback(res.url); else {toast(res.message,'error');if(btn){btn.disabled=false;btn.textContent='💾 Simpan';}} }).finalizeChunkedUpload(uId, file.name, file.type, folder);
+            google.script.run.withSuccessHandler(res => { if(res.success) callback(res.url); else {toast(res.message, 'error'); if(btn){btn.disabled=false; btn.textContent=btn.getAttribute('data-orig') || '💾 Simpan';}} }).finalizeChunkedUpload(uId, file.name, file.type, folder);
          }
       };
       sendChunk();
   }; reader.readAsDataURL(file);
 }
 // Drag Drop global setup
-['kg','tb','ij','ast'].forEach(p => {
+['kg','tb','ij','ast','pl'].forEach(p => {
   const zone = document.getElementById(`${p}-dropzone`); if(!zone) return;
   zone.addEventListener('dragover', e=>{e.preventDefault(); zone.classList.add('dragover');});
   zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
@@ -1281,7 +1453,12 @@ function delExpense(id){ if(confirm('Hapus?')) google.script.run.withSuccessHand
 function printExpense(){ window.print(); }
 
 // === SDM (Karyawan, Ijin, Lembur, Org) ===
-function loadKaryawan(){ google.script.run.withSuccessHandler(res=>{ if(res.success){karyawanData=res.data; renderKaryawan(karyawanData); updateKaryawanStats();} }).getKaryawan(); }
+function loadKaryawan(){ 
+  google.script.run.withSuccessHandler(resIjin => {
+    if(resIjin.success) ijinDataAll = resIjin.data;
+    google.script.run.withSuccessHandler(res=>{ if(res.success){karyawanData=res.data; renderKaryawan(karyawanData); updateKaryawanStats();} }).getKaryawan();
+  }).getIjin();
+}
 function updateKaryawanStats() {
   document.getElementById('statTotalKar').textContent = karyawanData.length;
   document.getElementById('statTetap').textContent = karyawanData.filter(d=>d.status==='Tetap').length;
@@ -1290,6 +1467,45 @@ function updateKaryawanStats() {
   document.getElementById('statKontrakHabis').textContent = in40.length;
   const wrap=document.getElementById('kontrakWarningWrap'), list=document.getElementById('kontrakWarningList');
   if(in40.length){ wrap.style.display='block'; list.innerHTML=''; in40.forEach(d=>list.innerHTML+=`<div style="display:flex;justify-content:space-between;background:#ef444415;padding:10px;border-radius:8px"><div><strong>${d.nama}</strong> <small>(${d.jabatan})</small></div><div style="text-align:right"><small style="color:var(--red)">${formatDate(d.tanggalSelesai)}</small><br><strong style="color:var(--red)">${Math.ceil((new Date(d.tanggalSelesai)-now)/86400000)} hr lagi</strong></div></div>`); } else wrap.style.display='none';
+  
+  // STATS IJIN HARI INI
+  const tToday = now.toISOString().split('T')[0];
+  const iToday = ijinDataAll.filter(d => d.tanggal === tToday && d.status === 'Disetujui');
+  const dSakit = iToday.filter(d => d.jenis.toLowerCase().includes('sakit')).length;
+  const dCuti = iToday.filter(d => d.jenis.toLowerCase().includes('cuti')).length;
+  const dIjin = iToday.filter(d => !d.jenis.toLowerCase().includes('sakit') && !d.jenis.toLowerCase().includes('cuti')).length;
+  
+  document.getElementById('statIjinToday').textContent = dIjin;
+  document.getElementById('statCutiToday').textContent = dCuti;
+  document.getElementById('statSakitToday').textContent = dSakit;
+  
+  const iW = document.getElementById('ijinTodayWrap'), iL = document.getElementById('ijinTodayList');
+  if(iToday.length){ 
+    iW.style.display='block'; iL.innerHTML=''; 
+    // Group by category for better readability
+    const categories = ['Sakit', 'Cuti', 'Ijin'];
+    categories.forEach(cat => {
+      const filtered = iToday.filter(d => {
+        const j = d.jenis.toLowerCase();
+        if(cat === 'Sakit') return j.includes('sakit');
+        if(cat === 'Cuti') return j.includes('cuti');
+        return !j.includes('sakit') && !j.includes('cuti');
+      });
+      if(filtered.length) {
+        let color = cat === 'Sakit' ? 'var(--red)' : (cat === 'Cuti' ? 'var(--orange)' : 'var(--blue)');
+        filtered.forEach(d => {
+          iL.innerHTML += `<div style="display:flex;align-items:center;gap:10px;background:#ffffff0a;padding:10px;border-radius:10px;border-left:4px solid ${color};">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:14px;color:var(--white);">${d.nama}</div>
+              <div style="font-size:11px;color:var(--gray);">${d.keterangan || 'Tanpa keterangan'}</div>
+            </div>
+            <span class="badge-tb" style="background:${color}22; color:${color}; border-color:${color}44;">${cat}</span>
+          </div>`;
+        });
+      }
+    });
+  } else iW.style.display='none';
+
   const jMap={}; karyawanData.forEach(d=>{jMap[d.jabatan]=(jMap[d.jabatan]||0)+1;});
   const jCont = document.getElementById('jabatanSummary'); jCont.innerHTML='';
   Object.entries(jMap).sort((a,b)=>b[1]-a[1]).forEach(([j,c])=> jCont.innerHTML+=`<div style="background:var(--navy2);padding:14px;border-radius:10px"><div style="font-size:12px;color:var(--gray)">${j}</div><div style="font-size:22px;font-weight:800;color:var(--accent)">${c}</div></div>`);
@@ -1297,22 +1513,22 @@ function updateKaryawanStats() {
   const cCont = document.getElementById('cabangSummary'); if(cCont) { cCont.innerHTML=''; Object.entries(cMap).sort((a,b)=>b[1]-a[1]).forEach(([cbg,cnt])=> cCont.innerHTML+=`<div style="background:var(--navy2);padding:14px;border-radius:10px;border-top:3px solid var(--teal)"><div style="font-size:13px;color:var(--gray);font-weight:700">${cbg}</div><div style="font-size:20px;font-weight:800;color:var(--teal)">${cnt} Org</div></div>`); }
 }
 function renderKaryawan(data) {
-  const tb = document.getElementById('tableKaryawan'); tb.innerHTML=''; if(!data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;}
+  const tb = document.getElementById('tableKaryawan'); tb.innerHTML=''; if(!data.length){tb.innerHTML='<tr><td colspan="9" class="empty-state">Kosong</td></tr>';return;}
   const now=new Date(); data.forEach(d=>{
     let sCell='-'; if(d.status==='Kontrak'&&d.tanggalSelesai){ const diff=Math.ceil((new Date(d.tanggalSelesai)-now)/86400000); sCell=`<span style="${diff<=40?'color:var(--red);font-weight:bold':''}">${formatDate(d.tanggalSelesai)} ${diff<=40&&diff>=0?`(${diff}hr)`:''}</span>`; }
-    tb.innerHTML+=`<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td><span class="badge-tb">${d.cabang||'-'}</span></td><td>${d.telepon||'-'}</td><td><span class="${d.status==='Tetap'?'badge-aktif':'badge-nonaktif'}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td>${sCell}</td><td><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
+    tb.innerHTML+=`<tr><td><strong>${d.nama}</strong></td><td>${d.jabatan}</td><td><span class="badge-tb">${d.cabang||'-'}</span></td><td>${d.telepon||'-'}</td><td><strong style="color:var(--teal)">${d.sisaCuti||0} hr</strong></td><td><span class="${d.status==='Tetap'?'badge-aktif':'badge-nonaktif'}">${d.status}</span></td><td>${formatDate(d.tanggalMasuk)}</td><td>${sCell}</td><td><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${d.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="delKaryawan('${d.id}')">🗑️</button></td></tr>`;
   });
 }
 function filterKaryawan(){ const q=v('karyawanSearch').toLowerCase(); renderKaryawan(karyawanData.filter(d=>d.nama.toLowerCase().includes(q)||(d.jabatan||'').toLowerCase().includes(q))); }
 function toggleTglSelesai(){ document.getElementById('wrapTglSelesai').style.display=v('kStatus')==='Kontrak'?'block':'none'; }
-function openKaryawanModal(){ setVal('karyawanId',''); document.getElementById('karyawanModalTitle').textContent='👤 Tambah Karyawan'; resetForm(['kNama','kJabatan','kCabang','kTelepon','kEmail','kTglSelesai']); setVal('kStatus','Kontrak'); toggleTglSelesai(); openModal('modalKaryawan'); }
-function editKaryawan(id){ const d=karyawanData.find(x=>x.id===id); if(!d)return; setVal('karyawanId',d.id); document.getElementById('karyawanModalTitle').textContent='✏️ Edit Karyawan'; ['Nama','Jabatan','Cabang','Telepon','Email','TglMasuk','Status','TglSelesai'].forEach(f=>setVal('k'+f, d[f.charAt(0).toLowerCase()+f.slice(1)]||'')); toggleTglSelesai(); openModal('modalKaryawan'); }
+function openKaryawanModal(){ setVal('karyawanId',''); document.getElementById('karyawanModalTitle').textContent='👤 Tambah Karyawan'; resetForm(['kNama','kJabatan','kCabang','kTelepon','kEmail','kTglSelesai']); setVal('kSisaCuti',12); setVal('kStatus','Kontrak'); toggleTglSelesai(); openModal('modalKaryawan'); }
+function editKaryawan(id){ const d=karyawanData.find(x=>x.id===id); if(!d)return; setVal('karyawanId',d.id); document.getElementById('karyawanModalTitle').textContent='✏️ Edit Karyawan'; ['Nama','Jabatan','Cabang','Telepon','Email','TglMasuk','Status','TglSelesai'].forEach(f=>setVal('k'+f, d[f.charAt(0).toLowerCase()+f.slice(1)]||'')); setVal('kSisaCuti', d.sisaCuti||0); toggleTglSelesai(); openModal('modalKaryawan'); }
 function submitKaryawan(){
-  const id=v('karyawanId'), n=v('kNama'), j=v('kJabatan'), cbg=v('kCabang'), tlp=v('kTelepon'), em=v('kEmail'), tm=v('kTglMasuk'), st=v('kStatus'), ts=v('kTglSelesai');
+  const id=v('karyawanId'), n=v('kNama'), j=v('kJabatan'), cbg=v('kCabang'), tlp=v('kTelepon'), em=v('kEmail'), tm=v('kTglMasuk'), st=v('kStatus'), ts=v('kTglSelesai'), sc=v('kSisaCuti');
   if(!n||!j) return toast('Nama & Jabatan wajib', 'error');
   const btn = document.querySelector('#modalKaryawan .btn-primary'); btn.disabled=true; btn.textContent='⏳...';
   const cb = res => { btn.disabled=false; btn.textContent='💾 Simpan'; if(res.success){toast('Berhasil');closeModal('modalKaryawan');loadKaryawan();}else toast(res.message,'error'); };
-  if(id) google.script.run.withSuccessHandler(cb).updateKaryawan(id,n,j,cbg,tlp,em,tm,st,ts); else google.script.run.withSuccessHandler(cb).addKaryawan(n,j,cbg,tlp,em,tm,st,ts);
+  if(id) google.script.run.withSuccessHandler(cb).updateKaryawan(id,n,j,cbg,tlp,em,tm,st,ts,sc); else google.script.run.withSuccessHandler(cb).addKaryawan(n,j,cbg,tlp,em,tm,st,ts,sc);
 }
 function delKaryawan(id){ if(confirm('Hapus?')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Dihapus');loadKaryawan();}else toast(res.message,'error');}).deleteKaryawan(id); }
 
@@ -1679,7 +1895,45 @@ function submitRetur() { const t=v('retTanggal'),a=v('retAlasan'),s=v('retSumber
 function showDetailRetur(id) { google.script.run.withSuccessHandler(res=>{if(res.success){ const tb=document.getElementById('tblDetailSJ'); tb.innerHTML=''; res.data.forEach(d=>tb.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td>${d.qty}</td><td>${d.satuan}</td><td>${d.batch||'-'}</td><td>${formatDate(d.expDate)}</td></tr>`); document.getElementById('detailSJTitle').textContent=`Detail Retur Barang`; openModal('modalDetailSJ'); }}).getReturDetail(id); }
 
 // ORDER
-function loadOrder() { google.script.run.withSuccessHandler(res=>{const tb=document.getElementById('tableOrder');tb.innerHTML='';if(!res.data.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Kosong</td></tr>';return;} res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>tb.innerHTML+=`<tr><td><strong>${d.noOrder}</strong></td><td>${formatDate(d.tanggal)}</td><td>${d.pelanggan}</td><td>${d.alamat}</td><td><strong style="font-size:16px">${d.totalItem}</strong> Unit</td><td><span class="${d.status==='Terkirim'?'order-terkirim':'order-pending'}">${d.status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showDetailOrder('${d.id}')">Detail</button> ${d.status!=='Terkirim'?`<button class="btn btn-teal btn-sm" onclick="kirimOrder('${d.id}')">Kirim</button>`:''}</td></tr>`);}).getOrders(); }
+function loadOrder() {
+  google.script.run.withSuccessHandler(res => {
+    const tb = document.getElementById('tableOrder'); tb.innerHTML = '';
+    if (!res.data.length) { tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>'; return; }
+    
+    // We need to fetch details for each order to check packing status
+    // For performance, ideally this is handled in backend, but we'll do an async check or bulk fetch if needed
+    // Currently, let's render and add the Packing button
+    res.data.forEach(d => {
+      const isSent = d.status === 'Terkirim';
+      const hasBukti = d.buktiPacking && d.buktiPacking !== '';
+      const statusCls = isSent ? 'order-terkirim' : 'order-pending';
+      
+      const detailBtn = `<button class="btn btn-ghost btn-sm" title="Lihat Detail Pesanan" onclick="showDetailOrder('${d.id}')"><i class="bi bi-eye"></i> Detail</button>`;
+      const printBtn = `<button class="btn btn-ghost btn-sm" title="Cetak Order" onclick="printOrderData('${d.id}')"><i class="bi bi-printer"></i> Cetak</button>`;
+      const uploadBtn = `<button class="btn btn-accent btn-sm" onclick="openUploadPackingModal('${d.id}','${d.noOrder}')">${hasBukti ? '📸 Ganti' : '📤 Bukti'}</button>`;
+      const viewBtn = hasBukti ? `<a href="${d.buktiPacking}" target="_blank" class="btn btn-sm" style="background:#0ea5e922; color:var(--teal); border:1px solid #0ea5e944; font-weight:700;" title="Lihat Bukti Foto">🖼️ Lihat Bukti</a>` : '';
+      const sendBtn = !isSent ? `<button class="btn btn-teal btn-sm" onclick="kirimOrder('${d.id}')">Kirim</button>` : '';
+      
+      tb.innerHTML += `<tr>
+        <td><strong>${d.noOrder}</strong></td>
+        <td>${formatDate(d.tanggal)}</td>
+        <td>${d.pelanggan}</td>
+        <td>${d.alamat}</td>
+        <td><strong style="font-size:16px">${d.totalItem}</strong> Unit</td>
+        <td><span class="${statusCls}">${d.status}</span></td>
+        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+          ${detailBtn}
+          ${printBtn}
+          ${uploadBtn}
+          ${viewBtn}
+          ${sendBtn}
+        </td>
+      </tr>`;
+    });
+  }).getOrders();
+}
+
+
 function submitOrder() { const t=v('ordTanggal'),p=v('ordPelanggan'),a=v('ordAlamat'),k=v('ordKet'),items=collectItems('ordItems','order'); if(!t||!p||!items) return toast('Lengkapi data','error'); const btn=document.querySelector('#modalOrder .btn-primary');btn.disabled=true; google.script.run.withSuccessHandler(res=>{btn.disabled=false;if(res.success){toast('Order Dibuat');closeModal('modalOrder');loadOrder();document.getElementById('ordItems').innerHTML='';resetForm(['ordPelanggan','ordAlamat','ordKet']);}else toast(res.message,'error')}).addOrder(t,p,a,k,JSON.stringify(items),currentUser.username); }
 function kirimOrder(id) { if(confirm('Tandai terkirim? Stok akan otomatis terpotong.')) google.script.run.withSuccessHandler(res=>{if(res.success){toast('Terkirim & Stok Dipotong');loadOrder();loadStock();}else toast(res.message,'error')}).kirimOrder(id); }
 function showDetailOrder(id) { google.script.run.withSuccessHandler(res=>{if(res.success){ const tb=document.getElementById('tblDetailSJ'); tb.innerHTML=''; res.data.forEach(d=>tb.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td>${d.qty}</td><td>${d.satuan}</td><td>${d.batch||'-'}</td><td>${d.expDate||'-'}</td></tr>`); document.getElementById('detailSJTitle').textContent=`Detail Order`; openModal('modalDetailSJ'); }}).getOrderDetail(id); }
@@ -1813,6 +2067,354 @@ function delAsset(id) {
       if (res.success) { toast('Pengajuan dibatalkan'); loadAsset(); checkPendingApprovals(); }
       else toast(res.message, 'error');
     }).deleteAsset(id);
+}
+
+function loadAnalisis() {
+  google.script.run.withSuccessHandler(res=>{
+    const tb=document.getElementById('tblAnalisisFull'); tb.innerHTML='';
+    res.data.forEach(d=>{
+      const badge = `<span class="stok-badge stok-${d.statusStok.toLowerCase()}">${d.statusStok}</span>`;
+      tb.innerHTML+=`<tr><td>${d.sku}</td><td>${d.nama}</td><td><strong>${d.stokSaat}</strong></td><td>${d.minggu}</td><td>${d.bulan}</td><td>${d.rataHarian}</td><td>${d.satuan}</td><td>${badge}</td></tr>`;
+    });
+  }).getAnalisisStock();
+}
+
+// STOCK OPNAME LOGIC
+function loadStockOpname() {
+  google.script.run.withSuccessHandler(res=>{
+    stockOpnameDataAll = res.data || [];
+    filterStockOpname();
+  }).getStockOpname();
+}
+function filterStockOpname() {
+  const m = v('filterMonthOpname');
+  const filtered = m ? stockOpnameDataAll.filter(d => d.tanggal.startsWith(m)) : stockOpnameDataAll;
+  renderStockOpname(filtered);
+}
+function renderStockOpname(data) {
+  const tb = document.getElementById('tableStockOpname'); tb.innerHTML = '';
+  if (!data.length) { tb.innerHTML = '<tr><td colspan="11" class="empty-state">Belum ada data</td></tr>'; return; }
+  data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d => {
+    const sel = parseFloat(d.selisih) || 0;
+    const selClass = sel > 0 ? 'positive' : (sel < 0 ? 'negative' : '');
+    const stClass = d.status === 'Approved' ? 'order-terkirim' : 'order-pending';
+    const canApproveOp = d.status === 'Pending' && (currentUser.role === 'admin' || currentUser.role === 'Supervisor');
+    tb.innerHTML += `<tr>
+      <td>${formatDate(d.tanggal)}</td>
+      <td><strong>${d.sku}</strong><br><small>${d.nama}</small></td>
+      <td><span class="badge-tb">${d.lokasi || '-'}</span></td>
+      <td>${d.batch || '-'}</td>
+      <td>${d.expDate || '-'}</td>
+      <td>${d.stokSistem}</td>
+      <td><strong>${d.stokFisik}</strong></td>
+      <td><span class="${selClass}">${sel > 0 ? '+' : ''}${sel}</span></td>
+      <td><span class="${stClass}">${d.status}</span></td>
+      <td>${d.createdBy}</td>
+      <td class="no-print">
+        ${canApproveOp ? `<button class="btn btn-teal btn-sm" onclick="procOpname('${d.id}','Approved')">✅</button>
+        <button class="btn btn-danger btn-sm" onclick="procOpname('${d.id}','Rejected')">✕</button>` : '-'}
+      </td>
+    </tr>`;
+  });
+}
+function printStockOpname() {
+  const m = v('filterMonthOpname');
+  const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  let periodText = "-";
+  if(m) {
+    const parts = m.split('-');
+    periodText = monthNames[parseInt(parts[1])-1] + " " + parts[0];
+  }
+  document.getElementById('opnamePrintSubtitle').textContent = 'Periode: ' + periodText;
+  window.print();
+}
+function handleSoScan(el) {
+  const q = el.value.trim().toLowerCase(); if(!q) return;
+  el.disabled = true;
+  const s = stockData.find(x => (x.sku||'').toLowerCase() === q || (x.barcode||'').toLowerCase() === q);
+  if(s) {
+    setVal('soStockId', s.id);
+    handleSoSelect(document.getElementById('soStockId'));
+    el.value = ''; // Clear scan after found
+    toast('✅ Barang ditemukan: ' + s.nama, 'success');
+  } else {
+    toast('❌ Barang "' + q + '" tidak ditemukan', 'error');
+    el.select();
+  }
+  el.disabled = false; el.focus();
+}
+function handleSoSelect(sel) {
+  const opt=sel.options[sel.selectedIndex]; 
+  const info = document.getElementById('soInfoBarang');
+  if(!opt.value){ setVal('soSistem',''); info.style.display='none'; return; }
+  const s=stockData.find(x=>x.id===opt.value); 
+  if(s){ 
+    info.style.display='block';
+    setVal('soSistem',s.stok); 
+    document.getElementById('soSKU').textContent = s.sku;
+    document.getElementById('soNama').textContent = s.nama;
+    document.getElementById('soLokasi').textContent = s.lokasi || '-';
+    document.getElementById('soBatch').textContent = s.batch || '-';
+    document.getElementById('soExp').textContent = s.expDate || '-';
+    calcSoSelisih(); 
+    // Auto-focus physical info after scanning
+    setTimeout(() => { document.getElementById('soFisik').focus(); }, 300);
+  }
+}
+function calcSoSelisih() {
+  const sis=parseFloat(v('soSistem'))||0, fis=parseFloat(v('soFisik'))||0, sel=fis-sis;
+  const el=document.getElementById('soSelisihWrap'), txt=document.getElementById('soSelisihText');
+  el.style.display='block'; txt.textContent=(sel>0?'+':'')+sel; txt.className=sel>0?'positive':(sel<0?'negative':'');
+}
+function submitStockOpname(isQueue = false) {
+  const t = v('soTanggal'), id = v('soStockId'), sis = v('soSistem'), fis = v('soFisik'), cat = v('soCatatan');
+  if(!t || (isQueue ? false : !id) || fis==='') return toast('Masukkan jumlah fisik','error');
+  
+  let s = isQueue ? opnameQueue[currentOpnameIndex] : stockData.find(x=>x.id===id);
+  let stockId = isQueue ? s.id : id;
+
+  const btn = isQueue ? document.getElementById('btnNextSo') : document.querySelector('#soFooterSingle .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳...';
+
+  google.script.run.withSuccessHandler(res=>{ 
+    btn.disabled = false; btn.textContent = isQueue ? '♻️ Simpan & Lanjut' : '💾 Ajukan Opname';
+    if(res.success){ 
+      toast('Audit ' + s.sku + ' disimpan ✅'); 
+      if(isQueue) {
+        currentOpnameIndex++;
+        if(currentOpnameIndex < opnameQueue.length) { renderQueueItem(); } 
+        else { toast('🎉 Seluruh Tugas Selesai!', 'success'); closeModal('modalStockOpname'); loadStockOpname(); }
+      } else {
+        closeModal('modalStockOpname'); loadStockOpname();
+      }
+    } else toast(res.message, 'error'); 
+  }).submitStockOpname(t, stockId, s.sku, s.nama, s.lokasi, s.batch, s.expDate, sis, fis, cat, currentUser.username);
+}
+
+// BULK SO LOGIC
+function openSoSelection() {
+  document.getElementById('searchSoSelect').value = '';
+  document.getElementById('checkAllSo').checked = false;
+  renderSoSelectionList();
+  openModal('modalSoSelection');
+}
+function renderSoSelectionList() {
+  const q = v('searchSoSelect').toLowerCase();
+  const tb = document.getElementById('tblSoSelection'); tb.innerHTML = '';
+  stockData.filter(s => s.sku.toLowerCase().includes(q) || s.nama.toLowerCase().includes(q)).forEach(s => {
+    tb.innerHTML += `<tr>
+      <td><input type="checkbox" class="so-check" value="${s.id}" onchange="updateSoSelectionCount()"></td>
+      <td><strong>${s.sku}</strong><br><small>${s.nama}</small></td>
+      <td>${s.batch || '-'}</td>
+      <td><span class="badge-tb">${s.lokasi || '-'}</span></td>
+      <td>${s.stok}</td>
+    </tr>`;
+  });
+  updateSoSelectionCount();
+}
+function toggleAllSo(el) {
+  document.querySelectorAll('.so-check').forEach(c => c.checked = el.checked);
+  updateSoSelectionCount();
+}
+function updateSoSelectionCount() {
+  const count = document.querySelectorAll('.so-check:checked').length;
+  document.getElementById('btnStartSoQueue').textContent = `🏁 Mulai Sesi Opname (${count} Terpilih)`;
+  document.getElementById('btnStartSoQueue').disabled = count === 0;
+}
+function startSoQueueFromSelection() {
+  const ids = Array.from(document.querySelectorAll('.so-check:checked')).map(c => c.value);
+  const items = stockData.filter(s => ids.includes(s.id));
+  closeModal('modalSoSelection');
+  startQueuedOpname(items);
+}
+function startAllSoQueue() {
+  if(confirm('Mulai audit untuk seluruh gudang? ('+stockData.length+' item)')) {
+    startQueuedOpname(stockData);
+  }
+}
+function startQueuedOpname(items) {
+  opnameQueue = items; currentOpnameIndex = 0;
+  document.getElementById('soQueueInfo').style.display = 'block';
+  document.getElementById('soFooterQueue').style.display = 'flex';
+  document.getElementById('soSelectWrap').style.display = 'none';
+  document.getElementById('soFooterSingle').style.display = 'none';
+  renderQueueItem();
+  openModal('modalStockOpname');
+}
+function renderQueueItem() {
+  const s = opnameQueue[currentOpnameIndex];
+  document.getElementById('soQueueCurrent').textContent = currentOpnameIndex + 1;
+  document.getElementById('soQueueTotal').textContent = opnameQueue.length;
+  
+  // Fill Info
+  document.getElementById('soInfoBarang').style.display = 'block';
+  document.getElementById('soSKU').textContent = s.sku;
+  document.getElementById('soNama').textContent = s.nama;
+  document.getElementById('soLokasi').textContent = s.lokasi || '-';
+  document.getElementById('soBatch').textContent = s.batch || '-';
+  document.getElementById('soExp').textContent = s.expDate || '-';
+  
+  setVal('soSistem', s.stok);
+  setVal('soFisik', '');
+  setVal('soCatatan', '');
+  document.getElementById('soSelisihWrap').style.display = 'none';
+  
+  // Update button text if last item
+  document.getElementById('btnNextSo').textContent = (currentOpnameIndex === opnameQueue.length - 1) ? '💾 Simpan & Selesai' : '♻️ Simpan & Lanjut';
+  
+  // PDA Auto-focus
+  setTimeout(() => { document.getElementById('soFisik').focus(); }, 300);
+}
+function skipSoQueue() {
+  currentOpnameIndex++;
+  if(currentOpnameIndex < opnameQueue.length) renderQueueItem();
+  else { toast('Sesi opname selesai'); closeModal('modalStockOpname'); loadStockOpname(); }
+}
+function finishSoQueue() {
+  if(confirm('Akhiri sesi opname sekarang? Progres yang sudah disimpan tetap masuk.')) {
+    closeModal('modalStockOpname'); loadStockOpname();
+  }
+}
+function procOpname(id, st) {
+  if(confirm('Konfirmasi '+st+' opname ini?'+(st==='Approved'?' Stok master akan diperbarui.':'')))
+    google.script.run.withSuccessHandler(res=>{ if(res.success){ toast('Berhasil diproses'); loadStockOpname(); loadStock(); } else toast(res.message,'error'); })
+      .approveStockOpname(id, st, currentUser.username);
+}
+
+// PACKING LIST LOGIC
+function loadPackingList() {
+  google.script.run.withSuccessHandler(res=>{
+    const tb=document.getElementById('tablePackingList'); tb.innerHTML='';
+    if(!res.data.length){ tb.innerHTML='<tr><td colspan="6" class="empty-state">Belum ada dokumen</td></tr>'; return; }
+    res.data.sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal)).forEach(d=>{
+      tb.innerHTML+=`<tr>
+        <td>${formatDate(d.tanggal)}</td>
+        <td><strong>${d.noPL}</strong></td>
+        <td>${d.keterangan}</td>
+        <td>${d.createdBy}</td>
+        <td>${d.fileUrl?`<a href="${d.fileUrl}" target="_blank" class="btn btn-ghost btn-sm">🔗 Buka</a>`:'-'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="delPackingList('${d.id}')">✕</button></td>
+      </tr>`;
+    });
+  }).getPackingList();
+}
+function submitPackingList() {
+  const t=v('plTanggal'), no=v('plNo'), ket=v('plKet');
+  if(!t||!no) return toast('Lengkapi data','error');
+  
+  const btn=document.getElementById('btnSavePl');
+  btn.setAttribute('data-orig', '💾 Simpan Dokumen');
+  btn.disabled=true; btn.textContent='⏳...';
+  
+  const proceed = url => {
+    const user = (currentUser && currentUser.username) ? currentUser.username : 'User';
+    google.script.run.withSuccessHandler(res=>{ 
+      btn.disabled=false; btn.textContent='💾 Simpan Dokumen';
+      if(res.success){ 
+        toast('Dokumen Tersimpan'); closeModal('modalPackingList'); loadPackingList(); resetForm(['plNo','plKet','plUrl']); removeFile('pl');
+      } else {
+        console.error('Save Error:', res.message);
+        toast(res.message, 'error'); 
+      }
+    }).withFailureHandler(err => {
+      btn.disabled=false; btn.textContent='💾 Simpan Dokumen';
+      console.error('Script Run Error:', err);
+      toast('Terjadi kesalahan sistem: ' + err.message, 'error');
+    }).addPackingList(t, no, ket, url, user);
+  };
+
+  const f = document.getElementById('plFile').files[0] || window['_droppedFile_pl'];
+  const panel = document.getElementById('pl-panel-upload').classList.contains('active');
+  const manualUrl = v('plUrl');
+
+  if(panel && f) { 
+    window['_droppedFile_pl']=null; 
+    uploadFileAndProceed('pl', f, 'Packing List', proceed, btn); 
+  } else if (!panel && manualUrl) {
+    proceed(manualUrl);
+  } else if (panel && !f) {
+    btn.disabled=false; btn.textContent='💾 Simpan Dokumen';
+    toast('Silakan pilih file terlebih dahulu', 'error');
+  } else {
+    proceed('');
+  }
+}
+function delPackingList(id) { if(confirm('Hapus dokumen ini?')) google.script.run.withSuccessHandler(res=>{ if(res.success) { toast('Dihapus'); loadPackingList(); } else toast(res.message,'error'); }).deleteRow('PackingList', id); }
+
+// ============================================================
+// PACKING LOGIC
+// ============================================================
+let currentPackingOrderId = null;
+let currentPackingItems = [];
+
+
+
+// ============================================================
+// UPLOAD BUKTI PACKING
+// ============================================================
+let currentUploadOrderId = null;
+let selectedPackingFile = null;
+
+function openUploadPackingModal(id, no) {
+  currentUploadOrderId = id;
+  document.getElementById('upNoOrder').textContent = no;
+  clearFileSelection();
+  openModal('modalUploadPacking');
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Ukuran file maksimal 5MB','error');
+    input.value = ''; return;
+  }
+  selectedPackingFile = file;
+  document.getElementById('upFileName').textContent = file.name;
+  document.getElementById('upFilePreview').style.display = 'block';
+  document.getElementById('upDropZone').style.display = 'none';
+  document.getElementById('btnDoUpload').disabled = false;
+}
+
+function clearFileSelection() {
+  selectedPackingFile = null;
+  document.getElementById('upFileInput').value = '';
+  document.getElementById('upFileName').textContent = '';
+  document.getElementById('upFilePreview').style.display = 'none';
+  document.getElementById('upDropZone').style.display = 'block';
+  document.getElementById('btnDoUpload').disabled = true;
+}
+
+function handleUploadPacking() {
+  if (!selectedPackingFile || !currentUploadOrderId) return;
+  
+  const btn = document.getElementById('btnDoUpload');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengupload...';
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result.split(',')[1];
+    google.script.run.withSuccessHandler(res => {
+      btn.disabled = false; btn.textContent = originalText;
+      if(res.success) {
+        toast('✅ Bukti Packing Berhasil Disimpan!', 'success');
+        closeModal('modalUploadPacking');
+        loadOrder(); // Refresh agar tombol Lihat Bukti muncul
+      } else {
+        toast(res.message, 'error');
+      }
+    }).withFailureHandler(err => {
+      btn.disabled = false; btn.textContent = originalText;
+      toast('Koneksi Gagal: ' + err.message, 'error');
+    }).uploadPackingFile(currentUploadOrderId, selectedPackingFile.name, base64, selectedPackingFile.type);
+  };
+  reader.onerror = () => { toast('Gagal membaca file','error'); btn.disabled=false; btn.textContent=originalText; };
+  reader.readAsDataURL(selectedPackingFile);
+}
+function printOrderData(id) {
+  showDetailOrder(id);
+  setTimeout(() => { window.print(); }, 800);
 }
 </script>
 <!-- JS Script Imports -->
