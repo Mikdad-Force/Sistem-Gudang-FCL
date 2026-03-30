@@ -1733,11 +1733,14 @@
       }
 
       #modalDetailOrder,
-      #modalDetailOrder * {
+      #modalDetailOrder *,
+      #modalDetailLaporan,
+      #modalDetailLaporan * {
         visibility: visible !important;
       }
 
-      #modalDetailOrder {
+      #modalDetailOrder,
+      #modalDetailLaporan {
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
@@ -1751,7 +1754,10 @@
       #modalDetailOrder .modal-close,
       #modalDetailOrder .modal-footer,
       #modalDetailOrder .btn,
-      #modalDetailOrder .header-actions {
+      #modalDetailOrder .header-actions,
+      #modalDetailLaporan .modal-close,
+      #modalDetailLaporan .modal-footer,
+      #modalDetailLaporan .btn {
         display: none !important;
       }
 
@@ -3051,16 +3057,16 @@
 
   <div class="loading-screen" id="loadingScreen">
     <div class="spinner"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Gudang FCL</div>
-    <div style="color:var(--gray);font-size:13px;">Memuat sistem...</div>
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;" data-i18n="gudangFCLTitle">Gudang FCL</div>
+    <div style="color:var(--gray);font-size:13px;" data-i18n="memuatSistem">Memuat sistem...</div>
   </div>
 
   <div id="loginPage" style="display:none; z-index:9999;">
     <div class="login-card">
       <div class="login-logo">
         <div class="icon">🏭</div>
-        <h1 data-i18n="loginTitle">Gudang FCL</h1>
-        <p data-i18n="loginSub">Sistem Pengelola Gudang</p>
+        <h1 data-i18n="gudangFCLTitle">Gudang FCL</h1>
+        <p data-i18n="pengelolaGudangSub">Sistem Pengelola Gudang</p>
       </div>
       <div class="form-group"><label class="form-label" data-i18n="username">Username</label><input type="text" class="form-control"
           id="loginUser" placeholder="Masukkan username" data-i18n="loginUserPlaceholder" autocomplete="username"></div>
@@ -3083,7 +3089,7 @@
             <div class="sidebar-brand">
               <div class="brand-icon">🏭</div>
               <div>
-                <h2>Gudang FCL</h2><span>Sistem Pengelola Gudang</span>
+                <h2 data-i18n="gudangFCLTitle">Gudang FCL</h2><span data-i18n="pengelolaGudangSub">Sistem Pengelola Gudang</span>
               </div>
             </div>
           </div>
@@ -3192,7 +3198,7 @@
               <div class="card"
                 style="border-color:#f59e0b44; background:linear-gradient(135deg, #f59e0b11, #1a3a5c55);">
                 <div class="card-header" style="margin-bottom:12px;">
-                  <h4 data-i18n="menungguApproval">🔔 Menunggu Approval Saya</h4>
+                  <h4 data-i18n="menungguApprovalSaya">🔔 Menunggu Approval Saya</h4>
                 </div>
                 <div class="table-wrap">
                   <table class="table table-hover table-striped align-middle mt-2">
@@ -3244,7 +3250,7 @@
             <!-- Operasional -->
             <div class="card mb-4">
               <div class="card-header">
-                <h4 data-i18n="operasionalOrderan">👥 Operasional & Orderan (Hari Ini)</h4>
+                <h4 data-i18n="operasionalOrderanHariIni">👥 Operasional & Orderan (Hari Ini)</h4>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
@@ -3326,20 +3332,20 @@
           <div class="page" id="page-kasGudang">
             <div class="card mb-4">
               <div class="card-header">
-                <h4>💰 Kas Gudang</h4><button class="btn btn-primary" onclick="openModal('modalKasGudang')">+ Tambah
+                <h4 data-i18n="kasGudang">💰 Kas Gudang</h4><button class="btn btn-primary" onclick="openModal('modalKasGudang')" data-i18n="tambahTransaksi">+ Tambah
                   Transaksi</button>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Tipe</th>
-                      <th>Keterangan</th>
-                      <th>Nominal</th>
-                      <th>Bukti</th>
-                      <th>Input By</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="tipe">Tipe</th>
+                      <th data-i18n="keterangan">Keterangan</th>
+                      <th data-i18n="nominal">Nominal</th>
+                      <th data-i18n="bukti">Bukti</th>
+                      <th data-i18n="inputBy">Input By</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableKasGudang"></tbody>
@@ -3351,20 +3357,20 @@
           <div class="page" id="page-teamBuilding">
             <div class="card">
               <div class="card-header">
-                <h4>🤝 Team Building</h4><button class="btn btn-primary" onclick="openModal('modalTB')">+
+                <h4 data-i18n="teamBuilding">🤝 Team Building</h4><button class="btn btn-primary" onclick="openModal('modalTB')" data-i18n="tambah">+
                   Tambah</button>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Tipe</th>
-                      <th>Keterangan</th>
-                      <th>Nominal</th>
-                      <th>Bukti</th>
-                      <th>Input By</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="tipe">Tipe</th>
+                      <th data-i18n="keterangan">Keterangan</th>
+                      <th data-i18n="nominal">Nominal</th>
+                      <th data-i18n="bukti">Bukti</th>
+                      <th data-i18n="inputBy">Input By</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableTB"></tbody>
@@ -3377,45 +3383,45 @@
           <div class="page" id="page-expense">
             <div class="card mb-4">
               <div class="card-header">
-                <h4>📊 Dashboard Expense</h4>
+                <h4 data-i18n="expense">📊 Dashboard Expense</h4>
                 <div style="display:flex;gap:8px;">
                   <select class="form-select" id="filterBulanExpense" onchange="filterExpense()"
                     style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
-                    <option value="all">-- Semua Bulan --</option>
-                    <option value="1">Januari</option>
-                    <option value="2">Februari</option>
-                    <option value="3">Maret</option>
-                    <option value="4">April</option>
-                    <option value="5">Mei</option>
-                    <option value="6">Juni</option>
-                    <option value="7">Juli</option>
-                    <option value="8">Agustus</option>
-                    <option value="9">September</option>
-                    <option value="10">Oktober</option>
-                    <option value="11">November</option>
-                    <option value="12">Desember</option>
+                    <option value="all" data-i18n="semuaBulan">-- Semua Bulan --</option>
+                    <option value="1" data-i18n="jan">Januari</option>
+                    <option value="2" data-i18n="feb">Februari</option>
+                    <option value="3" data-i18n="mar">Maret</option>
+                    <option value="4" data-i18n="apr">April</option>
+                    <option value="5" data-i18n="mei">Mei</option>
+                    <option value="6" data-i18n="jun">Juni</option>
+                    <option value="7" data-i18n="jul">Juli</option>
+                    <option value="8" data-i18n="agu">Agustus</option>
+                    <option value="9" data-i18n="sep">September</option>
+                    <option value="10" data-i18n="okt">Oktober</option>
+                    <option value="11" data-i18n="nov">November</option>
+                    <option value="12" data-i18n="des">Desember</option>
                   </select>
                   <select class="form-select" id="filterTahunExpense" onchange="filterExpense()"
                     style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit;">
                   </select>
-                  <button class="btn btn-teal" onclick="printExpense()">🖨️ Print Laporan</button>
+                  <button class="btn btn-teal" onclick="printExpense()" data-i18n="refresh">🖨️ Print Laporan</button>
                 </div>
               </div>
               <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
                 <div class="stat-card red">
-                  <div class="stat-label">Total Pengeluaran (Tahun Terpilih)</div>
+                  <div class="stat-label" data-i18n="totalPengeluaranTahun">Total Pengeluaran (Tahun Terpilih)</div>
                   <div class="stat-value red" id="statExpenseTahun">Rp 0</div>
                   <div class="stat-icon">📉</div>
                 </div>
                 <div class="stat-card amber">
-                  <div class="stat-label">Total Pengeluaran (Bulan Terpilih)</div>
+                  <div class="stat-label" data-i18n="totalPengeluaranBulan">Total Pengeluaran (Bulan Terpilih)</div>
                   <div class="stat-value amber" id="statExpenseBulan">Rp 0</div>
                   <div class="stat-icon">💸</div>
                 </div>
               </div>
 
               <h4
-                style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;margin:16px 0 12px;color:var(--gray);">
+                style="font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;margin:16px 0 12px;color:var(--gray);" data-i18n="rincianPerPerusahaan">
                 🏢 Rincian per Perusahaan</h4>
               <div id="companyExpenseStats"
                 style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom: 8px;">
@@ -3431,14 +3437,14 @@
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Perusahaan</th>
-                      <th>Kategori</th>
-                      <th>Keterangan</th>
-                      <th>Nominal</th>
-                      <th>Bank & Rekening</th>
-                      <th>Input By</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="perusahaan">Perusahaan</th>
+                      <th data-i18n="kategori">Kategori</th>
+                      <th data-i18n="keterangan">Keterangan</th>
+                      <th data-i18n="nominal">Nominal</th>
+                      <th data-i18n="bankRekening">Bank & Rekening</th>
+                      <th data-i18n="inputBy">Input By</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableExpense"></tbody>
@@ -3452,7 +3458,7 @@
               <div class="stat-card"
                 style="background: linear-gradient(135deg, var(--navy2), #0f2040); border: 1px solid var(--accent); min-height: 100px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                  <div class="stat-label" style="color:var(--accent); font-weight:800; margin:0;">👥 Ringkasan Personil
+                  <div class="stat-label" style="color:var(--accent); font-weight:800; margin:0;" data-i18n="ringkasanPersonilLembur">👥 Ringkasan Personil
                     Lembur (Laporan Terbaru)</div>
                   <div id="lapCurrentDate" style="font-size:12px; color:var(--text-muted); font-weight:700;">-</div>
                 </div>
@@ -3464,11 +3470,11 @@
 
             <div class="card">
               <div class="card-header">
-                <h4>📝 Riwayat Laporan Kerja (Harian)</h4>
+                <h4 data-i18n="riwayatLaporanKerjaHarian">📝 Riwayat Laporan Kerja (Harian)</h4>
                 <div style="display:flex; gap:8px;">
                   <select id="filterLapDivisi" class="form-select" onchange="renderLaporanTable()"
                     style="padding:5px 10px; border-radius:6px; background:#ffffff0d; color:#fff; border:1px solid #ffffff18; font-family:inherit; font-size:12px; height: 32px;">
-                    <option value="">Semua Divisi</option>
+                    <option value="" data-i18n="semuaDivisi">Semua Divisi</option>
                     <option value="Marketplace">🛒 Marketplace</option>
                     <option value="Distributor">📦 Distributor</option>
                     <option value="Inbound">📥 Inbound</option>
@@ -3484,15 +3490,15 @@
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Divisi/Pic</th>
-                      <th>Jam Kerja</th>
-                      <th>Lembur</th>
-                      <th>PHL</th>
-                      <th>Total Order/PO/Inb</th>
-                      <th>Qty</th>
-                      <th>KPI</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="divisi">Divisi/Pic</th>
+                      <th data-i18n="jamKerja">Jam Kerja</th>
+                      <th data-i18n="lembur">Lembur</th>
+                      <th data-i18n="phl">PHL</th>
+                      <th data-i18n="totalOrder">Total Order/PO/Inb</th>
+                      <th data-i18n="qty">Qty</th>
+                      <th data-i18n="kpi">KPI</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableLaporanKerja"></tbody>
@@ -3581,32 +3587,32 @@
           <div class="page" id="page-klaim">
             <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px;">
               <div class="stat-card amber">
-                <div class="stat-label">Total Tagihan (Pending)</div>
+                <div class="stat-label" data-i18n="totalTagihanPending">Total Tagihan (Pending)</div>
                 <div class="stat-value amber" id="statKlaimPending">Rp 0</div>
                 <div class="stat-icon">⚠️</div>
               </div>
               <div class="stat-card green">
-                <div class="stat-label">Total Selesai Dibayar</div>
+                <div class="stat-label" data-i18n="totalSelesaiDibayar">Total Selesai Dibayar</div>
                 <div class="stat-value green" id="statKlaimSelesai">Rp 0</div>
                 <div class="stat-icon">✅</div>
               </div>
             </div>
             <div class="card">
               <div class="card-header">
-                <h4>⚠️ Laporan Klaim Paket</h4><button class="btn btn-primary" onclick="openModal('modalKlaim')">+
+                <h4 data-i18n="laporanKlaimPaket">⚠️ Laporan Klaim Paket</h4><button class="btn btn-primary" onclick="openModal('modalKlaim')" data-i18n="tambah">+
                   Tambah Laporan</button>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Nama PIC</th>
-                      <th>No. Resi</th>
-                      <th>Harga Paket</th>
-                      <th>Keterangan</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="namaPic">Nama PIC</th>
+                      <th data-i18n="noResi">No. Resi</th>
+                      <th data-i18n="hargaPaket">Harga Paket</th>
+                      <th data-i18n="keterangan">Keterangan</th>
+                      <th data-i18n="status">Status</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableKlaim"></tbody>
@@ -3619,22 +3625,22 @@
             <!-- STATS -->
             <div class="task-stats-wrap">
               <div class="task-stat blue">
-                <div class="task-stat-label">Total Tugas</div>
+                <div class="task-stat-label" data-i18n="totalTugas">Total Tugas</div>
                 <div class="task-stat-value" id="tpStatTotal" style="color:var(--teal)">0</div>
                 <div class="task-stat-icon">📋</div>
               </div>
               <div class="task-stat amber">
-                <div class="task-stat-label">Dalam Proses</div>
+                <div class="task-stat-label" data-i18n="dalamProses">Dalam Proses</div>
                 <div class="task-stat-value" id="tpStatProgress" style="color:var(--accent)">0</div>
                 <div class="task-stat-icon">🔄</div>
               </div>
               <div class="task-stat green">
-                <div class="task-stat-label">Selesai</div>
+                <div class="task-stat-label" data-i18n="selesai">Selesai</div>
                 <div class="task-stat-value" id="tpStatDone" style="color:var(--green)">0</div>
                 <div class="task-stat-icon">✅</div>
               </div>
               <div class="task-stat red">
-                <div class="task-stat-label">Melewati Target</div>
+                <div class="task-stat-label" data-i18n="melewatiTarget">Melewati Target</div>
                 <div class="task-stat-value" id="tpStatOverdue" style="color:var(--red)">0</div>
                 <div class="task-stat-icon">⚠️</div>
               </div>
@@ -3643,24 +3649,24 @@
             <!-- FILTER + ADD BUTTON -->
             <div class="card mb-4">
               <div class="card-header">
-                <h4>📋 Tugas Project Warehouse</h4>
-                <button class="btn btn-primary" onclick="openTugasModal()">+ Buat Tugas</button>
+                <h4 data-i18n="tugasProjectWarehouse">📋 Tugas Project Warehouse</h4>
+                <button class="btn btn-primary" onclick="openTugasModal()" data-i18n="buatTugas">+ Buat Tugas</button>
               </div>
 
               <div class="task-filter-bar">
                 <select class="form-select" id="tpFilterStatus" onchange="renderTugasProject()">
-                  <option value="">Semua Status</option>
+                  <option value="" data-i18n="semuaStatus">Semua Status</option>
                   <option value="Todo">Todo</option>
-                  <option value="In Progress">In Progress</option>
+                  <option value="In Progress" data-i18n="dalamProses">In Progress</option>
                   <option value="Review">Review</option>
-                  <option value="Done">Done</option>
+                  <option value="Done" data-i18n="selesai">Done</option>
                   <option value="Dibatalkan">Dibatalkan</option>
                 </select>
                 <select class="form-select" id="tpFilterAssignee" onchange="renderTugasProject()">
-                  <option value="">Semua Assignee</option>
+                  <option value="" data-i18n="semuaAssignee">Semua Assignee</option>
                 </select>
                 <select class="form-select" id="tpFilterPriority" onchange="renderTugasProject()">
-                  <option value="">Semua Prioritas</option>
+                  <option value="" data-i18n="semuaPrioritas">Semua Prioritas</option>
                   <option value="Tinggi">Tinggi</option>
                   <option value="Sedang">Sedang</option>
                   <option value="Rendah">Rendah</option>
@@ -3707,42 +3713,42 @@
             <div class="stats-grid"
               style="grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:20px;">
               <div class="stat-card teal">
-                <div class="stat-label">Karyawan Aktif</div>
+                <div class="stat-label" data-i18n="karyawanAktif">Karyawan Aktif</div>
                 <div class="stat-value teal" id="statTotalKar">0</div>
                 <div class="stat-icon">👥</div>
               </div>
               <div class="stat-card blue">
-                <div class="stat-label">Riwayat Resign</div>
+                <div class="stat-label" data-i18n="riwayatResign">Riwayat Resign</div>
                 <div class="stat-value blue" id="statTotalRiwayat">0</div>
                 <div class="stat-icon">📜</div>
               </div>
               <div class="stat-card red">
-                <div class="stat-label">SP Aktif</div>
+                <div class="stat-label" data-i18n="spAktif">SP Aktif</div>
                 <div class="stat-value red" id="statTotalSP">0</div>
                 <div class="stat-icon">⚠️</div>
               </div>
               <div class="stat-card green">
-                <div class="stat-label">Tetap</div>
+                <div class="stat-label" data-i18n="tetap">Tetap</div>
                 <div class="stat-value green" id="statTetap">0</div>
                 <div class="stat-icon">💼</div>
               </div>
               <div class="stat-card amber">
-                <div class="stat-label">Kontrak</div>
+                <div class="stat-label" data-i18n="kontrak">Kontrak</div>
                 <div class="stat-value amber" id="statKontrak">0</div>
                 <div class="stat-icon">📝</div>
               </div>
               <div class="stat-card blue">
-                <div class="stat-label">Ijin Hari Ini</div>
+                <div class="stat-label" data-i18n="ijinHariIni">Ijin Hari Ini</div>
                 <div class="stat-value blue" id="statIjinToday">0</div>
                 <div class="stat-icon">🚻</div>
               </div>
               <div class="stat-card orange">
-                <div class="stat-label">Cuti Hari Ini</div>
+                <div class="stat-label" data-i18n="cutiHariIni">Cuti Hari Ini</div>
                 <div class="stat-value orange" id="statCutiToday">0</div>
                 <div class="stat-icon">🏡</div>
               </div>
               <div class="stat-card red">
-                <div class="stat-label">Sakit Hari Ini</div>
+                <div class="stat-label" data-i18n="sakitHariIni">Sakit Hari Ini</div>
                 <div class="stat-value red" id="statSakitToday">0</div>
                 <div class="stat-icon">🏥</div>
               </div>
@@ -3880,20 +3886,20 @@
           <div class="page" id="page-ijin">
             <div class="card">
               <div class="card-header">
-                <h4>✉️ Pengajuan Ijin & Cuti</h4>
-                <button class="btn btn-primary" onclick="openModal('modalIjin')">+ Ajukan Ijin</button>
+                <h4 data-i18n="ijin">✉️ Pengajuan Ijin & Cuti</h4>
+                <button class="btn btn-primary" onclick="openModal('modalIjin')" data-i18n="ajukanIjin">+ Ajukan Ijin</button>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal Mulai</th>
-                      <th>Nama Karyawan</th>
-                      <th>Jenis Ijin / Cuti</th>
-                      <th>Keterangan</th>
-                      <th>Bukti/Surat</th>
-                      <th>Status Approval</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tglMulai">Tanggal Mulai</th>
+                      <th data-i18n="namaKaryawan">Nama Karyawan</th>
+                      <th data-i18n="jenisIjinCuti">Jenis Ijin / Cuti</th>
+                      <th data-i18n="keterangan">Keterangan</th>
+                      <th data-i18n="bukti">Bukti/Surat</th>
+                      <th data-i18n="statusApproval">Status Approval</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableIjin"></tbody>
@@ -3906,44 +3912,44 @@
             <!-- STAT CARDS -->
             <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
               <div class="stat-card teal">
-                <div class="stat-label">Total Pengajuan</div>
+                <div class="stat-label" data-i18n="totalPengajuan">Total Pengajuan</div>
                 <div class="stat-value teal" id="statAssetTotal">0</div>
                 <div class="stat-icon">📦</div>
               </div>
               <div class="stat-card amber">
-                <div class="stat-label">Menunggu Approval</div>
+                <div class="stat-label" data-i18n="menungguApproval">Menunggu Approval</div>
                 <div class="stat-value amber" id="statAssetPending">0</div>
                 <div class="stat-icon">⏳</div>
               </div>
               <div class="stat-card green">
-                <div class="stat-label">Disetujui</div>
+                <div class="stat-label" data-i18n="disetujui">Disetujui</div>
                 <div class="stat-value green" id="statAssetApproved">0</div>
                 <div class="stat-icon">✅</div>
               </div>
               <div class="stat-card red">
-                <div class="stat-label">Ditolak</div>
+                <div class="stat-label" data-i18n="ditolak">Ditolak</div>
                 <div class="stat-value red" id="statAssetRejected">0</div>
                 <div class="stat-icon">❌</div>
               </div>
             </div>
             <div class="card">
               <div class="card-header">
-                <h4>📦 Riwayat Pengajuan Asset</h4>
-                <button class="btn btn-primary" onclick="openModal('modalAsset')">+ Ajukan Asset</button>
+                <h4 data-i18n="riwayatPengajuanAsset">📦 Riwayat Pengajuan Asset</h4>
+                <button class="btn btn-primary" onclick="openModal('modalAsset')" data-i18n="ajukanAsset">+ Ajukan Asset</button>
               </div>
               <div class="table-wrap">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Nama Pemohon</th>
-                      <th>Jenis Asset</th>
-                      <th>Estimasi Harga</th>
-                      <th>Prioritas</th>
-                      <th>Deskripsi</th>
-                      <th>Bukti</th>
-                      <th>Status Approval</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th data-i18n="namaPemohon">Nama Pemohon</th>
+                      <th data-i18n="jenisAsset">Jenis Asset</th>
+                      <th data-i18n="estimasiHarga">Estimasi Harga</th>
+                      <th data-i18n="prioritas">Prioritas</th>
+                      <th data-i18n="deskripsi">Deskripsi</th>
+                      <th data-i18n="bukti">Bukti</th>
+                      <th data-i18n="statusApproval">Status Approval</th>
+                      <th data-i18n="aksi">Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="tableAsset"></tbody>
@@ -3971,17 +3977,17 @@
               <div class="stats-grid"
                 style="grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); margin-bottom:15px; gap:12px;">
                 <div class="stat-card blue">
-                  <div class="stat-label">Lembur di Laporan</div>
+                  <div class="stat-label" data-i18n="lemburDiLaporan">Lembur di Laporan</div>
                   <div class="stat-value blue" id="vStatLemburLap">0</div>
                   <div class="stat-icon">📑</div>
                 </div>
                 <div class="stat-card green">
-                  <div class="stat-label">Sudah Pengajuan</div>
+                  <div class="stat-label" data-i18n="sudahPengajuan">Sudah Pengajuan</div>
                   <div class="stat-value green" id="vStatLemburReq">0</div>
                   <div class="stat-icon">✅</div>
                 </div>
                 <div class="stat-card red">
-                  <div class="stat-label">Belum Pengajuan</div>
+                  <div class="stat-label" data-i18n="belumPengajuan">Belum Pengajuan</div>
                   <div class="stat-value red" id="vStatLemburMissing">0</div>
                   <div class="stat-icon">⚠️</div>
                 </div>
@@ -4058,10 +4064,10 @@
           <div class="page" id="page-sop">
             <div class="card">
               <div class="card-header">
-                <h4>📋 SOP Gudang</h4>
+                <h4 data-i18n="sopGudang">📋 SOP Gudang</h4>
                 <div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" id="btnExportSOP"
-                    onclick="doExportSOP()">📤 Ekspor ke Google Docs</button><button class="btn btn-primary"
-                    onclick="openModal('modalSOP')">+ Tambah SOP</button></div>
+                    onclick="doExportSOP()" data-i18n="eksporGoogleDocs">📤 Ekspor ke Google Docs</button><button class="btn btn-primary"
+                    onclick="openModal('modalSOP')" data-i18n="tambahSOP">+ Tambah SOP</button></div>
               </div>
               <div id="sopList"></div>
             </div>
@@ -4073,8 +4079,8 @@
               <div class="col-md-7 col-lg-8">
                 <div class="card h-100 d-flex flex-column" style="padding:0; overflow:hidden;">
                   <div class="card-header" style="padding:20px 24px; border-bottom:1px solid var(--border-color);">
-                    <h4 style="margin:0;">⚙️ Manajemen User</h4>
-                    <button class="btn btn-primary btn-sm" onclick="openUserModal()">+ Tambah User</button>
+                    <h4 style="margin:0;" data-i18n="manajemenUser">⚙️ Manajemen User</h4>
+                    <button class="btn btn-primary btn-sm" onclick="openUserModal()" data-i18n="tambahUser">+ Tambah User</button>
                   </div>
                   <div class="table-wrap" style="max-height: 600px; overflow-y: auto; border:none; border-radius:0;">
                     <table class="table table-hover table-striped align-middle">
@@ -4097,18 +4103,18 @@
               <div class="col-md-5 col-lg-4">
                 <div class="card h-100 d-flex flex-column" style="padding:0;">
                   <div class="card-header" style="padding:20px 24px; border-bottom:1px solid var(--border-color);">
-                    <h4 style="margin:0;">🔑 Ganti Password</h4>
+                    <h4 style="margin:0;" data-i18n="gantiPassword">🔑 Ganti Password</h4>
                   </div>
                   <div class="p-4" style="flex:1;">
                     <div class="mb-4">
-                      <label class="form-label">Password Lama</label>
+                      <label class="form-label" data-i18n="passwordLama">Password Lama</label>
                       <input type="password" class="form-control" id="oldPass" placeholder="••••••••">
                     </div>
                     <div class="mb-4">
-                      <label class="form-label">Password Baru</label>
+                      <label class="form-label" data-i18n="passwordBaru">Password Baru</label>
                       <input type="password" class="form-control" id="newPass" placeholder="••••••••">
                     </div>
-                    <button class="btn btn-teal w-100 py-3" onclick="doChangePass()">
+                    <button class="btn btn-teal w-100 py-3" onclick="doChangePass()" data-i18n="perbaruiPassword">
                       🔄 Perbarui Password
                     </button>
                   </div>
@@ -4120,22 +4126,22 @@
           <div class="page" id="page-stock">
             <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
               <div class="stat-card teal">
-                <div class="stat-label">Total Jenis Barang</div>
+                <div class="stat-label" data-i18n="totalJenisBarang">Total Jenis Barang</div>
                 <div class="stat-value teal" id="statTotalSKU">0</div>
                 <div class="stat-icon">📦</div>
               </div>
               <div class="stat-card green">
-                <div class="stat-label">Total Stok (Unit)</div>
+                <div class="stat-label" data-i18n="totalStokUnit">Total Stok (Unit)</div>
                 <div class="stat-value green" id="statTotalStok">0</div>
                 <div class="stat-icon">✅</div>
               </div>
               <div class="stat-card amber">
-                <div class="stat-label">Stok Rendah</div>
+                <div class="stat-label" data-i18n="stokRendah">Stok Rendah</div>
                 <div class="stat-value amber" id="statStokRendah">0</div>
                 <div class="stat-icon">⚠️</div>
               </div>
               <div class="stat-card red">
-                <div class="stat-label">Hampir Exp (30hr)</div>
+                <div class="stat-label" data-i18n="hampirExp">Hampir Exp (30hr)</div>
                 <div class="stat-value red" id="statExpSoon">0</div>
                 <div class="stat-icon">📅</div>
               </div>
@@ -4653,19 +4659,19 @@
           <div class="modal-overlay" id="modalLaporanKerja">
             <div class="custom-modal" style="width: 780px;"><button class="modal-close"
                 onclick="closeModal('modalLaporanKerja')">✕</button>
-              <h3 id="lapModalTitle">📝 Input Laporan Pengerjaan Orderan</h3>
+              <h3 id="lapModalTitle" data-i18n="inputLaporanOrderan">📝 Input Laporan Pengerjaan Orderan</h3>
               <input type="hidden" id="lapEditId">
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Laporan</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggalLaporan">Tanggal Laporan</label><input type="date"
                     class="form-control" id="lapTanggal" onchange="checkLaporanExisting()"></div>
-                <div class="col-md mb-2"><label class="form-label">Shift</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="shift">Shift</label><select class="form-select"
                     id="lapShift">
                     <option value="Pagi">☀️ Shift Pagi</option>
                     <option value="Malam">🌙 Shift Malam</option>
                   </select></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Divisi</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="divisi">Divisi</label><select class="form-select"
                     id="lapDivisi" onchange="updateLapFields()">
                     <option value="Marketplace">🛒 Marketplace</option>
                     <option value="Distributor">📦 Distributor</option>
@@ -4673,38 +4679,38 @@
                     <option value="KOL">🎥 KOL</option>
                     <option value="Inbound">📥 Inbound</option>
                   </select></div>
-                <div class="col-md mb-2"><label class="form-label">Nama Pelapor (PIC)</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="namaPelaporPic">Nama Pelapor (PIC)</label><input type="text"
                     class="form-control" id="lapPic" placeholder="Contoh: Andi"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Total Pekerja Utama</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="totalPekerjaUtama">Total Pekerja Utama</label><input type="number"
                     class="form-control" id="lapOrang" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-                <div class="col-md mb-2"><label class="form-label">Total Admin</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="totalAdmin">Total Admin</label><input type="number"
                     class="form-control" id="lapAdmin" placeholder="0" min="0" oninput="calcJamKerja()"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Total PHL</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="totalPhl">Total PHL</label><input type="number"
                     class="form-control" id="lapPhl" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-                <div class="col-md mb-2"><label class="form-label">Jam Kerja PHL (Per Orang)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="jamKerjaPhl">Jam Kerja PHL (Per Orang)</label><input type="number"
                     class="form-control" id="lapJamPhl" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()">
                 </div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Orang Perbantuan (+)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="orangPerbantuan">Orang Perbantuan (+)</label><input type="number"
                     class="form-control" id="lapOrangBantu" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-                <div class="col-md mb-2"><label class="form-label">Jam / Orang (Bantu)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="jamOrangBantu">Jam / Orang (Bantu)</label><input type="number"
                     class="form-control" id="lapJamBantu" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()">
                 </div>
-                <div class="col-md mb-2"><label class="form-label">Orang Pengurangan (-)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="orangPengurangan">Orang Pengurangan (-)</label><input type="number"
                     class="form-control" id="lapOrangKurang" placeholder="0" min="0" oninput="calcJamKerja()"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Jam / Orang (Kurang)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="jamOrangKurang">Jam / Orang (Kurang)</label><input type="number"
                     class="form-control" id="lapJamKurang" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()">
                 </div>
-                <div class="col-md mb-2"><label class="form-label">Total Pekerja Lembur</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="totalPekerjaLembur">Total Pekerja Lembur</label><input type="number"
                     class="form-control" id="lapOrangLembur" placeholder="0" min="0" oninput="calcJamKerja()"></div>
-                <div class="col-md mb-2"><label class="form-label">Lama Lembur (Jam)</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="lamaLemburJam">Lama Lembur (Jam)</label><input type="number"
                     class="form-control" id="lapLembur" placeholder="0" min="0" step="0.5" oninput="calcJamKerja()">
                 </div>
               </div>
@@ -4756,7 +4762,7 @@
                     (Bantu x Jam) - ( Kurang x Jam ) + (Lembur x Jam)</span></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Kendala Pekerjaan</label><textarea
+                <div class="col-md mb-2"><label class="form-label" data-i18n="kendalaPekerjaan">Kendala Pekerjaan</label><textarea
                     class="form-control" id="lapKendala" placeholder="Tuliskan kendala yang dihadapi (jika ada)..."
                     style="min-height: 80px;"></textarea></div>
               </div>
@@ -4781,56 +4787,56 @@
 
           <div class="modal-overlay" id="modalHandover">
             <div class="custom-modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button>
-              <h3>📦 Input Laporan Hand Over</h3>
+              <h3 data-i18n="inputLaporanHandover">📦 Input Laporan Hand Over</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal</label><input type="date"
                     class="form-control" id="hoTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="namaPic">Nama PIC</label><input type="text"
                     class="form-control" id="hoPic" placeholder="Nama pengurus"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Nomor Resi</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="nomorResi">Nomor Resi</label><input type="text"
                     class="form-control" id="hoResi" placeholder="Masukkan nomor resi"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Pengerjaan</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="pengerjaan">Pengerjaan</label><input type="text"
                     class="form-control" id="hoPengerjaan" placeholder="Misal: Repacking, Ganti Label, dll."></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Keterangan Tambahan</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keteranganTambahan">Keterangan Tambahan</label><input type="text"
                     class="form-control" id="hoKeterangan" placeholder="Opsional..."></div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary"
-                  onclick="submitHandover()">💾 Simpan Laporan</button></div>
+                  onclick="closeModal('modalHandover')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+                  onclick="submitHandover()" data-i18n="simpanLaporan">💾 Simpan Laporan</button></div>
             </div>
           </div>
           <div class="modal-overlay" id="modalKlaim">
             <div class="custom-modal"><button class="modal-close" onclick="closeModal('modalKlaim')">✕</button>
-              <h3>⚠️ Input Laporan Klaim Paket</h3>
+              <h3 data-i18n="inputLaporanKlaim">⚠️ Input Laporan Klaim Paket</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal</label><input type="date"
                     class="form-control" id="klTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="namaPic">Nama PIC</label><input type="text"
                     class="form-control" id="klPic" placeholder="Nama pengurus"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Nomor Resi</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="nomorResi">Nomor Resi</label><input type="text"
                     class="form-control" id="klResi" placeholder="Masukkan nomor resi"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Harga Paket (Rp)</label>
+                <div class="col-md mb-2"><label class="form-label" data-i18n="hargaPaketRp">Harga Paket (Rp)</label>
                   <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control"
                       id="klHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
                 </div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keteranganDetail">Keterangan Detail</label><input type="text"
                     class="form-control" id="klKeterangan" placeholder="Penyebab klaim, dll."></div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalKlaim')">Batal</button><button class="btn btn-primary"
-                  onclick="submitKlaim()">💾 Simpan Laporan</button></div>
+                  onclick="closeModal('modalKlaim')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+                  onclick="submitKlaim()" data-i18n="simpanLaporan">💾 Simpan Laporan</button></div>
             </div>
           </div>
 
@@ -4840,16 +4846,16 @@
               <h3 id="tugasModalTitle">📋 Buat Tugas Baru</h3>
               <input type="hidden" id="tpEditId">
               <div class="row mb-3">
-                <div class="f-group" style="grid-column:1/-1;"><label class="form-label">Judul Tugas *</label><input
+                <div class="f-group" style="grid-column:1/-1;"><label class="form-label" data-i18n="judulTugas">Judul Tugas *</label><input
                     type="text" class="form-control" id="tpJudul" placeholder="Contoh: Pengecekan Stok Bulanan Area A">
                 </div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Assignee (Ditugaskan ke) *</label><select
+                <div class="col-md mb-2"><label class="form-label" data-i18n="assignee">Assignee (Ditugaskan ke) *</label><select
                     class="form-select" id="tpAssignee">
                     <option value="">-- Pilih User --</option>
                   </select></div>
-                <div class="col-md mb-2"><label class="form-label">Prioritas</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="prioritas">Prioritas</label><select class="form-select"
                     id="tpPriority">
                     <option value="Sedang">Sedang</option>
                     <option value="Tinggi">Tinggi</option>
@@ -4857,17 +4863,17 @@
                   </select></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Mulai *</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tglMulai">Tanggal Mulai *</label><input type="date"
                     class="form-control" id="tpTanggalMulai" onchange="hitungDurasi('tanggal')"></div>
-                <div class="col-md mb-2"><label class="form-label">Target Selesai *</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="targetSelesai">Target Selesai *</label><input type="date"
                     class="form-control" id="tpDeadline" onchange="hitungDurasi('tanggal')"></div>
-                <div class="col-md mb-2"><label class="form-label">Target Hari Selesai</label><input type="number"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="targetHariSelesai">Target Hari Selesai</label><input type="number"
                     class="form-control" id="tpTargetHari" min="1" placeholder="Otomatis / manual"
                     oninput="hitungDurasi('hari')"></div>
               </div>
               <div class="duration-display" id="tpDurasiInfo">📅 Durasi: <span id="tpDurasiText"></span></div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Status</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="status">Status</label><select class="form-select"
                     id="tpStatus">
                     <option value="Todo">📌 Todo</option>
                     <option value="In Progress">🔄 In Progress</option>
@@ -4875,17 +4881,17 @@
                     <option value="Done">✅ Done</option>
                     <option value="Dibatalkan">❌ Dibatalkan</option>
                   </select></div>
-                <div class="col-md mb-2"><label class="form-label">Kategori / Area</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="kategoriArea">Kategori / Area</label><input type="text"
                     class="form-control" id="tpKategori" placeholder="Contoh: Inbound, Stok, Operasional"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Deskripsi / Catatan</label><textarea
+                <div class="col-md mb-2"><label class="form-label" data-i18n="deskripsiCatatan">Deskripsi / Catatan</label><textarea
                     class="form-control" id="tpDeskripsi" rows="3"
                     placeholder="Jelaskan detail tugas yang harus diselesaikan..."></textarea></div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalTugasProject')">Batal</button><button class="btn btn-primary"
-                  onclick="saveTugasProject()">💾 Simpan Tugas</button></div>
+                  onclick="closeModal('modalTugasProject')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+                  onclick="saveTugasProject()" data-i18n="simpanTugas">💾 Simpan Tugas</button></div>
             </div>
           </div>
           <div class="modal-overlay" id="modalTugasDetail">
@@ -5178,15 +5184,15 @@
           <div class="modal-overlay" id="modalAsset">
             <div class="custom-modal" style="width:580px">
               <button class="modal-close" onclick="closeModal('modalAsset')">✕</button>
-              <h3>📦 Form Pengajuan Asset</h3>
+              <h3 data-i18n="formAsset">📦 Form Pengajuan Asset</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Pengajuan</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggalPengajuan">Tanggal Pengajuan</label><input type="date"
                     class="form-control" id="assetTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Nama Pemohon</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="namaPemohon">Nama Pemohon</label><input type="text"
                     class="form-control" id="assetNama" placeholder="Nama lengkap pemohon"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Jenis Asset</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="jenisAsset">Jenis Asset</label><select class="form-select"
                     id="assetJenis">
                     <option value="Laptop / PC">💻 Laptop / PC</option>
                     <option value="Printer / Scanner">🖨️ Printer / Scanner</option>
@@ -5197,7 +5203,7 @@
                     <option value="Elektronik">📱 Elektronik Lainnya</option>
                     <option value="Lainnya">📋 Lainnya</option>
                   </select></div>
-                <div class="col-md mb-2"><label class="form-label">Prioritas</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="prioritas">Prioritas</label><select class="form-select"
                     id="assetPrioritas">
                     <option value="Normal">🟢 Normal</option>
                     <option value="Mendesak">🟡 Mendesak</option>
@@ -5205,13 +5211,13 @@
                   </select></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Estimasi Harga (Rp)</label>
+                <div class="col-md mb-2"><label class="form-label" data-i18n="estimasiHarga">Estimasi Harga (Rp)</label>
                   <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control"
                       id="assetHarga" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
                 </div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Deskripsi Kebutuhan</label>
+                <div class="col-md mb-2"><label class="form-label" data-i18n="deskripsiKebutuhan">Deskripsi Kebutuhan</label>
                   <textarea class="form-control" id="assetDeskripsi"
                     placeholder="Jelaskan kebutuhan asset secara detail: spesifikasi, tujuan penggunaan, jumlah yang diperlukan..."
                     style="min-height:90px"></textarea>
@@ -5476,30 +5482,31 @@
                   onclick="submitStock()">💾 Simpan</button></div>
             </div>
           </div>
+          <!-- Modal Inbound -->
           <div class="modal-overlay" id="modalInbound">
             <div class="custom-modal" style="width:680px"><button class="modal-close"
                 onclick="closeModal('modalInbound')">✕</button>
-              <h3>📥 Form Inbound Barang</h3>
+              <h3 data-i18n="formInboundTitle">📥 Form Inbound Barang</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Masuk</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal Masuk</label><input type="date"
                     class="form-control" id="inbTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Supplier Pengirim</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="supplier">Supplier Pengirim</label><input type="text"
                     class="form-control" id="inbSupplier" placeholder="Nama Supplier"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan</label><input type="text"
                     class="form-control" id="inbKet" placeholder="Catatan tambahan (opsional)"></div>
               </div>
               <div style="margin-bottom:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Masuk</label>
+                  <label style="font-size:13px;color:#a0b4c8;font-weight:600;" data-i18n="inventory">Daftar Barang Masuk</label>
                   <div style="display:flex;gap:8px;">
                     <input type="file" id="fileImportInbound" accept=".csv" style="display:none"
                       onchange="handleImportInbound(this)">
                     <button class="btn btn-ghost btn-sm"
-                      onclick="document.getElementById('fileImportInbound').click()">📥
+                      onclick="document.getElementById('fileImportInbound').click()" data-i18n="importCsv">📥
                       Import CSV</button>
-                    <button class="btn btn-ghost btn-sm" onclick="addItemRow('inbItems','inbound')">+ Tambah
+                    <button class="btn btn-ghost btn-sm" onclick="addItemRow('inbItems','inbound')" data-i18n="tambahBaris">+ Tambah
                       Baris</button>
                   </div>
                 </div>
@@ -5509,150 +5516,150 @@
                   Batch, Exp</div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalInbound')">Batal</button><button class="btn btn-primary"
-                  onclick="submitInbound()">💾 Simpan & Tambah Stok</button></div>
+                  onclick="closeModal('modalInbound')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+                  onclick="submitInbound()" data-i18n="simpanTambahStok">💾 Simpan & Tambah Stok</button></div>
             </div>
           </div>
+          <!-- Modal Outbound -->
           <div class="modal-overlay" id="modalOutbound">
             <div class="custom-modal" style="width:680px"><button class="modal-close"
                 onclick="closeModal('modalOutbound')">✕</button>
-              <h3>✂️ Form Pemotongan Stok Manual</h3>
+              <h3 data-i18n="formOutboundTitle">✂️ Form Pemotongan Stok Manual</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Pemotongan</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tglPotong">Tanggal Pemotongan</label><input type="date"
                     class="form-control" id="outTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Alasan (Tujuan)</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="alasanTujuan">Alasan (Tujuan)</label><select class="form-select"
                     id="outTujuan">
-                    <option value="Barang Rusak/Expired">Barang Rusak / Expired</option>
-                    <option value="Selisih Stok Opname">Selisih Stok Opname</option>
-                    <option value="Pemakaian Internal">Pemakaian Internal</option>
-                    <option value="Lainnya">Lainnya</option>
+                    <option value="Barang Rusak/Expired" data-i18n="kadaluarsa">Barang Rusak / Expired</option>
+                    <option value="Selisih Stok Opname" data-i18n="stockOpname">Selisih Stok Opname</option>
+                    <option value="Pemakaian Internal" data-i18n="operasionalKerja">Pemakaian Internal</option>
+                    <option value="Lainnya" data-i18n="notifAll">Lainnya</option>
                   </select></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan Detail</label><input type="text"
                     class="form-control" id="outKet" placeholder="Jelaskan alasan pemotongan secara spesifik"></div>
               </div>
               <div style="margin-bottom:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label
-                    style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Dipotong</label><button
-                    class="btn btn-ghost btn-sm" onclick="addItemRow('outItems','outbound')">+ Tambah Baris</button>
+                    style="font-size:13px;color:#a0b4c8;font-weight:600;" data-i18n="inventory">Daftar Barang Dipotong</label><button
+                    class="btn btn-ghost btn-sm" onclick="addItemRow('outItems','outbound')" data-i18n="tambahBaris">+ Tambah Baris</button>
                 </div>
                 <div id="outItems"></div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalOutbound')">Batal</button><button class="btn btn-danger"
-                  onclick="submitOutbound()">✂️ Konfirmasi Potong Stok</button></div>
+                  onclick="closeModal('modalOutbound')" data-i18n="batal">Batal</button><button class="btn btn-danger"
+                  onclick="submitOutbound()" data-i18n="konfirmasiPotong">✂️ Konfirmasi Potong Stok</button></div>
             </div>
           </div>
+          <!-- Modal Retur -->
           <div class="modal-overlay" id="modalRetur">
             <div class="custom-modal" style="width:680px"><button class="modal-close"
                 onclick="closeModal('modalRetur')">✕</button>
-              <h3>↩️ Form Retur Barang</h3>
+              <h3 data-i18n="formReturTitle">↩️ Form Retur Barang</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Retur</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tglRetur">Tanggal Retur</label><input type="date"
                     class="form-control" id="retTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Alasan Retur</label><select class="form-select"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="alasan">Alasan Retur</label><select class="form-select"
                     id="retAlasan">
-                    <option value="Barang Salah Kirim">Barang Salah Kirim</option>
-                    <option value="Barang Rusak">Barang Rusak / Cacat</option>
-                    <option value="Kelebihan Pengiriman">Kelebihan Pengiriman</option>
-                    <option value="Tidak Sesuai Pesanan">Tidak Sesuai Pesanan</option>
-                    <option value="Lainnya">Lainnya</option>
+                    <option value="Barang Salah Kirim" data-i18n="error">Barang Salah Kirim</option>
+                    <option value="Barang Rusak" data-i18n="error">Barang Rusak / Cacat</option>
+                    <option value="Kelebihan Pengiriman" data-i18n="success">Kelebihan Pengiriman</option>
+                    <option value="Tidak Sesuai Pesanan" data-i18n="error">Tidak Sesuai Pesanan</option>
+                    <option value="Lainnya" data-i18n="notifAll">Lainnya</option>
                   </select></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Sumber Retur <span
-                      style="color:var(--gray);font-weight:400">(Pelanggan / Toko)</span></label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="sumberRetur">Sumber Retur</label><input type="text"
                     class="form-control" id="retSumber" placeholder="Nama pelanggan / toko yang meretur"></div>
-                <div class="col-md mb-2"><label class="form-label">Keterangan Detail</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan Detail</label><input type="text"
                     class="form-control" id="retKet" placeholder="Penjelasan tambahan (opsional)"></div>
               </div>
               <div style="margin-bottom:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <label style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Diretur</label>
+                  <label style="font-size:13px;color:#a0b4c8;font-weight:600;" data-i18n="inventory">Daftar Barang Diretur</label>
                   <div style="display:flex;gap:8px;">
                     <input type="file" id="fileImportRetur" accept=".csv" style="display:none"
                       onchange="handleImportRetur(this)">
-                    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileImportRetur').click()">📥
-                      Import
-                      CSV</button>
-                    <button class="btn btn-ghost btn-sm" onclick="addItemRow('retItems','retur')">+ Tambah
+                    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileImportRetur').click()" data-i18n="importCsv">📥
+                      Import CSV</button>
+                    <button class="btn btn-ghost btn-sm" onclick="addItemRow('retItems','retur')" data-i18n="tambahBaris">+ Tambah
                       Baris</button>
                   </div>
                 </div>
                 <div id="retItems"></div>
-                <div style="font-size:10px;color:var(--gray);margin-top:4px;">* Format Import: Tgl, Sumber, Alasan, Ket,
-                  SKU,
-                  Qty, Batch, Exp</div>
               </div>
               <div
-                style="background:#0ea5e912;border:1px solid #0ea5e922;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--teal);margin-bottom:16px;">
-                ℹ️ Barang yang diretur akan <strong>otomatis masuk kembali ke stok</strong> sesuai jumlah yang diinput.
+                style="background:#0ea5e912;border:1px solid #0ea5e922;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--teal);margin-bottom:16px;" data-i18n="notifSeeAll">
+                ℹ️ Barang yang diretur akan otomatis masuk kembali ke stok sesuai jumlah yang diinput.
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalRetur')">Batal</button><button class="btn btn-teal"
-                  onclick="submitRetur()">↩️ Konfirmasi Retur & Tambah Stok</button></div>
+                  onclick="closeModal('modalRetur')" data-i18n="batal">Batal</button><button class="btn btn-teal"
+                  onclick="submitRetur()" data-i18n="konfirmasiRetur">↩️ Konfirmasi Retur & Tambah Stok</button></div>
             </div>
           </div>
+          <!-- Modal Detail SJ -->
           <div class="modal-overlay" id="modalDetailSJ">
             <div class="custom-modal" style="width:640px"><button class="modal-close"
                 onclick="closeModal('modalDetailSJ')">✕</button>
-              <h3 id="detailSJTitle">Detail Surat Jalan</h3>
+              <h3 id="detailSJTitle" data-i18n="detailSJ">Detail Surat Jalan</h3>
               <div class="table-wrap" style="max-height:400px;overflow-y:auto;">
                 <table class="table table-hover table-striped align-middle mt-2">
                   <thead>
                     <tr>
-                      <th>SKU</th>
-                      <th>Nama</th>
-                      <th>Qty</th>
-                      <th>Satuan</th>
-                      <th>Batch</th>
-                      <th>Exp Date</th>
+                      <th data-i18n="sku">SKU</th>
+                      <th data-i18n="nama">Nama</th>
+                      <th data-i18n="qty">Qty</th>
+                      <th data-i18n="satuan">Satuan</th>
+                      <th data-i18n="batch">Batch</th>
+                      <th data-i18n="expDate">Exp Date</th>
                     </tr>
                   </thead>
                   <tbody id="tblDetailSJ"></tbody>
                 </table>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalDetailSJ')">Tutup</button></div>
+                  onclick="closeModal('modalDetailSJ')" data-i18n="tutup">Tutup</button></div>
             </div>
           </div>
+          <!-- Modal Order -->
           <div class="modal-overlay" id="modalOrder">
             <div class="custom-modal" style="width:680px"><button class="modal-close"
                 onclick="closeModal('modalOrder')">✕</button>
-              <h3>🛒 Buat Orderan Baru</h3>
+              <h3 data-i18n="formOrderTitle">🛒 Buat Orderan Baru</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Tanggal Order</label><input type="date"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="tglOrder">Tanggal Order</label><input type="date"
                     class="form-control" id="ordTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label">Nama Pelanggan</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="pelanggan">Nama Pelanggan</label><input type="text"
                     class="form-control" id="ordPelanggan" placeholder="Nama pelanggan / customer"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Alamat Pengiriman</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="alamat">Alamat Pengiriman</label><input type="text"
                     class="form-control" id="ordAlamat" placeholder="Alamat lengkap"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Keterangan</label><input type="text"
+                <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan</label><input type="text"
                     class="form-control" id="ordKet" placeholder="Catatan order (opsional)"></div>
               </div>
               <div style="margin-bottom:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><label
-                    style="font-size:13px;color:#a0b4c8;font-weight:600;">Daftar Barang Order</label><button
-                    class="btn btn-ghost btn-sm" onclick="addItemRow('ordItems','order')">+ Tambah Baris</button></div>
+                    style="font-size:13px;color:#a0b4c8;font-weight:600;" data-i18n="inventory">Daftar Barang Order</label><button
+                    class="btn btn-ghost btn-sm" onclick="addItemRow('ordItems','order')" data-i18n="tambahBaris">+ Tambah Baris</button></div>
                 <div id="ordItems"></div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
-                  onclick="closeModal('modalOrder')">Batal</button><button class="btn btn-primary"
-                  onclick="submitOrder()">💾 Simpan Order</button></div>
+                  onclick="closeModal('modalOrder')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+                  onclick="submitOrder()" data-i18n="simpan">💾 Simpan Order</button></div>
             </div>
           </div>
 
+          <!-- Modal Upload Packing -->
           <div class="modal-overlay" id="modalUploadPacking">
             <div class="custom-modal" style="width:480px"><button class="modal-close"
                 onclick="closeModal('modalUploadPacking')">✕</button>
               <div style="text-align:center; margin-bottom:20px;">
                 <div style="font-size:40px; margin-bottom:10px;">📤</div>
-                <h3 style="margin:0">Upload Bukti Packing</h3>
+                <h3 style="margin:0" data-i18n="uploadBukti">Upload Bukti Packing</h3>
                 <p id="upNoOrder" style="color:var(--accent); font-weight:800; font-size:16px; margin-top:4px;"></p>
               </div>
 
@@ -5662,23 +5669,22 @@
                   onchange="handleFileSelect(this)">
                 <div id="upDropZone" onclick="document.getElementById('upFileInput').click()" style="cursor:pointer;">
                   <i class="bi bi-cloud-arrow-up" style="font-size:48px; color:var(--accent);"></i>
-                  <p style="margin-top:10px; font-weight:600;">Klik untuk Pilih File Foto / PDF</p>
-                  <p style="font-size:12px; color:var(--text-muted);">Maksimal 5MB</p>
+                  <p style="margin-top:10px; font-weight:600;" data-i18n="klikPilihFile">Klik untuk Pilih File Foto / PDF</p>
+                  <p style="font-size:12px; color:var(--text-muted);" data-i18n="maksSize">Maksimal 5MB</p>
                 </div>
                 <div id="upFilePreview"
                   style="display:none; margin-top:15px; text-align:left; background:var(--bg-panel); padding:10px; border-radius:8px;">
                   <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span id="upFileName"
                       style="font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;"></span>
-                    <button class="btn btn-danger btn-sm" onclick="clearFileSelection()">Hapus</button>
+                    <button class="btn btn-danger btn-sm" onclick="clearFileSelection()" data-i18n="hapus">Hapus</button>
                   </div>
                 </div>
               </div>
 
               <div class="modal-footer">
-                <button class="btn btn-ghost" onclick="closeModal('modalUploadPacking')">Batal</button>
-                <button class="btn btn-primary" id="btnDoUpload" disabled onclick="handleUploadPacking()">🚀 Mulai
-                  Upload</button>
+                <button class="btn btn-ghost" onclick="closeModal('modalUploadPacking')" data-i18n="batal">Batal</button>
+                <button class="btn btn-primary" id="btnDoUpload" disabled onclick="handleUploadPacking()" data-i18n="mulaiUpload">🚀 Mulai Upload</button>
               </div>
             </div>
           </div>
@@ -5687,76 +5693,74 @@
         </div>
     </div>
 
+    <!-- Modal Stock Opname -->
     <div class="modal-overlay" id="modalStockOpname">
       <div class="custom-modal"><button class="modal-close" onclick="closeModal('modalStockOpname')">✕</button>
-        <h3>⚖️ Pengajuan Stock Opname</h3>
+        <h3 data-i18n="formStockOpnameTitle">⚖️ Pengajuan Stock Opname</h3>
         <div id="soQueueInfo"
           style="display:none; background:var(--accent); color:#000; padding:12px; border-radius:10px; font-weight:800; text-align:center; margin-bottom:16px; font-size:16px; box-shadow:0 4px 15px rgba(245,158,11,0.3);">
           📌 Audit Item <span id="soQueueCurrent">1</span> dari <span id="soQueueTotal">1</span>
         </div>
         <div class="row mb-3" id="soScanWrap"
           style="background:var(--accent-dim); padding:10px; border-radius:8px; margin-bottom:16px; border:1px solid var(--accent);">
-          <div class="col-md"><label class="form-label" style="color:var(--accent); font-weight:800;">🔍 SCAN BARCODE /
-              SKU</label>
-            <input type="text" class="form-control" id="soScan" placeholder="Klik di sini & Scan (Tekan Enter)..."
+          <div class="col-md"><label class="form-label" style="color:var(--accent); font-weight:800;" data-i18n="scanBarcode">🔍 SCAN BARCODE / SKU</label>
+            <input type="text" class="form-control" id="soScan" placeholder="Klik di sini & Scan..."
               onkeydown="if(event.key==='Enter') handleSoScan(this)"
               style="background:var(--bg-panel); border-color:var(--accent); color:#fff; font-size:16px;">
           </div>
         </div>
         <div class="row mb-3" id="soTglWrap" style="display:none">
-          <div class="col-md mb-2"><label class="form-label">Tanggal Opname</label><input type="date"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal Opname</label><input type="date"
               class="form-control" id="soTanggal"></div>
         </div>
         <div class="row mb-3" id="soSelectWrap">
-          <div class="col-md mb-2"><label class="form-label">Atau Pilih Manual</label><select class="form-select"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="pilihUser">Atau Pilih Manual</label><select class="form-select"
               id="soStockId" onchange="handleSoSelect(this)">${getStockOptions()}</select></div>
         </div>
 
         <div id="soInfoBarang"
           style="display:none; background:var(--navy3); border:2px solid var(--accent); border-radius:12px; padding:16px; margin-bottom:18px;">
           <div style="margin-bottom:12px; border-bottom:1px solid var(--border-light); padding-bottom:8px;">
-            <small
-              style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:11px; font-weight:800;">📍
-              Lokasi Penyimpanan</small>
+            <small style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:11px; font-weight:800;" data-i18n="lokasi">📍 Lokasi Penyimpanan</small>
             <div id="soLokasi" style="font-size:28px; font-weight:900; color:var(--accent); letter-spacing:1px;"></div>
           </div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <div style="grid-column: span 2;"><small class="text-muted">Nama Barang:</small>
+            <div style="grid-column: span 2;"><small class="text-muted" data-i18n="nama">Nama Barang:</small>
               <div id="soNama" style="font-size:16px; font-weight:700;"></div>
               <div id="soSKU" style="color:var(--teal); font-weight:700;"></div>
             </div>
-            <div><small class="text-muted">Batch:</small>
+            <div><small class="text-muted" data-i18n="batch">Batch:</small>
               <div id="soBatch" style="font-weight:600"></div>
             </div>
-            <div><small class="text-muted">Exp Date:</small>
+            <div><small class="text-muted" data-i18n="expDate">Exp Date:</small>
               <div id="soExp" style="font-weight:600; color:var(--red)"></div>
             </div>
           </div>
         </div>
 
         <div class="row mb-3">
-          <div class="col-md mb-2"><label class="form-label">Stok Sistem</label><input type="number"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="stokSistem">Stok Sistem</label><input type="number"
               class="form-control" id="soSistem" readonly
               style="background:var(--border-color); font-weight:700; color:var(--gray)"></div>
-          <div class="col-md mb-2"><label class="form-label">Jumlah Fisik (QTY)</label><input type="number"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="jumlahFisik">Jumlah Fisik (QTY)</label><input type="number"
               class="form-control" id="soFisik" placeholder="0" oninput="calcSoSelisih()" inputmode="numeric"
               style="font-size:24px; font-weight:800; height:60px; border:2px solid var(--teal); text-align:center;">
           </div>
         </div>
         <div id="soSelisihWrap"
           style="font-size:16px; margin-bottom:16px; font-weight:800; display:none; text-align:center; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05);">
-          Selisih: <span id="soSelisihText">0</span></div>
+          <span data-i18n="selisih">Selisih</span>: <span id="soSelisihText">0</span></div>
         <div class="row mb-3">
-          <div class="col-md mb-2"><label class="form-label">Catatan Admin/PDA</label><input type="text"
-              class="form-control" id="soCatatan" placeholder="Ketik keterangan (opsional)..."></div>
+          <div class="col-md mb-2"><label class="form-label" data-i18n="catatan">Catatan</label><input type="text"
+              class="form-control" id="soCatatan" data-i18n="keterangan" placeholder="Ketik keterangan (opsional)..."></div>
         </div>
         <div class="modal-footer" id="soFooterSingle"><button class="btn btn-ghost"
-            onclick="closeModal('modalStockOpname')">Batal</button><button class="btn btn-primary"
-            onclick="submitStockOpname()">💾 Ajukan Opname</button></div>
+            onclick="closeModal('modalStockOpname')" data-i18n="batal">Batal</button><button class="btn btn-primary"
+            onclick="submitStockOpname()" data-i18n="ajukanOpname">💾 Ajukan Opname</button></div>
         <div class="modal-footer" id="soFooterQueue" style="display:none;"><button class="btn btn-ghost"
-            onclick="finishSoQueue()">🏁 Batal</button><button class="btn btn-accent" onclick="skipSoQueue()">⏭️
+            onclick="finishSoQueue()" data-i18n="batal">🏁 Batal</button><button class="btn btn-accent" onclick="skipSoQueue()" data-i18n="lewatkan">⏭️
             Lewati</button><button class="btn btn-primary" id="btnNextSo" onclick="submitStockOpname(true)"
-            style="padding:12px 30px; font-size:16px;">♻️ Simpan & Lanjut</button></div>
+            style="padding:12px 30px; font-size:16px;" data-i18n="simpanLanjut">♻️ Simpan & Lanjut</button></div>
       </div>
     </div>
 
@@ -5786,29 +5790,29 @@
       </div>
     </div>
 
+    <!-- Modal Packing List -->
     <div class="modal-overlay" id="modalPackingList">
       <div class="custom-modal" style="width:580px"><button class="modal-close"
           onclick="closeModal('modalPackingList')">✕</button>
-        <h3>📋 Tambah Packing List Dokumen</h3>
+        <h3 data-i18n="formPackingListTitle">📋 Tambah Packing List Dokumen</h3>
         <div class="row mb-3">
-          <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal</label><input type="date" class="form-control"
               id="plTanggal"></div>
-          <div class="col-md mb-2"><label class="form-label">No. Packing List</label><input type="text"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="noOrder">No. Packing List</label><input type="text"
               class="form-control" id="plNo" placeholder="No. Dokumen / Resi"></div>
         </div>
         <div class="row mb-3">
-          <div class="col-md mb-2"><label class="form-label">Keterangan Dokumen</label><input type="text"
+          <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan Dokumen</label><input type="text"
               class="form-control" id="plKet" placeholder="Contoh: Packing List Gudang Utama"></div>
         </div>
 
         <div class="file-upload-tabs">
-          <div class="file-tab active" onclick="switchTab('pl','upload',this)">📁 Upload File</div>
-          <div class="file-tab" onclick="switchTab('pl','url',this)">🔗 Masukkan Link</div>
+          <div class="file-tab active" onclick="switchTab('pl','upload',this)" data-i18n="upload">📁 Upload File</div>
+          <div class="file-tab" onclick="switchTab('pl','url',this)" data-i18n="urlLink">🔗 Masukkan Link</div>
         </div>
 
         <div id="pl-panel-upload" class="file-panel active">
-          <div class="dropzone" id="pl-dropzone" onclick="document.getElementById('plFile').click()">📤 Klik atau Drag
-            file ke sini<input type="file" id="plFile" style="display:none" onchange="handleFileSelect('pl',this)">
+          <div class="dropzone" id="pl-dropzone" onclick="document.getElementById('plFile').click()" data-i18n="dragDrop">📤 Klik atau Drag file ke sini<input type="file" id="plFile" style="display:none" onchange="handleFileSelect('pl',this)">
           </div>
           <div class="file-preview" id="pl-preview">
             <div class="file-info">
@@ -5817,24 +5821,24 @@
                 <div id="pl-fname" style="font-weight:700">filename.pdf</div>
                 <div id="pl-fsize" style="font-size:11px;color:var(--gray)">0 MB</div>
               </div>
-            </div><button class="btn btn-danger btn-sm" onclick="removeFile('pl')">Hapus</button>
+            </div><button class="btn btn-danger btn-sm" onclick="removeFile('pl')" data-i18n="hapus">Hapus</button>
           </div>
           <div class="upload-progress" id="pl-progress">
             <div class="u-bar">
               <div class="u-fill" id="pl-pbar" style="width:0%"></div>
             </div>
-            <div style="font-size:11px;color:var(--teal);margin-top:4px">Mengunggah ke Google Drive...</div>
+            <div style="font-size:11px;color:var(--teal);margin-top:4px" data-i18n="menyimpan">Mengunggah ke Google Drive...</div>
           </div>
         </div>
 
         <div id="pl-panel-url" class="file-panel">
-          <div class="mb-3"><label class="form-label">URL Dokumen (Link Luar)</label><input type="url"
+          <div class="mb-3"><label class="form-label" data-i18n="urlLink">URL Dokumen</label><input type="url"
               class="form-control" id="plUrl" placeholder="https://drive.google.com/..."></div>
         </div>
 
         <div class="modal-footer"><button class="btn btn-ghost"
-            onclick="closeModal('modalPackingList')">Batal</button><button class="btn btn-primary" id="btnSavePl"
-            onclick="submitPackingList()">💾 Simpan Dokumen</button></div>
+            onclick="closeModal('modalPackingList')" data-i18n="batal">Batal</button><button class="btn btn-primary" id="btnSavePl"
+            onclick="submitPackingList()" data-i18n="simpan">💾 Simpan Dokumen</button></div>
       </div>
     </div>
 
@@ -5860,18 +5864,18 @@
         handover: "Hand Over",
         klaim: "Klaim Paket",
         tugasProject: "Tugas Project",
-        karyawan: "Data Karyawan",
-        ijin: "Pengajuan Ijin/Cuti",
-        lembur: "Pengajuan Lembur",
+        karyawan: "Karyawan",
+        ijin: "Ijin/Cuti",
+        lembur: "Lembur",
         pengajuanAsset: "Pengajuan Asset",
-        organisasi: "Struktur Organisasi",
+        organisasi: "Organisasi",
         gantiPass: "Ganti Password",
         sop: "SOP Gudang",
         packingList: "Packing List",
-        stock: "Stock Barang",
+        stock: "Stock Inventory",
         inbound: "Inbound Barang",
-        outbound: "Potong Stok Manual",
-        retur: "Retur Barang",
+        outbound: "Potong Stok",
+        retur: "Return Barang",
         order: "Orderan",
         stockOpname: "Stock Opname",
         analisis: "Analisis Stok",
@@ -5881,8 +5885,9 @@
         saldoKasGudang: "Saldo Kas Gudang",
         saldoTeamBuilding: "Saldo Team Building",
         totalKasMasuk: "Total Kas Masuk",
+        totalKasKeluar: "Total Kas Keluar",
         notifTitle: "Notifikasi",
-        notifMarkRead: "✓ Baca Semua",
+        notifMarkRead: "✓ Tandai Semua Dibaca",
         notifAll: "Semua",
         notifUnread: "Belum Dibaca",
         notifSeeAll: "Lihat Semua Aktivitas",
@@ -5895,7 +5900,7 @@
         tutup: "Tutup",
         pilihBahasa: "Pilih Bahasa",
         mandarin: "Mandarin",
-        inggeris: "English",
+        inggeris: "Inggris",
         indonesia: "Indonesia",
         pencarian: "Cari...",
         tambah: "Tambah",
@@ -5905,9 +5910,6 @@
         detail: "Detail",
         status: "Status",
         tanggal: "Tanggal",
-        noOrder: "No. Order",
-        pelanggan: "Pelanggan",
-        alamat: "Alamat",
         noOrder: "No. Order",
         pelanggan: "Pelanggan",
         alamat: "Alamat",
@@ -5947,7 +5949,299 @@
         searchPlaceholderStock: "Cari SKU atau Nama Barang...",
         searchPlaceholderOrder: "Cari Customer atau No. Order...",
         pilihStatus: "-- Pilih Status --",
-        semuaStatus: "Semua Status"
+        semuaStatus: "Semua Status",
+        bukti: "Bukti",
+        inputBy: "Input By",
+        tambahTransaksi: "Tambah Transaksi",
+        pilihBulan: "-- Pilih Bulan --",
+        printLaporan: "Print Laporan",
+        dashboardExpense: "Dashboard Expense",
+        rincianPerusahaan: "Rincian per Perusahaan",
+        riwayatLaporanHarian: "Riwayat Laporan Kerja (Harian)",
+        buatLaporan: "Buat Laporan",
+        ringkasanPersonil: "Ringkasan Personil Lembur",
+        tugasProjectWarehouse: "Tugas Project Warehouse",
+        papanKanban: "Papan Kanban",
+        tabelList: "Tabel List",
+        karyawanAktif: "Karyawan Aktif",
+        riwayatResign: "Riwayat Resign",
+        suratPeringatan: "Surat Peringatan",
+        ekspor: "Ekspor",
+        pengajuanIjinCuti: "Pengajuan Ijin & Cuti",
+        ajukanIjin: "Ajukan Ijin",
+        pengajuanAssetTitle: "Pengajuan Asset",
+        ajukanAsset: "Ajukan Asset",
+        dashboardValidasiLembur: "Dashboard Validasi Lembur",
+        namaKaryawan: "Nama Karyawan",
+        jabatan: "Jabatan",
+        telepon: "Telepon",
+        email: "Email",
+        tglMasuk: "Tanggal Masuk",
+        selesaiKontrak: "Selesai Kontrak",
+        sisaCuti: "Sisa Cuti",
+        prioritas: "Prioritas",
+        deskripsi: "Deskripsi",
+        alasan: "Alasan",
+        masaBerlaku: "Masa Berlaku",
+        kadaluarsa: "Kadaluarsa",
+        estimasiHarga: "Estimasi Harga",
+        shift: "Shift",
+        kendala: "Kendala",
+        pilihUser: "-- Pilih User --",
+        targetSelesai: "Target Selesai",
+        durasi: "Durasi",
+        catatan: "Catatan",
+        uploadFile: "Upload File",
+        urlLink: "URL Link",
+        dragDrop: "Klik atau drag & drop file di sini",
+        maksSize: "maks. 5MB",
+        semuaDivisi: "Semua Divisi",
+        rekapLembur: "Lihat Rekap Seluruh Tanggal",
+        lemburDiLaporan: "Lembur di Laporan",
+        sudahPengajuan: "Sudah Pengajuan",
+        belumPengajuan: "Belum Pengajuan",
+        rekapKetidaksinkronan: "Rekap Ketidaksinkronan",
+        inputKasGudang: "Input Kas Gudang",
+        tipeTransaksi: "Tipe Transaksi",
+        pengeluaran: "Pengeluaran",
+        pemasukan: "Pemasukan",
+        keteranganKegiatan: "Keterangan Kegiatan",
+        buktiInvoice: "Bukti Invoice",
+        tambahExpense: "Tambah Expense",
+        perusahaan: "Perusahaan",
+        bankRekening: "Bank & Rekening",
+        gantiPassword: "Ganti Password",
+        passwordLama: "Password Lama",
+        passwordBaru: "Password Baru",
+        konfirmasiPassword: "Konfirmasi Password",
+        inputLaporanOrderan: "Input Laporan Orderan",
+        jamKerjaPhl: "Jam Kerja PHL",
+        orangBantu: "Orang Perbantuan",
+        orangKurang: "Orang Pengurangan",
+        pekerjaLembur: "Pekerja Lembur",
+        lamaLembur: "Lama Lembur",
+        kpi: "KPI (Total Output / Jam)",
+        totalKeseluruhanJam: "Total Keseluruhan Jam",
+        inputHandover: "Input Hand Over",
+        inputKlaim: "Input Klaim Paket",
+        hargaPaket: "Harga Paket",
+        buatTugasBaru: "Buat Tugas Baru",
+        judulTugas: "Judul Tugas",
+        assignee: "Assignee",
+        areaKategori: "Area / Kategori",
+        tambahKaryawan: "Tambah Karyawan",
+        cabangLokasi: "Cabang / Lokasi",
+        formResign: "Form Resign",
+        alasanUtama: "Alasan Utama",
+        buatSP: "Buat Surat Peringatan",
+        jenisSP: "Jenis SP",
+        tglTerbit: "Tgl Terbit",
+        masaBerlakuHari: "Masa Berlaku (Hari)",
+        tglKadaluarsaSP: "Tgl Kadaluarsa SP",
+        formIjinCuti: "Form Ijin / Cuti",
+        formLembur: "Form Pengajuan Lembur",
+        formLemburKhusus: "Form Lembur Khusus",
+        // New Inventory Keys
+        formInboundTitle: "📥 Form Inbound Barang",
+        formOutboundTitle: "✂️ Form Pemotongan Stok Manual",
+        formReturTitle: "↩️ Form Retur Barang",
+        formOrderTitle: "🛒 Buat Orderan Baru",
+        formStockOpnameTitle: "⚖️ Pengajuan Stock Opname",
+        formPackingListTitle: "📋 Tambah Packing List Dokumen",
+        tglInbound: "Tanggal Inbound",
+        supplier: "Supplier",
+        tglPotong: "Tanggal Pemotongan",
+        alasanTujuan: "Alasan (Tujuan)",
+        tglRetur: "Tanggal Retur",
+        sumberRetur: "Sumber Retur",
+        detailSJ: "Detail Surat Jalan",
+        tglOrder: "Tanggal Order",
+        pilihBarangAudit: "📋 Pilih Barang untuk di-Audit",
+        mulaiSesiOpname: "🏁 Mulai Sesi Opname",
+        ajukanOpname: "💾 Ajukan Opname",
+        konfirmasiRetur: "↩️ Konfirmasi Retur & Tambah Stok",
+        konfirmasiPotong: "✂️ Konfirmasi Potong Stok",
+        simpanTambahStok: "💾 Simpan & Tambah Stok",
+        scanBarcode: "🔍 SCAN BARCODE / SKU",
+        stokSistem: "Stok Sistem",
+        jumlahFisik: "Jumlah Fisik (QTY)",
+        selisih: "Selisih",
+        lewatkan: "Lewati",
+        simpanLanjut: "Simpan & Lanjut",
+        importCsv: "Import CSV",
+        tambahBaris: "Tambah Baris",
+        uploadBukti: "Upload Bukti Packing",
+        klikPilihFile: "Klik untuk Pilih File Foto / PDF",
+        mulaiUpload: "🚀 Mulai Upload",
+        // Global UI
+        memuatSistem: "Memuat sistem...",
+        pengelolaGudangSub: "Sistem Pengelola Gudang",
+        menungguApprovalSaya: "🔔 Menunggu Approval Saya",
+        operasionalOrderanHariIni: "👥 Operasional & Orderan (Hari Ini)",
+        divisiOperasional: "Divisi Operasional",
+        pekerja: "Pekerja",
+        pengeluaranKasGudang: "📉 Pengeluaran Kas Gudang",
+        pengeluaranTeamBuilding: "🤝 Pengeluaran Team Building",
+        inputBy: "Input By",
+        bukti: "Bukti",
+        tambahTransaksi: "+ Tambah Transaksi",
+        jan: "Januari", feb: "Februari", mar: "Maret", apr: "April", mei: "Mei", jun: "Juni",
+        jul: "Juli", agu: "Agustus", sep: "September", okt: "Oktober", nov: "November", des: "Desember",
+        semuaBulan: "-- Semua Bulan --",
+        // Additional UI keys
+        totalPengeluaranTahun: "Total Pengeluaran (Tahun Terpilih)",
+        totalPengeluaranBulan: "Total Pengeluaran (Bulan Terpilih)",
+        rincianPerPerusahaan: "🏢 Rincian per Perusahaan",
+        ringkasanPersonilLembur: "👥 Ringkasan Personil Lembur (Laporan Terbaru)",
+        riwayatLaporanKerjaHarian: "📝 Riwayat Laporan Kerja (Harian)",
+        totalGarisLaporan: "Total Laporan",
+        rataRataPekerja: "Rata-rata Pekerja Masuk",
+        totalLembur: "Total Jam Lembur",
+        totalJamKerja: "Total Keseluruhan Jam Kerja",
+        totalOrderan: "Total Orderan",
+        kpiOrdJam: "KPI (Ord/Jam)",
+        laporanHandover: "📦 Laporan Hand Over",
+        laporanKlaimPaket: "⚠️ Laporan Klaim Paket",
+        totalTagihanPending: "Total Tagihan (Pending)",
+        totalSelesaiDibayar: "Total Selesai Dibayar",
+        tugasProjectWarehouse: "📋 Tugas Project Warehouse",
+        totalTugas: "Total Tugas",
+        dalamProses: "Dalam Proses",
+        melewatiTarget: "Melewati Target",
+        buatTugas: "+ Buat Tugas",
+        semuaDivisi: "Semua Divisi",
+        semuaStatus: "Semua Status",
+        semuaAssignee: "Semua Assignee",
+        semuaPrioritas: "Semua Prioritas",
+        // HR Labels
+        karyawanAktif: "Karyawan Aktif",
+        riwayatResign: "Riwayat Resign",
+        spAktif: "SP Aktif",
+        tetap: "Tetap",
+        kontrak: "Kontrak",
+        ijinHariIni: "Ijin Hari Ini",
+        cutiHariIni: "Cuti Hari Ini",
+        sakitHariIni: "Sakit Hari Ini",
+        ekspor: "Ekspor",
+        tambahKaryawan: "+ Tambah Karyawan",
+        jabatan: "Jabatan",
+        tglMasuk: "Tgl Masuk",
+        selesaiKontrak: "Selesai Kontrak",
+        sisaCuti: "Sisa Cuti",
+        tglResign: "Tgl Resign",
+        jenisSP: "Jenis SP",
+        tglTerbit: "Tgl Terbit",
+        masaBerlaku: "Masa Berlaku",
+        ajukanIjin: "+ Ajukan Ijin",
+        jenisIjinCuti: "Jenis Ijin / Cuti",
+        statusApproval: "Status Approval",
+        // Asset, Lembur, Org, SOP, Users, Stock
+        totalPengajuan: "Total Pengajuan",
+        menungguApproval: "Menunggu Approval",
+        disetujui: "Disetujui",
+        ditolak: "Ditolak",
+        riwayatPengajuanAsset: "Riwayat Pengajuan Asset",
+        ajukanAsset: "+ Ajukan Asset",
+        dashboardValidasiLembur: "📊 Dashboard Validasi Lembur",
+        lihatRekapSeluruhTanggal: "Lihat Rekap Seluruh Tanggal",
+        lemburDiLaporan: "Lembur di Laporan",
+        sudahPengajuan: "Sudah Pengajuan",
+        belumPengajuan: "Belum Pengajuan",
+        ketidaksinkronanLembur: "🔴 Karyawan Belum Melakukan Pengajuan Lembur:",
+        rekapKetidaksinkronan: "📑 Rekap Ketidaksinkronan Seluruh Tanggal:",
+        strukturOrganisasi: "🏗️ Struktur Organisasi",
+        expand: "Expand",
+        collapse: "Collapse",
+        sopGudang: "📋 SOP Gudang",
+        eksporGoogleDocs: "📤 Ekspor ke Google Docs",
+        manajemenUser: "⚙️ Manajemen User",
+        tambahUser: "+ Tambah User",
+        passwordLama: "Password Lama",
+        passwordBaru: "Password Baru",
+        perbaruiPassword: "🔄 Perbarui Password",
+        totalJenisBarang: "Total Jenis Barang",
+        totalStokUnit: "Total Stok (Unit)",
+        stokRendah: "Stok Rendah",
+        hampirExp: "Hampir Exp (30hr)",
+        daftarStockBarang: "📦 Daftar Stock Barang",
+        exportCSV: "📤 Export CSV",
+        // Modal & Form Labels
+        inputLaporanOrderan: "Input Laporan Pengerjaan Orderan",
+        tanggalLaporan: "Tanggal Laporan",
+        shift: "Shift",
+        namaPelaporPic: "Nama Pelapor (PIC)",
+        totalPekerjaUtama: "Total Pekerja Utama",
+        totalAdmin: "Total Admin",
+        totalPhl: "Total PHL",
+        jamKerjaPhl: "Jam Kerja PHL (Per Orang)",
+        orangPerbantuan: "Orang Perbantuan (+)",
+        jamOrangBantu: "Jam / Orang (Bantu)",
+        orangPengurangan: "Orang Pengurangan (-)",
+        jamOrangKurang: "Jam / Orang (Kurang)",
+        totalPekerjaLembur: "Total Pekerja Lembur",
+        lamaLemburJam: "Lama Lembur (Jam)",
+        pilihNamaPersonilLembur: "Pilih Nama Personil yang Lembur:",
+        totalOrderDidapat: "Total Order Didapat",
+        totalPo: "Total PO",
+        totalQtyPcs: "Total Qty (Pcs)",
+        totalInboundSj: "Total Inbound (SJ)",
+        totalQtyInbound: "Total Qty (Inbound)",
+        kpiOutputJam: "KPI (Total Output / Total Jam Kerja)",
+        kendalaPekerjaan: "Kendala Pekerjaan",
+        batal: "Batal",
+        simpanLaporan: "Simpan Laporan",
+        detailLaporanKerja: "Detail Laporan Kerja",
+        tutup: "Tutup",
+        cetakLaporan: "Cetak Laporan",
+        inputLaporanHandover: "Input Laporan Hand Over",
+        nomorResi: "Nomor Resi",
+        pengerjaan: "Pengerjaan",
+        keteranganTambahan: "Keterangan Tambahan",
+        inputLaporanKlaim: "Input Laporan Klaim Paket",
+        hargaPaketRp: "Harga Paket (Rp)",
+        keteranganDetail: "Keterangan Detail",
+        buatTugasBaru: "Buat Tugas Baru",
+        targetHariSelesai: "Target Hari Selesai",
+        kategoriArea: "Kategori / Area",
+        deskripsiCatatan: "Deskripsi / Catatan",
+        simpanTugas: "Simpan Tugas",
+        namaLengkap: "Nama Lengkap",
+        cabangLokasi: "Cabang / Lokasi",
+        telepon: "Telepon",
+        email: "Email",
+        sisaKuotaCuti: "Sisa Kuota Cuti (Hari)",
+        formResign: "Form Resign / Non-Aktif",
+        alasanUtama: "Alasan Utama",
+        simpanNonAktif: "Simpan & Non-Aktifkan",
+        buatSP: "Buat Surat Peringatan (SP)",
+        pilihKaryawan: "Pilih Karyawan",
+        masaBerlakuHari: "Masa Berlaku (Hari)",
+        tglKadaluarsaSP: "Tanggal Kadaluarsa SP",
+        alasanDeskripsiPelanggaran: "Alasan / Deskripsi Pelanggaran",
+        formIjinCuti: "Form Pengajuan Ijin / Cuti",
+        keteranganLengkap: "Keterangan Lengkap",
+        suratDokterBukti: "Surat Dokter / Bukti Pendukung",
+        uploadFile: "Upload File",
+        urlLink: "URL Link",
+        klikDragDrop: "Klik atau drag & drop file di sini",
+        formLembur: "Form Pengajuan Lembur",
+        jumlahJamLembur: "Jumlah Jam Lembur",
+        keteranganTugasLembur: "Keterangan / Tugas Lembur",
+        formLemburKhusus: "Form Pengajuan Lembur Khusus",
+        formAsset: "Form Pengajuan Asset",
+        estimasiHarga: "Estimasi Harga (Rp)",
+        deskripsiKebutuhan: "Deskripsi Kebutuhan",
+        alurPersetujuan: "Alur Persetujuan",
+        riwayatApproval: "Riwayat Approval",
+        tambahAnggotaOrg: "Tambah Anggota Organisasi",
+        atasanLangsung: "Atasan Langsung",
+        departemen: "Departemen",
+        urlFoto: "URL Foto",
+        urutanTampil: "Urutan Tampil",
+        tambahSOP: "Tambah SOP",
+        judulSOP: "Judul SOP",
+        isiKontenSOP: "Isi / Konten SOP",
+        hakAksesMenu: "Hak Akses Menu"
       },
       en: {
         dashboard: "Dashboard",
@@ -5980,6 +6274,7 @@
         saldoKasGudang: "Warehouse Balance",
         saldoTeamBuilding: "Team Building Balance",
         totalKasMasuk: "Total Cash In",
+        totalKasKeluar: "Total Cash Out",
         notifTitle: "Notifications",
         notifMarkRead: "✓ Mark All Read",
         notifAll: "All",
@@ -6043,7 +6338,300 @@
         searchPlaceholderStock: "Search SKU or Product Name...",
         searchPlaceholderOrder: "Search Customer or Order No...",
         pilihStatus: "-- Select Status --",
-        semuaStatus: "All Status"
+        semuaStatus: "All Status",
+        bukti: "Proof",
+        inputBy: "Input By",
+        tambahTransaksi: "Add Transaction",
+        pilihBulan: "-- Select Month --",
+        printLaporan: "Print Report",
+        dashboardExpense: "Expense Dashboard",
+        rincianPerusahaan: "Details per Company",
+        riwayatLaporanHarian: "Daily Work Report History",
+        buatLaporan: "Create Report",
+        ringkasanPersonil: "Overtime Personnel Summary",
+        tugasProjectWarehouse: "Warehouse Project Tasks",
+        papanKanban: "Kanban Board",
+        tabelList: "List Table",
+        karyawanAktif: "Active Employees",
+        riwayatResign: "Resign History",
+        suratPeringatan: "Warning Letter",
+        ekspor: "Export",
+        pengajuanIjinCuti: "Leave/Permission Request",
+        ajukanIjin: "Request Leave",
+        pengajuanAssetTitle: "Asset Request",
+        ajukanAsset: "Request Asset",
+        dashboardValidasiLembur: "Overtime Validation Dashboard",
+        namaKaryawan: "Employee Name",
+        jabatan: "Position",
+        telepon: "Phone",
+        email: "Email",
+        tglMasuk: "Entry Date",
+        selesaiKontrak: "End of Contract",
+        sisaCuti: "Remaining Leave",
+        prioritas: "Priority",
+        deskripsi: "Description",
+        alasan: "Reason",
+        masaBerlaku: "Validity Period",
+        kadaluarsa: "Expired",
+        estimasiHarga: "Estimated Price",
+        shift: "Shift",
+        kendala: "Constraint",
+        pilihUser: "-- Select User --",
+        targetSelesai: "Target Done",
+        durasi: "Duration",
+        catatan: "Notes",
+        uploadFile: "Upload File",
+        urlLink: "URL Link",
+        dragDrop: "Click or drag & drop file here",
+        maksSize: "max. 5MB",
+        semuaDivisi: "All Divisions",
+        rekapLembur: "View All Dates Summary",
+        lemburDiLaporan: "Overtime in Report",
+        sudahPengajuan: "Requested",
+        belumPengajuan: "Not Requested",
+        rekapKetidaksinkronan: "Mismatch Summary",
+        inputKasGudang: "Input Warehouse Cash",
+        tipeTransaksi: "Transaction Type",
+        pengeluaran: "Expense",
+        pemasukan: "Income",
+        keteranganKegiatan: "Activity Description",
+        buktiInvoice: "Invoice Proof",
+        tambahExpense: "Add Expense",
+        perusahaan: "Company",
+        bankRekening: "Bank & Account",
+        gantiPassword: "Change Password",
+        passwordLama: "Old Password",
+        passwordBaru: "New Password",
+        konfirmasiPassword: "Confirm Password",
+        inputLaporanOrderan: "Input Order Report",
+        jamKerjaPhl: "PHL Work Hours",
+        orangBantu: "Support Personnel",
+        orangKurang: "Personnel Reduction",
+        pekerjaLembur: "Overtime Workers",
+        lamaLembur: "Overtime Duration",
+        kpi: "KPI (Output/Hour)",
+        totalKeseluruhanJam: "Total Total Hours",
+        inputHandover: "Input Hand Over",
+        inputKlaim: "Input Claim Report",
+        hargaPaket: "Package Price",
+        buatTugasBaru: "Create New Task",
+        judulTugas: "Task Title",
+        assignee: "Assignee",
+        areaKategori: "Area / Category",
+        tambahKaryawan: "Add Employee",
+        cabangLokasi: "Branch / Location",
+        formResign: "Resign Form",
+        alasanUtama: "Main Reason",
+        buatSP: "Create Warning Letter",
+        jenisSP: "Warning Type",
+        tglTerbit: "Issue Date",
+        masaBerlakuHari: "Validity (Days)",
+        tglKadaluarsaSP: "Expiry Date",
+        formIjinCuti: "Leave/Permission Form",
+        formLembur: "Overtime Request Form",
+        formLemburKhusus: "Special Overtime Form",
+        // New Inventory Keys
+        formInboundTitle: "📥 Inbound Goods Form",
+        formOutboundTitle: "✂️ Manual Stock Outbound Form",
+        formReturTitle: "↩️ Goods Return Form",
+        formOrderTitle: "🛒 Create New Order",
+        formStockOpnameTitle: "⚖️ Stock Audit Submission",
+        formPackingListTitle: "📋 Add Packing List Document",
+        tglInbound: "Inbound Date",
+        supplier: "Supplier",
+        tglPotong: "Outbound Date",
+        alasanTujuan: "Reason (Destination)",
+        tglRetur: "Return Date",
+        sumberRetur: "Return Source",
+        detailSJ: "Delivery Note Detail",
+        tglOrder: "Order Date",
+        pilihBarangAudit: "📋 Select Items for Audit",
+        mulaiSesiOpname: "🏁 Start Audit Session",
+        ajukanOpname: "💾 Submit Audit",
+        konfirmasiRetur: "↩️ Confirm Return & Add Stock",
+        konfirmasiPotong: "✂️ Confirm Stock Outbound",
+        simpanTambahStok: "💾 Save & Add Stock",
+        scanBarcode: "🔍 SCAN BARCODE / SKU",
+        stokSistem: "System Stock",
+        jumlahFisik: "Physical Qty",
+        selisih: "Difference",
+        lewatkan: "Skip",
+        simpanLanjut: "Save & Continue",
+        importCsv: "Import CSV",
+        tambahBaris: "Add Row",
+        uploadBukti: "Upload Packing Proof",
+        klikPilihFile: "Click to Select Photo / PDF File",
+        mulaiUpload: "🚀 Start Upload",
+        // Global UI
+        memuatSistem: "Loading system...",
+        pengelolaGudangSub: "Warehouse Management System",
+        menungguApprovalSaya: "🔔 Pending My Approval",
+        operasionalOrderanHariIni: "👥 Operations & Orders (Today)",
+        divisiOperasional: "Operations Division",
+        pekerja: "Worker",
+        pengeluaranKasGudang: "📉 Warehouse Cash Expense",
+        pengeluaranTeamBuilding: "🤝 Team Building Expense",
+        inputBy: "Input By",
+        bukti: "Proof",
+        tambahTransaksi: "+ Add Transaction",
+        jan: "January", feb: "February", mar: "March", apr: "April", mei: "May", jun: "June",
+        jul: "July", agu: "August", sep: "September", okt: "October", nov: "November", des: "December",
+        semuaBulan: "-- All Months --",
+        // Additional UI keys
+        totalPengeluaranTahun: "Total Expense (Selected Year)",
+        totalPengeluaranBulan: "Total Expense (Selected Month)",
+        rincianPerPerusahaan: "🏢 Breakdown by Company",
+        ringkasanPersonilLembur: "👥 Overtime Personnel Summary (Latest)",
+        riwayatLaporanKerjaHarian: "📝 Daily Work Report History",
+        totalGarisLaporan: "Total Reports",
+        rataRataPekerja: "Avg Workers Present",
+        totalLembur: "Total Overtime Hours",
+        totalJamKerja: "Total Working Hours",
+        totalOrderan: "Total Orders",
+        kpiOrdJam: "KPI (Ord/Hr)",
+        laporanHandover: "📦 Handover Report",
+        laporanKlaimPaket: "⚠️ Package Claim Report",
+        totalTagihanPending: "Total Pending Bill",
+        totalSelesaiDibayar: "Total Paid Out",
+        tugasProjectWarehouse: "📋 Warehouse Project Tasks",
+        totalTugas: "Total Tasks",
+        dalamProses: "In Progress",
+        melewatiTarget: "Overdue",
+        buatTugas: "+ Create Task",
+        semuaDivisi: "All Divisions",
+        semuaStatus: "All Status",
+        semuaAssignee: "All Assignee",
+        semuaPrioritas: "All Priorities",
+        // HR Labels
+        karyawanAktif: "Active Employees",
+        riwayatResign: "Resign History",
+        spAktif: "Active Warning (SP)",
+        tetap: "Permanent",
+        kontrak: "Contract",
+        ijinHariIni: "Permission Today",
+        cutiHariIni: "Leave Today",
+        sakitHariIni: "Sick Today",
+        ekspor: "Export",
+        tambahKaryawan: "+ Add Employee",
+        jabatan: "Position",
+        tglMasuk: "Join Date",
+        selesaiKontrak: "End Contract",
+        sisaCuti: "Leave Balance",
+        tglResign: "Resign Date",
+        jenisSP: "Warning Type",
+        tglTerbit: "Issue Date",
+        masaBerlaku: "Validity",
+        ajukanIjin: "+ Request Permission",
+        jenisIjinCuti: "Leave/Permission Type",
+        statusApproval: "Approval Status",
+        // Asset, Lembur, Org, SOP, Users, Stock
+        totalPengajuan: "Total Submission",
+        menungguApproval: "Pending Approval",
+        disetujui: "Approved",
+        ditolak: "Rejected",
+        riwayatPengajuanAsset: "Asset Submission History",
+        ajukanAsset: "+ Request Asset",
+        dashboardValidasiLembur: "📊 Overtime Validation Dashboard",
+        lihatRekapSeluruhTanggal: "See All Dates Summary",
+        lemburDiLaporan: "Overtime in Report",
+        sudahPengajuan: "Already Requested",
+        belumPengajuan: "Missing Request",
+        ketidaksinkronanLembur: "🔴 Employees Missing Overtime Request:",
+        rekapKetidaksinkronan: "📑 All Dates Inconsistency Summary:",
+        strukturOrganisasi: "🏗️ Organization Structure",
+        expand: "Expand",
+        collapse: "Collapse",
+        sopGudang: "📋 Warehouse SOP",
+        eksporGoogleDocs: "📤 Export to Google Docs",
+        manajemenUser: "⚙️ User Management",
+        tambahUser: "+ Add User",
+        passwordLama: "Old Password",
+        passwordBaru: "New Password",
+        perbaruiPassword: "🔄 Update Password",
+        totalJenisBarang: "Total SKU Count",
+        totalStokUnit: "Total Stock (Units)",
+        stokRendah: "Low Stock",
+        hampirExp: "Expiring Soon (30d)",
+        daftarStockBarang: "📦 Stock Inventory List",
+        exportCSV: "📤 Export CSV",
+        // Modal & Form Labels
+        inputLaporanOrderan: "Work Order Report Input",
+        tanggalLaporan: "Report Date",
+        shift: "Shift",
+        namaPelaporPic: "Reporter Name (PIC)",
+        totalPekerjaUtama: "Total Main Workers",
+        totalAdmin: "Total Admin",
+        totalPhl: "Total PHL (Freelance)",
+        jamKerjaPhl: "PHL Working Hours (Per Person)",
+        orangPerbantuan: "Support Personnel (+)",
+        jamOrangBantu: "Hrs / Person (Support)",
+        orangPengurangan: "Personnel Deduction (-)",
+        jamOrangKurang: "Hrs / Person (Deduction)",
+        totalPekerjaLembur: "Total Overtime Workers",
+        lamaLemburJam: "Overtime Duration (Hrs)",
+        pilihNamaPersonilLembur: "Select Overtime Personnel:",
+        totalOrderDidapat: "Total Orders Received",
+        totalPo: "Total PO",
+        totalQtyPcs: "Total Qty (Pcs)",
+        totalInboundSj: "Total Inbound (Waybill)",
+        totalQtyInbound: "Total Qty (Inbound)",
+        kpiOutputJam: "KPI (Total Output / Total Working Hours)",
+        kendalaPekerjaan: "Work Obstacles",
+        batal: "Cancel",
+        simpanLaporan: "Save Report",
+        detailLaporanKerja: "Work Report Detail",
+        tutup: "Close",
+        cetakLaporan: "Print Report",
+        inputLaporanHandover: "Handover Report Input",
+        nomorResi: "Tracking Number",
+        pengerjaan: "Work Details",
+        keteranganTambahan: "Additional Notes",
+        inputLaporanKlaim: "Package Claim Report Input",
+        hargaPaketRp: "Package Price (Rp)",
+        keteranganDetail: "Detailed Notes",
+        buatTugasBaru: "Create New Task",
+        judulTugas: "Task Title",
+        targetHariSelesai: "Target Days to Complete",
+        kategoriArea: "Category / Area",
+        deskripsiCatatan: "Description / Notes",
+        simpanTugas: "Save Task",
+        namaLengkap: "Full Name",
+        cabangLokasi: "Branch / Location",
+        telepon: "Phone",
+        email: "Email",
+        sisaKuotaCuti: "Remaining Leave (Days)",
+        formResign: "Resignation / Inactive Form",
+        alasanUtama: "Main Reason",
+        simpanNonAktif: "Save & Deactivate",
+        buatSP: "Create Warning Letter (SP)",
+        pilihKaryawan: "Select Employee",
+        masaBerlakuHari: "Validity Period (Days)",
+        tglKadaluarsaSP: "SP Expiration Date",
+        alasanDeskripsiPelanggaran: "Reason / Violation Details",
+        formIjinCuti: "Leave / Permission Request Form",
+        keteranganLengkap: "Full Explanation",
+        suratDokterBukti: "Doctor's Note / Supporting Evidence",
+        uploadFile: "Upload File",
+        urlLink: "URL Link",
+        klikDragDrop: "Click or drag & drop file here",
+        formLembur: "Overtime Request Form",
+        jumlahJamLembur: "Total Overtime Hours",
+        keteranganTugasLembur: "Overtime Notes / Task",
+        formLemburKhusus: "Special Overtime Request Form",
+        formAsset: "Asset Request Form",
+        estimasiHarga: "Estimated Price (Rp)",
+        deskripsiKebutuhan: "Requirement Description",
+        alurPersetujuan: "Approval Workflow",
+        riwayatApproval: "Approval History",
+        tambahAnggotaOrg: "Add Organization Member",
+        atasanLangsung: "Direct Supervisor",
+        departemen: "Department",
+        urlFoto: "Photo URL",
+        urutanTampil: "Display Order",
+        tambahSOP: "Add SOP",
+        judulSOP: "SOP Title",
+        isiKontenSOP: "SOP Content",
+        hakAksesMenu: "Menu Access Permissions"
       },
       zh: {
         dashboard: "仪表板",
@@ -6076,6 +6664,7 @@
         saldoKasGudang: "仓库现金余额",
         saldoTeamBuilding: "团建现金余额",
         totalKasMasuk: "总现金收入",
+        totalKasKeluar: "总现金支出",
         notifTitle: "通知",
         notifMarkRead: "✓ 全部读过",
         notifAll: "全部",
@@ -6139,7 +6728,300 @@
         searchPlaceholderStock: "查询商品编码或名称...",
         searchPlaceholderOrder: "查询客户或订单号...",
         pilihStatus: "-- 选择状态 --",
-        semuaStatus: "全部状态"
+        semuaStatus: "全部状态",
+        bukti: "凭证",
+        inputBy: "录入人",
+        tambahTransaksi: "添加交易",
+        pilihBulan: "-- 选择月份 --",
+        printLaporan: "打印报告",
+        dashboardExpense: "费用仪表板",
+        rincianPerusahaan: "公司明细",
+        riwayatLaporanHarian: "每日工作报告历史",
+        buatLaporan: "创建报告",
+        ringkasanPersonil: "加班人员摘要",
+        tugasProjectWarehouse: "仓库项目任务",
+        papanKanban: "看板",
+        tabelList: "列表视图",
+        karyawanAktif: "在职员工",
+        riwayatResign: "离职历史",
+        suratPeringatan: "警告信",
+        ekspor: "导出",
+        pengajuanIjinCuti: "请假申请",
+        ajukanIjin: "申请请假",
+        pengajuanAssetTitle: "资产申请",
+        ajukanAsset: "申请资产",
+        dashboardValidasiLembur: "加班校验仪表板",
+        namaKaryawan: "员工姓名",
+        jabatan: "职位",
+        telepon: "电话",
+        email: "电子邮件",
+        tglMasuk: "入职日期",
+        selesaiKontrak: "合同到期",
+        sisaCuti: "剩余假期",
+        prioritas: "优先级",
+        deskripsi: "描述",
+        alasan: "原因",
+        masaBerlaku: "有效期",
+        kadaluarsa: "过期",
+        estimasiHarga: "预估价格",
+        shift: "班次",
+        kendala: "障碍/问题",
+        pilihUser: "-- 选择用户 --",
+        targetSelesai: "目标完成日期",
+        durasi: "时长",
+        catatan: "备注",
+        uploadFile: "上传文件",
+        urlLink: "URL 链接",
+        dragDrop: "点击或拖拽文件到这里",
+        maksSize: "最大 5MB",
+        semuaDivisi: "所有部门",
+        rekapLembur: "查看所有日期摘要",
+        lemburDiLaporan: "报告中的加班",
+        sudahPengajuan: "已申请",
+        belumPengajuan: "未申请",
+        rekapKetidaksinkronan: "不匹配摘要",
+        inputKasGudang: "输入仓库现金",
+        tipeTransaksi: "交易类型",
+        pengeluaran: "支出",
+        pemasukan: "收入",
+        keteranganKegiatan: "活动描述",
+        buktiInvoice: "发票凭证",
+        tambahExpense: "添加费用",
+        perusahaan: "公司",
+        bankRekening: "银行与账号",
+        gantiPassword: "修改密码",
+        passwordLama: "旧密码",
+        passwordBaru: "新密码",
+        konfirmasiPassword: "确认密码",
+        inputLaporanOrderan: "输入订单报告",
+        jamKerjaPhl: "临时工工时",
+        orangBantu: "支援人员",
+        orangKurang: "人员减少",
+        pekerjaLembur: "加班人员",
+        lamaLembur: "加班时长",
+        kpi: "KPI (产出/小时)",
+        totalKeseluruhanJam: "总时数",
+        inputHandover: "输入交接报告",
+        inputKlaim: "输入索赔报告",
+        hargaPaket: "包裹价格",
+        buatTugasBaru: "创建新任务",
+        judulTugas: "任务标题",
+        assignee: "受托人",
+        areaKategori: "区域 / 类别",
+        tambahKaryawan: "添加员工",
+        cabangLokasi: "分支 / 地点",
+        formResign: "离职表单",
+        alasanUtama: "主要原因",
+        buatSP: "创建警告信",
+        jenisSP: "警告类型",
+        tglTerbit: "发布日期",
+        masaBerlakuHari: "有效期 (天)",
+        tglKadaluarsaSP: "过期日期",
+        formIjinCuti: "请假表单",
+        formLembur: "加班申请表",
+        formLemburKhusus: "特殊加班表",
+        // New Inventory Keys
+        formInboundTitle: "📥 入库表单",
+        formOutboundTitle: "✂️ 手动扣库存表单",
+        formReturTitle: "↩️ 退货表单",
+        formOrderTitle: "🛒 创建新订单",
+        formStockOpnameTitle: "⚖️ 提交库存盘点",
+        formPackingListTitle: "📋 添加装箱单文档",
+        tglInbound: "入库日期",
+        supplier: "供应商",
+        tglPotong: "扣减日期",
+        alasanTujuan: "原因（目的）",
+        tglRetur: "退货日期",
+        sumberRetur: "退货来源",
+        detailSJ: "送货单详情",
+        tglOrder: "订单日期",
+        pilihBarangAudit: "📋 选择要审计的商品",
+        mulaiSesiOpname: "🏁 开始盘点期间",
+        ajukanOpname: "💾 提交盘点",
+        konfirmasiRetur: "↩️ 确认退货并增加库存",
+        konfirmasiPotong: "✂️ 确认扣除库存",
+        simpanTambahStok: "💾 保存并增加库存",
+        scanBarcode: "🔍 扫描条形码 / SKU",
+        stokSistem: "系统库存",
+        jumlahFisik: "实物数量",
+        selisih: "差异",
+        lewatkan: "跳过",
+        simpanLanjut: "保存并继续",
+        importCsv: "导入 CSV",
+        tambahBaris: "添加行",
+        uploadBukti: "上传打包凭证",
+        klikPilihFile: "点击选择照片 / PDF 文件",
+        mulaiUpload: "🚀 开始上传",
+        // Global UI
+        memuatSistem: "正在加载系统...",
+        pengelolaGudangSub: "仓库管理系统",
+        menungguApprovalSaya: "🔔 等待我的批准",
+        operasionalOrderanHariIni: "👥 运营与订单（今天）",
+        divisiOperasional: "运营部门",
+        pekerja: "工作人员",
+        pengeluaranKasGudang: "📉 仓库现金支出",
+        pengeluaranTeamBuilding: "🤝 团建支出",
+        inputBy: "输入者",
+        bukti: "凭证",
+        tambahTransaksi: "+ 添加交易",
+        jan: "一月", feb: "二月", mar: "三月", apr: "四月", mei: "五月", jun: "六月",
+        jul: "七月", agu: "八月", sep: "九月", okt: "十月", nov: "十一月", des: "十二月",
+        semuaBulan: "-- 所有月份 --",
+        // Additional UI keys
+        totalPengeluaranTahun: "总支出（所选年份）",
+        totalPengeluaranBulan: "总支出（所选月份）",
+        rincianPerPerusahaan: "🏢 按公司划分的详细信息",
+        ringkasanPersonilLembur: "👥 加班人员摘要（最新报告）",
+        riwayatLaporanKerjaHarian: "📝 每日工作报告历史",
+        totalGarisLaporan: "报告总数",
+        rataRataPekerja: "平均入职人数",
+        totalLembur: "总加班小时数",
+        totalJamKerja: "总工作小时数",
+        totalOrderan: "总订单数",
+        kpiOrdJam: "绩效（订单/小时）",
+        laporanHandover: "📦 交接报告",
+        laporanKlaimPaket: "⚠️ 包裹索赔报告",
+        totalTagihanPending: "待处理账单总额",
+        totalSelesaiDibayar: "已支付总额",
+        tugasProjectWarehouse: "📋 仓库项目任务",
+        totalTugas: "任务总数",
+        dalamProses: "进行中",
+        melewatiTarget: "超过目标",
+        buatTugas: "+ 创建任务",
+        semuaDivisi: "所有部门",
+        semuaStatus: "所有状态",
+        semuaAssignee: "所有负责人",
+        semuaPrioritas: "所有优先级",
+        // HR Labels
+        karyawanAktif: "在职员工",
+        riwayatResign: "离职历史",
+        spAktif: "有效警告 (SP)",
+        tetap: "正式工",
+        kontrak: "合同工",
+        ijinHariIni: "今日请假",
+        cutiHariIni: "今日年假",
+        sakitHariIni: "今日病假",
+        ekspor: "导出",
+        tambahKaryawan: "+ 添加员工",
+        jabatan: "职位",
+        tglMasuk: "入职日期",
+        selesaiKontrak: "合同结束",
+        sisaCuti: "剩余年假",
+        tglResign: "离职日期",
+        jenisSP: "警告类型",
+        tglTerbit: "发布日期",
+        masaBerlaku: "有效期",
+        ajukanIjin: "+ 提交申请",
+        jenisIjinCuti: "请假/年假类型",
+        statusApproval: "审批状态",
+        // Asset, Lembur, Org, SOP, Users, Stock
+        totalPengajuan: "总提交",
+        menungguApproval: "待审批",
+        disetujui: "已批准",
+        ditolak: "已拒绝",
+        riwayatPengajuanAsset: "资产申请历史",
+        ajukanAsset: "+ 申请资产",
+        dashboardValidasiLembur: "📊 加班验证看板",
+        lihatRekapSeluruhTanggal: "查看全日期摘要",
+        lemburDiLaporan: "报表中的加班",
+        sudahPengajuan: "已申请",
+        belumPengajuan: "未申请",
+        ketidaksinkronanLembur: "🔴 未提交加班申请的员工：",
+        rekapKetidaksinkronan: "📑 全日期不一致摘要：",
+        strukturOrganisasi: "🏗️ 组织架构",
+        expand: "展开",
+        collapse: "折叠",
+        sopGudang: "📋 仓库 SOP",
+        eksporGoogleDocs: "📤 导出到 Google Docs",
+        manajemenUser: "⚙️ 用户管理",
+        tambahUser: "+ 添加用户",
+        passwordLama: "旧密码",
+        passwordBaru: "新密码",
+        perbaruiPassword: "🔄 更新密码",
+        totalJenisBarang: "总 SKU 数量",
+        totalStokUnit: "总库存（单位）",
+        stokRendah: "库存不足",
+        hampirExp: "即将过期（30天）",
+        daftarStockBarang: "📦 库存清单",
+        exportCSV: "📤 导出 CSV",
+        // Modal & Form Labels
+        inputLaporanOrderan: "输入工作订单报告",
+        tanggalLaporan: "报告日期",
+        shift: "班次",
+        namaPelaporPic: "报告人姓名 (PIC)",
+        totalPekerjaUtama: "主要工人总数",
+        totalAdmin: "行政人员总数",
+        totalPhl: "临时工总数",
+        jamKerjaPhl: "临时工工作时间（每人）",
+        orangPerbantuan: "支援人员 (+)",
+        jamOrangBantu: "小时/每人（支援）",
+        orangPengurangan: "人员减少 (-)",
+        jamOrangKurang: "小时/每人（减少）",
+        totalPekerjaLembur: "加班人员总数",
+        lamaLemburJam: "加班时间（小时）",
+        pilihNamaPersonilLembur: "选择加班人员：",
+        totalOrderDidapat: "收到的订单总数",
+        totalPo: "订单总数 (PO)",
+        totalQtyPcs: "总数量 (Pcs)",
+        totalInboundSj: "入库总数 (SJ)",
+        totalQtyInbound: "入库总数量",
+        kpiOutputJam: "绩效 (总产出 / 总工作时间)",
+        kendalaPekerjaan: "工作障碍",
+        batal: "取消",
+        simpanLaporan: "保存报告",
+        detailLaporanKerja: "工作报告详情",
+        tutup: "关闭",
+        cetakLaporan: "打印报告",
+        inputLaporanHandover: "输入交接报告",
+        nomorResi: "快递单号",
+        pengerjaan: "工作详情",
+        keteranganTambahan: "附加备注",
+        inputLaporanKlaim: "输入包裹索赔报告",
+        hargaPaketRp: "包裹价格 (Rp)",
+        keteranganDetail: "详细备注",
+        buatTugasBaru: "创建新任务",
+        judulTugas: "任务标题",
+        targetHariSelesai: "预计完成天数",
+        kategoriArea: "类别 / 区域",
+        deskripsiCatatan: "描述 / 备注",
+        simpanTugas: "保存任务",
+        namaLengkap: "全名",
+        cabangLokasi: "分支机构 / 地点",
+        telepon: "电话",
+        email: "电子邮件",
+        sisaKuotaCuti: "剩余年假（天）",
+        formResign: "离职 / 停职表单",
+        alasanUtama: "主要原因",
+        simpanNonAktif: "保存并停职",
+        buatSP: "创建警告信 (SP)",
+        pilihKaryawan: "选择员工",
+        masaBerlakuHari: "有效期（天）",
+        tglKadaluarsaSP: "SP 到期日期",
+        alasanDeskripsiPelanggaran: "原因 / 违规细节",
+        formIjinCuti: "请假 / 批准申请表",
+        keteranganLengkap: "详细说明",
+        suratDokterBukti: "医生证明 / 佐证材料",
+        uploadFile: "上传文件",
+        urlLink: "URL 链接",
+        klikDragDrop: "点击或拖拽文件到此处",
+        formLembur: "加班申请表",
+        jumlahJamLembur: "总加班小时数",
+        keteranganTugasLembur: "加班备注 / 任务",
+        formLemburKhusus: "特别加班申请表",
+        formAsset: "资产申请表",
+        estimasiHarga: "预计价格 (Rp)",
+        deskripsiKebutuhan: "需求描述",
+        alurPersetujuan: "审批流程",
+        riwayatApproval: "审批历史",
+        tambahAnggotaOrg: "添加组织成员",
+        atasanLangsung: "直接上级",
+        departemen: "部门",
+        urlFoto: "照片 URL",
+        urutanTampil: "显示顺序",
+        tambahSOP: "添加 SOP",
+        judulSOP: "SOP 标题",
+        isiKontenSOP: "SOP 内容",
+        hakAksesMenu: "菜单访问权限"
       }
     };
 
@@ -6157,21 +7039,42 @@
       const data = i18nData[currentLang];
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (data[key]) {
-          if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
-            el.setAttribute('placeholder', data[key]);
+        const text = data[key];
+        if (text) {
+          // Check for placeholders in input/textarea
+          if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.getAttribute('placeholder')) {
+            el.setAttribute('placeholder', text);
           } else {
-            // Preservation of icons in sidebar/etc
-            const icon = el.querySelector('.icon, i');
+            // Handle elements with icons (e.g., sidebar)
+            const icon = el.querySelector('i, .icon');
             if (icon) {
               const iconHtml = icon.outerHTML;
-              el.innerHTML = iconHtml + ' ' + data[key];
+              // Special case: if the text had an emoji prefix, we might want to keep the emoji or replace it
+              // For now, let's just append the translated text after the icon
+              el.innerHTML = iconHtml + ' ' + text;
             } else {
-              el.textContent = data[key];
+              // Standard text replacement
+              // Check if the element has other children we should preserve
+              if (el.children.length === 0) {
+                el.textContent = text;
+              } else {
+                // If it has children but no identified icon, we attempt to only replace the text node
+                // This is safer for complex buttons or labels
+                Array.from(el.childNodes).forEach(node => {
+                  if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+                    node.textContent = ' ' + text + ' ';
+                  }
+                });
+              }
             }
           }
         }
       });
+      // Also update the current language label in topbar
+      const currentLangLabel = document.getElementById('currentLangLabel');
+      if (currentLangLabel) {
+        currentLangLabel.textContent = currentLang === 'id' ? '🇮🇩 ID' : currentLang === 'en' ? '🇺🇸 EN' : '🇨🇳 ZH';
+      }
 
       // Special cases
       if (document.getElementById('pageTitle')) {
@@ -9187,9 +10090,7 @@
       setTimeout(() => { window.print(); }, 800);
     }
 
-    function printLaporanHarian() {
-      window.print();
-    }
+
 
     function printLemburDetail() {
       window.print();
