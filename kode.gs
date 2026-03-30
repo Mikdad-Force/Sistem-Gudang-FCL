@@ -31,7 +31,9 @@ const CONFIG = {
     TUGAS_PROJECT: 'TugasProject',
     ASSET: 'PengajuanAsset',
     STOCK_OPNAME: 'StockOpname',
-    PACKING_LIST: 'PackingList'
+    PACKING_LIST: 'PackingList',
+    RIWAYAT_KARYAWAN: 'RiwayatKaryawan',
+    SURAT_PERINGATAN: 'SuratPeringatan'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -88,6 +90,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.ASSET, ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history']);
   setupSheet(ss, CONFIG.SHEETS.STOCK_OPNAME, ['id','tanggal','stockId','sku','nama','lokasi','batch','expDate','stokSistem','stokFisik','selisih','status','catatan','createdBy','createdAt','approvedBy','approvedAt']);
   setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -178,7 +182,7 @@ function login(username, password) {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function changePassword(newPassword, userId) {
+function adminResetPassword(newPassword, userId) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.USERS);
     const data = sheet.getDataRange().getValues();
@@ -305,10 +309,10 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
           newStatus = 'Ditolak';
         } else if (action === 'Approve') {
           if (userRole === 'admin') newStatus = 'Disetujui';
-          else if (currentStatus === 'Pending HR') newStatus = 'Pending TL';
-          else if (currentStatus === 'Pending TL') newStatus = 'Pending VS';
-          else if (currentStatus === 'Pending VS') newStatus = 'Pending SPV';
-          else if (currentStatus === 'Pending SPV') newStatus = 'Disetujui';
+          else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
+          else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
+          else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
+          else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
           else newStatus = 'Disetujui'; 
         }
         
@@ -443,8 +447,8 @@ function getIjin() {
 function addIjin(tanggal, nama, jenis, keterangan, bukti, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.IJIN);
-    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending HR', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, jenis, keterangan, bukti, 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
+    sheet.appendRow([generateId(), tanggal, nama, jenis, keterangan, bukti, 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -483,8 +487,8 @@ function getLembur() {
 function addLembur(tanggal, nama, divisi, jumlahJam, keterangan, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
-    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending HR', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, divisi, jumlahJam, keterangan, 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
+    sheet.appendRow([generateId(), tanggal, nama, divisi, jumlahJam, keterangan, 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
     formatSheetLembur(); // Rapihkan setelah tambah
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -494,6 +498,67 @@ function deleteLembur(id) {
   const res = deleteRow(CONFIG.SHEETS.LEMBUR, id);
   if (res.success) formatSheetLembur(); // Rapihkan setelah hapus
   return res;
+}
+
+function updateApprovalStatus(type, id, action, note, role, userName) {
+  try {
+    const sheetName = type === 'Lembur' ? CONFIG.SHEETS.LEMBUR : CONFIG.SHEETS.IJIN;
+    const sheet = getSheet(sheetName);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        let currentStatus = data[i][6];
+        let nextStatus = currentStatus;
+
+        if (action === 'Approve') {
+          if (currentStatus === 'Pending Team Leader') nextStatus = 'Pending Vice Supervisor';
+          else if (currentStatus === 'Pending Vice Supervisor') nextStatus = 'Pending Supervisor';
+          else if (currentStatus === 'Pending Supervisor') nextStatus = 'Pending HR';
+          else if (currentStatus === 'Pending HR') nextStatus = 'Disetujui';
+        } else {
+          nextStatus = 'Ditolak';
+        }
+
+        // Update Status & History
+        let history = [];
+        try { history = JSON.parse(data[i][9] || '[]'); } catch (e) { history = []; }
+        history.push({ date: now, action: action, status: nextStatus, by: userName, role: role, reason: note || '' });
+
+        sheet.getRange(i + 1, 7).setValue(nextStatus);
+        sheet.getRange(i + 1, 10).setValue(JSON.stringify(history));
+        
+        if (type === 'Lembur') formatSheetLembur();
+        return { success: true, nextStatus: nextStatus };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateLemburAdmin(id, jam, status, note, adminName) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        let history = [];
+        try { history = JSON.parse(data[i][9] || '[]'); } catch (e) { history = []; }
+        history.push({ date: now, action: 'Edit Admin', status: status, by: adminName, role: 'admin', reason: note || 'Perubahan jam ' + data[i][4] + ' -> ' + jam });
+
+        sheet.getRange(i+1, 5).setValue(jam);
+        sheet.getRange(i+1, 7).setValue(status);
+        sheet.getRange(i+1, 10).setValue(JSON.stringify(history));
+        
+        formatSheetLembur();
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 function formatSheetLembur() {
@@ -813,6 +878,21 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
   } catch (e) { return { success: false, message: e.message }; }
 }
 function deleteLaporanKerja(id) { return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id); }
+function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 2, 1, 22).setValues([[
+          tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
+        ]]);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
 
 // ============================================================
 // HANDOVER & KLAIM
@@ -1111,6 +1191,39 @@ function getOrders() {
     }
     // Sort latest first
     return { success: true, data: result.reverse() };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function getOrdersWithDetails() {
+  try {
+    const ordRes = getOrders();
+    if (!ordRes.success) return ordRes;
+    
+    const orders = ordRes.data;
+    const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    const detData = detSheet.getDataRange().getValues();
+    
+    // Create a map for quick lookup
+    const detailsMap = {};
+    for (let i = 1; i < detData.length; i++) {
+      const orderId = String(detData[i][1]);
+      if (!detailsMap[orderId]) detailsMap[orderId] = [];
+      detailsMap[orderId].push({
+        sku: detData[i][4],
+        nama: detData[i][5],
+        qty: parseFloat(detData[i][6]) || 0,
+        satuan: detData[i][7],
+        batch: detData[i][8] || '-',
+        expDate: detData[i][9] || '-'
+      });
+    }
+    
+    // Merge details into orders
+    orders.forEach(o => {
+      o.items = detailsMap[String(o.id)] || [];
+    });
+    
+    return { success: true, data: orders };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
@@ -1515,8 +1628,8 @@ function getAsset() {
 function addAsset(tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas, bukti, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET);
-    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending HR', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, jenisAsset, deskripsi, parseFloat(estimasiHarga)||0, prioritas, bukti || '', 'Pending HR', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
+    sheet.appendRow([generateId(), tanggal, nama, jenisAsset, deskripsi, parseFloat(estimasiHarga)||0, prioritas, bukti || '', 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -1661,3 +1774,124 @@ function finalizeChunkedUpload(uploadId, fileName, contentType, folderName) {
     return { success: true, url: file.getUrl() };
   } catch (e) { return { success: false, message: 'Gagal Unggah: ' + e.message }; }
 }
+
+// ============================================================
+// RIWAYAT KARYAWAN (RESIGN)
+// ============================================================
+function getRiwayatKaryawan() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.RIWAYAT_KARYAWAN);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: String(data[i][0]),
+        nama: data[i][1],
+        jabatan: data[i][2],
+        cabang: data[i][3] || '-',
+        telepon: data[i][4] || '-',
+        tanggalMasuk: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5] || ''),
+        tanggalResign: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6] || ''),
+        alasanResign: data[i][7] || '-',
+        keterangan: data[i][8] || '',
+        createdBy: data[i][9] || '',
+        createdAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10] || '')
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addRiwayatKaryawan(karyawanId, nama, jabatan, cabang, telepon, tanggalMasuk, tanggalResign, alasanResign, keterangan, createdBy) {
+  try {
+    // 1. Simpan ke sheet RiwayatKaryawan
+    const id = generateId();
+    getSheet(CONFIG.SHEETS.RIWAYAT_KARYAWAN).appendRow([
+      id, nama, jabatan, cabang || '', telepon || '',
+      tanggalMasuk, tanggalResign, alasanResign, keterangan || '',
+      createdBy, new Date().toISOString()
+    ]);
+    // 2. Ubah status karyawan menjadi 'Resign' di sheet Karyawan
+    const karSheet = getSheet(CONFIG.SHEETS.KARYAWAN);
+    const karData = karSheet.getDataRange().getValues();
+    for (let i = 1; i < karData.length; i++) {
+      if (String(karData[i][0]) === String(karyawanId)) {
+        karSheet.getRange(i + 1, 8).setValue('Resign');
+        karSheet.getRange(i + 1, 10).setValue(tanggalResign);
+        break;
+      }
+    }
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteRiwayatKaryawan(id) {
+  return deleteRow(CONFIG.SHEETS.RIWAYAT_KARYAWAN, id);
+}
+
+// ============================================================
+// SURAT PERINGATAN (SP)
+// ============================================================
+function getSuratPeringatan() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_PERINGATAN);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    const now = new Date();
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      const kadaluarsa = data[i][7] instanceof Date ? data[i][7] : new Date(data[i][7]);
+      const sisaHari = Math.ceil((kadaluarsa - now) / 86400000);
+      result.push({
+        id: String(data[i][0]),
+        karyawanNama: data[i][1],
+        karyawanId: String(data[i][2] || ''),
+        jenisSP: data[i][3],
+        alasan: data[i][4],
+        tanggalSP: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5] || ''),
+        masaBerlaku: parseInt(data[i][6]) || 180,
+        tanggalKadaluarsa: data[i][7] instanceof Date ? Utilities.formatDate(data[i][7], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][7] || ''),
+        sisaHari: sisaHari,
+        status: sisaHari <= 0 ? 'Kadaluarsa' : 'Aktif',
+        createdBy: data[i][9] || '',
+        createdAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10] || '')
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addSuratPeringatan(karyawanNama, karyawanId, jenisSP, alasan, tanggalSP, masaBerlaku, createdBy) {
+  try {
+    const id = generateId();
+    const tglSP = new Date(tanggalSP);
+    const tglKadaluarsa = new Date(tglSP);
+    tglKadaluarsa.setDate(tglKadaluarsa.getDate() + parseInt(masaBerlaku));
+    const tglKadStr = Utilities.formatDate(tglKadaluarsa, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    getSheet(CONFIG.SHEETS.SURAT_PERINGATAN).appendRow([
+      id, karyawanNama, karyawanId || '', jenisSP, alasan,
+      tanggalSP, parseInt(masaBerlaku), tglKadStr,
+      'Aktif', createdBy, new Date().toISOString()
+    ]);
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteSuratPeringatan(id) {
+  return deleteRow(CONFIG.SHEETS.SURAT_PERINGATAN, id);
+}
+
+// BATCH DATA FOR FASTER LOADING
+function getKaryawanFullData() {
+  try {
+    return {
+      success: true,
+      karyawan: getKaryawan(),
+      riwayat: getRiwayatKaryawan(),
+      sp: getSuratPeringatan(),
+      ijin: getIjin()
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
