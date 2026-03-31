@@ -273,10 +273,10 @@ function getPendingApprovals() {
   try {
     return { 
        success: true, 
-       ijin: getIjin(),
-       lembur: getLembur(),
-       asset: getAsset(),
-       stockOpname: getStockOpname()
+       ijin: (getIjin().data || []),
+       lembur: (getLembur().data || []),
+       asset: (getAsset().data || []),
+       stockOpname: (getStockOpname().data || [])
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -293,6 +293,8 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
       sheetName = CONFIG.SHEETS.LEMBUR; statusCol = 8; historyCol = 11;
     } else if (tipe === 'asset') {
       sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12;
+    } else if (tipe === 'opname') {
+      return approveStockOpname(id, action === 'Approve' ? 'Approved' : 'Rejected', userNama);
     } else {
       return { success: false, message: 'Tipe tidak dikenali' };
     }
@@ -303,18 +305,33 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
         let currentStatus = data[i][statusCol - 1] === 'Pending' ? 'Pending HR' : data[i][statusCol - 1];
-        let newStatus = '';
         
-        if (action === 'Reject') {
-          newStatus = 'Ditolak';
-        } else if (action === 'Approve') {
-          if (userRole === 'admin') newStatus = 'Disetujui';
-          else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
-          else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
-          else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
-          else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
-          else newStatus = 'Disetujui'; 
-        }
+        // BACKEND AUTHORIZATION CHECK
+        const isAdmin = (userRole === 'admin' || userRole === 'Super Admin');
+        const isTL = (userRole === 'Team Leader' || userRole === 'TL' || userRole.includes('Team Leader'));
+        const isVice = (userRole === 'Vice Supervisor' || userRole === 'Vice SPV' || userRole === 'Vice VPV');
+        const isSPV = (userRole === 'Supervisor' || userRole === 'SPV');
+        const isHR = (userRole === 'HR');
+
+        let authorized = isAdmin;
+        if (currentStatus === 'Pending Team Leader' && isTL) authorized = true;
+        if (currentStatus === 'Pending Vice Supervisor' && isVice) authorized = true;
+        if (currentStatus === 'Pending Supervisor' && isSPV) authorized = true;
+        if (currentStatus === 'Pending HR' && isHR) authorized = true;
+
+        if (!authorized) return { success: false, message: 'Anda tidak memiliki wewenang untuk tahap approval ini.' };
+
+        let newStatus = '';
+          if (action === 'Reject') {
+            newStatus = 'Ditolak';
+          } else if (action === 'Approve') {
+            if (isAdmin) newStatus = 'Disetujui';
+            else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
+            else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
+            else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
+            else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
+            else newStatus = 'Disetujui'; 
+          }
         
         sheet.getRange(i + 1, statusCol).setValue(newStatus);
         
@@ -1671,14 +1688,14 @@ function approveStockOpname(id, status, approvedBy) {
     const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME); const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        if (data[i][9] !== 'Pending') return { success: false, message: 'Sudah diproses' };
-        sheet.getRange(i+1, 10).setValue(status);
-        sheet.getRange(i+1, 14).setValue(approvedBy);
-        sheet.getRange(i+1, 15).setValue(new Date().toISOString());
+        if (data[i][11] !== 'Pending') return { success: false, message: 'Sudah diproses' };
+        sheet.getRange(i+1, 12).setValue(status); // Status: Column L
+        sheet.getRange(i+1, 16).setValue(approvedBy); // ApprovedBy: Column P
+        sheet.getRange(i+1, 17).setValue(new Date().toISOString()); // ApprovedAt: Column Q
         
         if (status === 'Approved') {
           const stockId = data[i][2];
-          const fisik = data[i][7];
+          const fisik = data[i][9]; // FIXED: Fisik is at index 9
           const stSheet = getSheet(CONFIG.SHEETS.STOCK);
           const stData = stSheet.getDataRange().getValues();
           for(let j=1; j<stData.length; j++) {
