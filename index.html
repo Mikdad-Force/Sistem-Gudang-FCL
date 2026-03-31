@@ -1477,6 +1477,18 @@
       color: var(--light);
       border: 1px solid var(--border-color);
     }
+    
+    /* WAREHOUSE STATISTICS DASHBOARD */
+    .warehouse-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+    .warehouse-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; transition: transform 0.2s ease, box-shadow 0.2s ease; position: relative; overflow: hidden; }
+    .warehouse-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-color: var(--accent); }
+    .warehouse-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; }
+    .warehouse-name { font-size: 14px; font-weight: 800; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+    .warehouse-total { font-size: 24px; font-weight: 900; color: var(--teal); }
+    .warehouse-divisions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .div-pill { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; background: rgba(255,255,255,0.04); border-radius: 8px; font-size: 11px; color: var(--text-muted); }
+    .div-pill strong { color: #fff; font-size: 12px; }
+    .warehouse-card::after { content: '🏢'; position: absolute; bottom: -10px; right: -5px; font-size: 60px; opacity: 0.05; filter: grayscale(1); }
 
     .btn-ghost:hover {
       background: var(--border-color);
@@ -3138,6 +3150,7 @@
           <nav class="sidebar-nav">
             <div class="nav-section" data-i18n="utama">Utama</div>
             <div class="nav-item active" onclick="showPage('dashboard')" data-i18n="dashboard"><span class="icon">📊</span> Dashboard</div>
+            <div class="nav-item" id="navCentralApproval" onclick="showPage('approval')" style="display:none;"><span class="icon">✅</span> Approval <span class="badge-count" id="badgeTotalApproval" style="display:none;">0</span></div>
 
             <div class="nav-section" data-i18n="keuangan">Keuangan</div>
             <div class="nav-item" onclick="showPage('kasGudang')" data-i18n="kasGudang"><span class="icon">💰</span> Kas Gudang</div>
@@ -3219,6 +3232,58 @@
           </div>
         </div>
         <div class="content">
+          <!-- Centralized Approval Page -->
+          <div class="page" id="page-approval">
+            <div class="card" style="border-color:var(--accent); background:linear-gradient(135deg, #f59e0b09, #1a3a5c33);">
+              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h4>✅ Pusat Approval</h4>
+                <button class="btn btn-ghost btn-sm" onclick="loadCentralizedApprovals()">🔄 Refresh</button>
+              </div>
+              <div class="p-4">
+                <p style="color:var(--gray); font-size:13px; margin-bottom:15px;">Daftar seluruh pengajuan yang menunggu persetujuan Anda dari berbagai kategori.</p>
+                
+                <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                  <div class="stat-card" style="padding:12px; text-align:center;">
+                    <div class="stat-label">Total Pending</div>
+                    <div class="stat-value" id="statApprTotal">0</div>
+                  </div>
+                  <div class="stat-card blue" style="padding:12px; text-align:center;">
+                    <div class="stat-label">Ijin/Cuti</div>
+                    <div class="stat-value blue" id="statApprIjin">0</div>
+                  </div>
+                  <div class="stat-card amber" style="padding:12px; text-align:center;">
+                    <div class="stat-label">Lembur</div>
+                    <div class="stat-value amber" id="statApprLembur">0</div>
+                  </div>
+                  <div class="stat-card teal" style="padding:12px; text-align:center;">
+                    <div class="stat-label">Asset</div>
+                    <div class="stat-value teal" id="statApprAsset">0</div>
+                  </div>
+                  <div class="stat-card red" style="padding:12px; text-align:center;">
+                    <div class="stat-label">Stock Opname</div>
+                    <div class="stat-value red" id="statApprOpname">0</div>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead>
+                      <tr>
+                        <th>Tgl Pengajuan</th>
+                        <th>Kategori</th>
+                        <th>Nama Staff</th>
+                        <th>Detail Tugas / Alasan</th>
+                        <th>Status</th>
+                        <th style="width:180px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableCentralApproval"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Dashboard -->
           <div class="page active" id="page-dashboard">
 
@@ -3782,6 +3847,9 @@
                 <div class="stat-icon">🏥</div>
               </div>
             </div>
+            
+            <!-- WAREHOUSE DASHBOARD -->
+            <div id="karWarehouseStats" class="warehouse-stats-grid"></div>
 
             <!-- TAB NAVIGATION -->
             <div class="kar-tabs">
@@ -5390,12 +5458,19 @@
                     placeholder="Kosongkan jika tidak diubah"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label">Nama Lengkap</label><input type="text"
-                    class="form-control" id="uNama" placeholder="Nama lengkap"></div>
+                <div class="col-md mb-2"><label class="form-label">Nama Lengkap</label>
+                  <input type="text" class="form-control" id="uNama" list="listKaryawanNama" placeholder="Nama lengkap">
+                  <datalist id="listKaryawanNama"></datalist>
+                </div>
                 <div class="col-md mb-2"><label class="form-label">Role</label><select class="form-select" id="uRole"
                     onchange="togglePermissions(); toggleCustomRole(); applyRolePresets();">
                     <option value="user">User / Staff (Biasa)</option>
                     <option value="Team Leader">Team Leader</option>
+                    <option value="Team Leader MP">Team Leader MP</option>
+                    <option value="Team Leader Distributor">Team Leader Distributor</option>
+                    <option value="Team Leader Return">Team Leader Return</option>
+                    <option value="Team Leader KOL & Manual">Team Leader KOL & Manual</option>
+                    <option value="Team Leader Inbound">Team Leader Inbound</option>
                     <option value="Vice Supervisor">Vice Supervisor</option>
                     <option value="Supervisor">Supervisor</option>
                     <option value="HR">HR</option>
@@ -7407,51 +7482,79 @@
       if (ls) { ls.style.setProperty('display', 'none', 'important'); }
       if (lp) { lp.style.setProperty('display', 'none', 'important'); }
 
+      const role = currentUser.role || '';
+      const isPimpinan = (role === 'admin' || role === 'Super Admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Vice VPV' || role === 'HR' || role === 'Team Leader' || role === 'TL' || role.includes('Team Leader'));
+      
       document.getElementById('app').style.display = 'block';
       document.getElementById('userName').textContent = currentUser.nama;
-      document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '👑 Admin' : '👤 ' + currentUser.role;
+      document.getElementById('userRole').textContent = role === 'admin' ? '👑 Admin' : '👤 ' + role;
       document.getElementById('userAvatar').textContent = currentUser.nama.charAt(0).toUpperCase();
 
-      if (currentUser.role === 'admin' || currentUser.role === 'SPV' || currentUser.role === 'Vice SPV') {
+      if (role === 'admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor') {
         const btnExp = document.getElementById('btnExportLembur');
         if (btnExp) btnExp.style.display = 'inline-block';
       }
 
       let allowedMenus = []; if (currentUser.permissions) { try { allowedMenus = JSON.parse(currentUser.permissions); } catch (e) { } }
-      const canManageUsers = currentUser.role === 'admin' || allowedMenus.includes('kelolaUser');
+      const isHR = (role === 'HR');
+      const isViceSPV = (role === 'Vice SPV' || role === 'Vice Supervisor');
+      const canManageUsers = role === 'admin' || isHR || isViceSPV || allowedMenus.includes('kelolaUser');
 
       if (currentUser.role !== 'admin') {
         let firstAllowedPage = null;
         document.querySelectorAll('.nav-item').forEach(el => {
           const match = (el.getAttribute('onclick') || '').match(/showPage\('([^']+)'\)/);
-          if (match) { const pName = match[1]; if (!allowedMenus.includes(pName) && pName !== 'users') el.style.display = 'none'; else { el.style.display = 'flex'; if (!firstAllowedPage) firstAllowedPage = pName; } }
+          if (match) { 
+            const pName = match[1]; 
+            // Visibility Check
+            let isVisible = allowedMenus.includes(pName);
+            if (pName === 'users' && canManageUsers) isVisible = true;
+            if (pName === 'approval') isVisible = isPimpinan; // Strictly role-based
+
+            if (isVisible) {
+              el.style.display = 'flex';
+              if (!firstAllowedPage) firstAllowedPage = pName;
+            } else {
+              el.style.display = 'none';
+            }
+          }
         });
         document.querySelectorAll('.nav-section').forEach(sec => {
           let nextEl = sec.nextElementSibling; let hasVis = false;
           while (nextEl && !nextEl.classList.contains('nav-section')) { if (nextEl.style.display !== 'none') { hasVis = true; break; } nextEl = nextEl.nextElementSibling; }
-          if (!hasVis && sec.id !== 'navAdmin') sec.style.display = 'none';
+          if (sec.id === 'navAdmin') { if (canManageUsers) sec.style.display = 'block'; else sec.style.display = 'none'; }
+          else if (!hasVis) sec.style.display = 'none';
+          else sec.style.display = 'block';
         });
         if (canManageUsers) {
           document.getElementById('navAdmin').style.display = 'block';
           document.getElementById('navUsers').style.display = 'flex';
         }
+        if (isPimpinan) {
+          document.getElementById('navCentralApproval').style.display = 'flex';
+        }
         if (firstAllowedPage) showPage(firstAllowedPage); else document.querySelector('.content').innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><div style="font-size:40px; margin-bottom:10px;">⛔</div>Anda belum memiliki akses menu.<br>Silakan hubungi Administrator.</div>';
       } else {
         document.getElementById('navAdmin').style.display = 'block';
         document.getElementById('navUsers').style.display = 'flex';
+        document.getElementById('navCentralApproval').style.display = 'flex';
         showPage('dashboard');
       }
       setToday();
       updateLemburStaffSelect();
 
       // Visibilitas tombol khusus pimpinan
-      const isPimpinanLembur = (currentUser.role === 'admin' || currentUser.role === 'SPV' || currentUser.role === 'Vice SPV');
+      const isPimpinanLembur = (role === 'admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Team Leader' || role === 'TL');
       const btnK = document.getElementById('btnLemburKhusus');
       if (btnK) btnK.style.display = isPimpinanLembur ? 'block' : 'none';
       const btnE = document.getElementById('btnExportLembur');
-      if (btnE) btnE.style.display = (isPimpinanLembur || currentUser.role === 'HR') ? 'block' : 'none';
+      if (btnE) btnE.style.display = (isPimpinanLembur || role === 'HR') ? 'block' : 'none';
 
-      if (typeof checkPendingApprovals === 'function') checkPendingApprovals();
+      if (typeof checkPendingApprovals === 'function') {
+        checkPendingApprovals();
+        // Poling setiap 5 menit untuk notifikasi baru
+        setInterval(checkPendingApprovals, 5 * 60 * 1000);
+      }
       if (typeof loadUsersDropdown === 'function') loadUsersDropdown();
     }
     // checkPendingApprovals original implementation is below
@@ -7460,7 +7563,8 @@
       const t = new Date().toISOString().split('T')[0];
       ['kgTanggal', 'tbTanggal', 'kTglMasuk', 'inbTanggal', 'outTanggal', 'ordTanggal', 'retTanggal', 'lapTanggal', 'hoTanggal', 'klTanggal', 'ijTanggal', 'lbTanggal', 'exTanggal', 'tpTanggalMulai', 'assetTanggal', 'soTanggal', 'plTanggal'].forEach(id => setVal(id, t));
       if (currentUser) {
-        const isAdminOrHR = (currentUser.role === 'admin' || currentUser.role === 'HR' || currentUser.role === 'SPV' || currentUser.role === 'Vice SPV');
+        const role = currentUser.role || '';
+        const isAdminOrHR = (role === 'admin' || role === 'HR' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Team Leader' || role === 'TL');
         ['ijNama', 'assetNama'].forEach(id => {
           const el = document.getElementById(id);
           if (el) { el.value = currentUser.nama; el.readOnly = true; el.style.background = 'var(--input-bg)'; el.style.opacity = '0.7'; }
@@ -7519,20 +7623,30 @@
       organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
       users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Packing List Dokumentasi',
       inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
-      retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok'
+      retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok',
+      approval: '✅ Pusat Approval'
     };
     const pageLoaders = {
       dashboard: loadDashboard, kasGudang: loadKasGudang, teamBuilding: loadTB, expense: loadExpense,
       karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
       handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
-      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, laporanKerja: loadLaporanKerja
+      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, laporanKerja: loadLaporanKerja,
+      approval: loadCentralizedApprovals
     };
 
     function showPage(name) {
+      if (name === 'users') {
+        const role = currentUser.role || '';
+        const isHR = (role === 'HR');
+        const isViceSPV = (role === 'Vice SPV' || role === 'Vice Supervisor');
+        let allowedMenus = []; if (currentUser.permissions) { try { allowedMenus = JSON.parse(currentUser.permissions); } catch (e) { } }
+        if (role !== 'admin' && !isHR && !isViceSPV && !allowedMenus.includes('kelolaUser')) return toast('Akses dilarang', 'error');
+      }
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById('page-' + name).classList.add('active');
+      const pg = document.getElementById('page-' + name);
+      if (pg) pg.classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => { if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active'); });
       
       const titleEl = document.getElementById('pageTitle');
@@ -7572,51 +7686,187 @@
     }
 
     // === APPROVAL ===
-    function canApprove(status, role) {
-      if (role === 'admin') return true;
+    function canApprove(status, role, category) {
+      if (role === 'admin' || role === 'Super Admin') return true;
       let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
       if (userPerms.includes('aksesApproval')) return true;
 
-      if (status === 'Pending HR' || status === 'Pending') return role === 'HR';
-      if (status === 'Pending Team Leader') return role === 'Team Leader';
-      if (status === 'Pending Vice Supervisor') return role === 'Vice Supervisor';
-      if (status === 'Pending Supervisor') return role === 'Supervisor';
+      const isPimpinan = (role === 'admin' || role === 'Super Admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Vice VPV' || role === 'HR' || role === 'Team Leader' || role === 'TL' || role.includes('Team Leader'));
+      
+      // Safety and final status check (Approved, Disetujui, Tolak, Rejected are final)
+      if (!status) return false;
+      const finalStatuses = ['Disetujui', 'Tolak', 'Disetujui Admin', 'Approved', 'Rejected', 'Approved Admin', 'Ditolak'];
+      if (finalStatuses.includes(status)) return false;
+
+      // UNIVERSAL VISIBILITY: Any leader can see all 'Pending' items
+      if (isPimpinan && (status.includes('Pending') || status === 'Pending')) return true;
+
       return false;
     }
     function checkPendingApprovals() {
+      if (!currentUser) return;
       google.script.run.withSuccessHandler(res => {
-        let pendingCount = 0; const dashList = document.getElementById('dashApprovalList'); if (dashList) dashList.innerHTML = '';
-        const processItem = (d, tipe) => {
-          let status = d.status === 'Pending' ? 'Pending HR' : d.status;
-          if (canApprove(status, currentUser.role)) {
-            pendingCount++;
-            const page = tipe === 'Ijin' ? 'ijin' : (tipe === 'Lembur' ? 'lembur' : 'pengajuanAsset');
-            if (dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${tipe}</span></td><td><strong>${d.nama}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${page}')">Lihat</button></td></tr>`;
-            addNotification(`Approval ${tipe}`, `${d.nama} menunggu approval ${status}`, 'info', page);
-          }
-        };
-        if (res.ijin && res.ijin.success) { ijinDataAll = res.ijin.data; ijinDataAll.forEach(d => processItem(d, 'Ijin')); }
-        if (res.lembur && res.lembur.success) { lemburDataAll = res.lembur.data; lemburDataAll.forEach(d => processItem(d, 'Lembur')); }
-        if (res.asset && res.asset.success) { res.asset.data.forEach(d => processItem(d, 'Asset')); }
-        if (res.stockOpname && res.stockOpname.success) {
-          res.stockOpname.data.forEach(d => {
-            if (d.status === 'Pending' && (currentUser.role === 'admin' || currentUser.role === 'Supervisor')) {
-              pendingCount++;
-              if (dashList) dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">Stock Opname</span></td><td><strong>${d.sku}</strong></td><td><span class="badge-pending">⏳ Pending</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('stockOpname')">Lihat</button></td></tr>`;
-              addNotification(`Approval Stock Opname`, `SKU ${d.sku} menunggu approval`, 'warning', 'stockOpname');
+        if (!res) return;
+        const role = currentUser.role || '';
+        let total = 0;
+        const dashList = document.getElementById('dashApprovalList');
+        if (dashList) dashList.innerHTML = '';
+
+        const filterPending = (list, type) => {
+          if (!list || !Array.isArray(list)) return [];
+          const items = [];
+          list.forEach(d => {
+            const status = d.status;
+            const isFinal = ['Disetujui', 'Tolak', 'Disetujui Admin', 'Approved', 'Rejected', 'Approved Admin', 'Ditolak'].includes(status);
+            if (!isFinal && canApprove(status, role, type)) {
+              total++;
+              items.push(d);
+              if (dashList) {
+                const page = (type === 'Ijin' || type === 'Ijin/Cuti') ? 'ijin' : (type === 'Lembur' ? 'lembur' : (type === 'Asset' ? 'pengajuanAsset' : 'stockOpname'));
+                const staff = d.nama || d.karyawan || d.sku || '-';
+                dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${type}</span></td><td><strong>${staff}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${page}')">Lihat</button></td></tr>`;
+              }
             }
           });
-        }
-        if (pendingCount > 0) {
+          return items;
+        };
+
+        filterPending(res.ijin, 'Ijin/Cuti');
+        filterPending(res.lembur, 'Lembur');
+        filterPending(res.asset, 'Asset');
+        filterPending(res.stockOpname, 'Stock Opname');
+
+        const badge = document.getElementById('notifBadge');
+        const centralBadge = document.getElementById('badgeTotalApproval');
+        if (total > 0) {
+          if (badge) { badge.textContent = total; badge.style.display = 'flex'; }
+          if (centralBadge) { centralBadge.textContent = total; centralBadge.style.display = 'inline-block'; }
           document.getElementById('dashApprovalWrap').style.display = 'block';
+        } else {
+          if (badge) badge.style.display = 'none';
+          if (centralBadge) centralBadge.style.display = 'none';
+          document.getElementById('dashApprovalWrap').style.display = 'none';
+          if (dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>';
         }
-        else { document.getElementById('dashApprovalWrap').style.display = 'none'; if (dashList) dashList.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray);">Tidak ada antrean approval.</td></tr>'; }
       }).getPendingApprovals();
     }
     function processApproval(tipe, id, action) {
       let reason = ''; if (action === 'Reject') { reason = prompt('Alasan Penolakan:'); if (reason === null) return; } else { if (!confirm('Yakin setujui?')) return; }
+      
+      const btn = event ? event.target : null;
+      const oldTxt = btn ? btn.textContent : '';
+      if (btn && btn.tagName === 'BUTTON') { btn.disabled = true; btn.textContent = '⏳'; }
+      
       toast('Memproses...', 'success');
-      google.script.run.withSuccessHandler(res => { if (res.success) { toast('Approval diproses ✅'); if (tipe === 'ijin') loadIjin(); else loadLembur(); checkPendingApprovals(); } else toast(res.message, 'error'); }).processApprovalStatus(tipe, id, action, currentUser.nama, currentUser.role, reason);
+      google.script.run.withSuccessHandler(res => { 
+        if (btn && btn.tagName === 'BUTTON') { btn.disabled = false; btn.textContent = oldTxt; }
+        if (res.success) { 
+          toast('Approval diproses ✅'); 
+          const t = tipe.toLowerCase();
+          if (t === 'ijin') loadIjin(); 
+          else if (t === 'lembur') loadLembur(); 
+          else if (t === 'asset') loadAsset();
+          else if (t.includes('opname')) loadStockOpname();
+          
+          if (document.getElementById('page-approval').classList.contains('active')) {
+            loadCentralizedApprovals();
+          }
+          checkPendingApprovals(); 
+        } else toast(res.message, 'error'); 
+      }).processApprovalStatus(tipe.toLowerCase(), id, action, currentUser.nama, currentUser.role, reason);
+    }
+
+    function loadCentralizedApprovals() {
+      const tb = document.getElementById('tableCentralApproval');
+      if (!tb) return;
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px;"><div class="spinner"></div><br>Memuat data approval...</td></tr>';
+      
+      google.script.run.withSuccessHandler(res => {
+        if (res) { renderCentralizedApprovals(res); }
+        else { tb.innerHTML = `<tr><td colspan="6" class="empty-state">Data tidak ditemukan</td></tr>`; }
+      }).getPendingApprovals();
+    }
+
+    function isAuthorizedToAct(status, role, category) {
+      if (role === 'admin' || role === 'Super Admin') return true;
+      let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
+      if (userPerms.includes('aksesApproval')) return true;
+
+      const isTL = (role === 'Team Leader' || role === 'TL' || role.includes('Team Leader'));
+      const isVice = (role === 'Vice Supervisor' || role === 'Vice SPV' || role === 'Vice VPV');
+      const isSPV = (role === 'Supervisor' || role === 'SPV');
+      const isHR = (role === 'HR');
+
+      if (category === 'Stock Opname' && status === 'Pending') return (isSPV || role === 'admin' || role === 'Super Admin');
+
+      if (status === 'Pending Team Leader') return isTL;
+      if (status === 'Pending Vice Supervisor') return isVice;
+      if (status === 'Pending Supervisor') return isSPV;
+      if (status === 'Pending HR' || status === 'Pending') return isHR;
+
+      return false;
+    }
+
+    function renderCentralizedApprovals(res) {
+      const tb = document.getElementById('tableCentralApproval');
+      if (!tb) return;
+      tb.innerHTML = '';
+      
+      const role = currentUser.role || '';
+      const items = [];
+      
+      const filterItems = (list, type, module) => {
+        if (!list || !Array.isArray(list)) return [];
+        return list.filter(d => {
+          const status = d.status;
+        return (status !== 'Disetujui' && status !== 'Tolak' && status !== 'Disetujui Admin' && status !== 'Approved' && status !== 'Rejected' && status !== 'Ditolak') && canApprove(status, role, type);
+        }).map(d => ({ ...d, _type: type, _module: module }));
+      };
+
+      const ijin = filterItems(res.ijin, 'Ijin/Cuti', 'ijin');
+      const lembur = filterItems(res.lembur, 'Lembur', 'lembur');
+      const asset = filterItems(res.asset, 'Asset', 'asset');
+      const opname = filterItems(res.stockOpname, 'Stock Opname', 'opname');
+      
+      items.push(...ijin, ...lembur, ...asset, ...opname);
+      items.sort((a, b) => new Date(b.tanggal || b.createdAt) - new Date(a.tanggal || a.createdAt));
+
+      document.getElementById('statApprTotal').textContent = items.length;
+      document.getElementById('statApprIjin').textContent = ijin.length;
+      document.getElementById('statApprLembur').textContent = lembur.length;
+      document.getElementById('statApprAsset').textContent = asset.length;
+      document.getElementById('statApprOpname').textContent = opname.length;
+
+      if (items.length === 0) {
+        tb.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="emoji">🎉</div>Tidak ada approval pending</td></tr>';
+        return;
+      }
+
+      items.forEach(d => {
+        const staff = d.nama || d.karyawan || d.sku || '-';
+        const detail = d.keterangan || d.alasan || d.detailTugas || d.nama || '-';
+        const tgl = formatDate(d.tanggal || d.createdAt);
+        const status = d.status === 'Pending' ? 'Pending HR' : d.status;
+
+        tb.innerHTML += `
+          <tr>
+            <td><span class="text-muted">${tgl}</span></td>
+            <td><span class="badge-pending-stage">${d._type}</span></td>
+            <td><strong>${staff}</strong></td>
+            <td><div style="max-width:250px; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${detail}</div></td>
+            <td><span class="badge-pending">${status}</span></td>
+            <td>
+              ${isAuthorizedToAct(d.status, role, d._type) ? `
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-teal btn-sm" onclick="processApproval('${d._module}', '${d.id}', 'Approve')">Setuju</button>
+                <button class="btn btn-danger btn-sm" onclick="processApproval('${d._module}', '${d.id}', 'Reject')">Tolak</button>
+              </div>` : `
+              <span class="badge-lock" title="Menunggu antrean role terkait">🔒 Terkunci</span>
+              `}
+            </td>
+          </tr>
+        `;
+      });
     }
     function showHistoryModal(str) {
       const content = document.getElementById('riwayatContent'); content.innerHTML = '';
@@ -7867,7 +8117,43 @@
       setVal('statSP1', spAktif.filter(d => d.jenisSP === 'SP 1').length);
       setVal('statSP2', spAktif.filter(d => d.jenisSP === 'SP 2').length);
       setVal('statSP3', spAktif.filter(d => d.jenisSP === 'SP 3').length);
+      
+      // Update Warehouse Dashboard
+      renderKaryawanWarehouseStats();
     }
+    function renderKaryawanWarehouseStats() {
+      const cont = document.getElementById('karWarehouseStats');
+      if (!cont) return;
+      const activeData = karyawanData.filter(d => !riwayatData.some(r => r.id === d.id));
+      
+      const stats = {};
+      activeData.forEach(d => {
+        const loc = d.cabang || 'Lainnya';
+        const div = d.jabatan || 'Staf';
+        if (!stats[loc]) stats[loc] = { total: 0, divs: {} };
+        stats[loc].total++;
+        stats[loc].divs[div] = (stats[loc].divs[div] || 0) + 1;
+      });
+
+      let html = '';
+      Object.keys(stats).sort().forEach(loc => {
+        const s = stats[loc];
+        const divsHtml = Object.entries(s.divs)
+          .sort((a,b) => b[1] - a[1])
+          .map(([d, c]) => `<div class="div-pill"><span>${d}</span><strong>${c}</strong></div>`)
+          .join('');
+        
+        html += `<div class="warehouse-card">
+          <div class="warehouse-header">
+            <div class="warehouse-name">🏗️ ${loc}</div>
+            <div class="warehouse-total">${s.total} Org</div>
+          </div>
+          <div class="warehouse-divisions">${divsHtml}</div>
+        </div>`;
+      });
+      cont.innerHTML = html;
+    }
+
     function renderKaryawan(data) {
       const tb = document.getElementById('tableKaryawan'); tb.innerHTML = ''; if (!data.length) { tb.innerHTML = '<tr><td colspan="9" class="empty-state">Kosong</td></tr>'; return; }
       const now = new Date();
@@ -8074,15 +8360,9 @@
             let actionHtml = `<button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>`;
 
             let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
-            const canApprove = (
-              (role === 'admin') ||
-              (role === 'Team Leader' && d.status === 'Pending Team Leader') ||
-              ((role === 'Vice Supervisor' || userPerms.includes('aksesViceSpv')) && d.status === 'Pending Vice Supervisor') ||
-              ((role === 'Supervisor' || userPerms.includes('aksesSpv')) && d.status === 'Pending Supervisor') ||
-              ((role === 'HR' || userPerms.includes('aksesHr')) && d.status === 'Pending HR')
-            );
+            const canAppr = canApprove(d.status, role);
 
-            if (canApprove) {
+            if (canAppr) {
               actionHtml += `
                 <button class="btn btn-teal btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Approve')">Setuju</button>
                 <button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Reject')">Tolak</button>
@@ -8157,15 +8437,9 @@
         let actionHtml = `<button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>`;
 
         let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
-        const canApprove = (
-          (role === 'admin') ||
-          (role === 'Team Leader' && d.status === 'Pending Team Leader') ||
-          ((role === 'Vice Supervisor' || userPerms.includes('aksesViceSpv')) && d.status === 'Pending Vice Supervisor') ||
-          ((role === 'Supervisor' || userPerms.includes('aksesSpv')) && d.status === 'Pending Supervisor') ||
-          ((role === 'HR' || userPerms.includes('aksesHr')) && d.status === 'Pending HR')
-        );
+        const canAppr = canApprove(d.status, role);
 
-        if (canApprove) {
+        if (canAppr) {
           actionHtml += `
             <button class="btn btn-teal btn-sm" onclick="processApproval('Lembur','${d.id}','Approve')">Setuju</button>
             <button class="btn btn-danger btn-sm" onclick="processApproval('Lembur','${d.id}','Reject')">Tolak</button>
@@ -8199,22 +8473,6 @@
       }
     }
 
-    function processApproval(type, id, action) {
-      const note = action === 'Reject' ? prompt('Alasan Penolakan:') : '';
-      if (action === 'Reject' && note === null) return;
-
-      const btn = event.target;
-      const oldTxt = btn.textContent;
-      btn.disabled = true; btn.textContent = '⏳';
-
-      google.script.run.withSuccessHandler(res => {
-        btn.disabled = false; btn.textContent = oldTxt;
-        if (res.success) {
-          toast(`Berhasil: ${res.nextStatus || 'Ditolak'}`);
-          if (type === 'Lembur') loadLembur(); else loadIjin();
-        } else toast(res.message, 'error');
-      }).updateApprovalStatus(type, id, action, note, currentUser.role, currentUser.nama);
-    }
 
     function editLemburAdmin(id) {
       const d = lemburDataAll.find(x => x.id === id);
@@ -9299,13 +9557,25 @@
         ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'aksesSpv', 'kelolaUser'].forEach(set);
       } else if (r === 'Vice Supervisor') {
         ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'aksesViceSpv', 'kelolaUser'].forEach(set);
-      } else if (r === 'Team Leader') {
+      } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
         ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'aksesApproval'].forEach(set);
       }
     }
     function toggleCustomRole() { const s = v('uRole'); document.getElementById('uRoleCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
-    function openUserModal() { setVal('uId', ''); document.getElementById('userModalTitle').textContent = '⚙️ Tambah User'; resetForm(['uUsername', 'uPassword', 'uNama', 'uRoleCustom']); setVal('uRole', 'user'); togglePermissions(); toggleCustomRole(); document.querySelectorAll('#uPermissionsGrid input').forEach(c => c.checked = false); openModal('modalUser'); }
-    function editUser(id) { const u = usersData.find(x => x.id === id); if (!u) return; setVal('uId', u.id); document.getElementById('userModalTitle').textContent = '✏️ Edit User'; setVal('uUsername', u.username); setVal('uNama', u.nama); setVal('uPassword', ''); const rOpts = Array.from(document.getElementById('uRole').options).map(o => o.value); if (rOpts.includes(u.role)) { setVal('uRole', u.role); } else { setVal('uRole', 'Lainnya'); setVal('uRoleCustom', u.role); } togglePermissions(); toggleCustomRole(); document.querySelectorAll('#uPermissionsGrid input').forEach(c => c.checked = false); try { const p = JSON.parse(u.permissions || '[]'); p.forEach(val => { const cb = document.querySelector(`#uPermissionsGrid input[value="${val}"]`); if (cb) cb.checked = true; }); } catch (e) { } openModal('modalUser'); }
+    function updateKaryawanDatalist() {
+      const dl = document.getElementById('listKaryawanNama');
+      if (!dl) return;
+      dl.innerHTML = '';
+      if (karyawanData && karyawanData.length) {
+        karyawanData.forEach(k => {
+          const opt = document.createElement('option');
+          opt.value = k.nama;
+          dl.appendChild(opt);
+        });
+      }
+    }
+    function openUserModal() { updateKaryawanDatalist(); setVal('uId', ''); document.getElementById('userModalTitle').textContent = '⚙️ Tambah User'; resetForm(['uUsername', 'uPassword', 'uNama', 'uRoleCustom']); setVal('uRole', 'user'); togglePermissions(); toggleCustomRole(); document.querySelectorAll('#uPermissionsGrid input').forEach(c => c.checked = false); openModal('modalUser'); }
+    function editUser(id) { updateKaryawanDatalist(); const u = usersData.find(x => x.id === id); if (!u) return; setVal('uId', u.id); document.getElementById('userModalTitle').textContent = '✏️ Edit User'; setVal('uUsername', u.username); setVal('uNama', u.nama); setVal('uPassword', ''); const rOpts = Array.from(document.getElementById('uRole').options).map(o => o.value); if (rOpts.includes(u.role)) { setVal('uRole', u.role); } else { setVal('uRole', 'Lainnya'); setVal('uRoleCustom', u.role); } togglePermissions(); toggleCustomRole(); document.querySelectorAll('#uPermissionsGrid input').forEach(c => c.checked = false); try { const p = JSON.parse(u.permissions || '[]'); p.forEach(val => { const cb = document.querySelector(`#uPermissionsGrid input[value="${val}"]`); if (cb) cb.checked = true; }); } catch (e) { } openModal('modalUser'); }
     function submitUser() {
       const id = v('uId'), un = v('uUsername'), pw = v('uPassword'), nm = v('uNama'), rSel = v('uRole'), r = rSel === 'Lainnya' ? v('uRoleCustom') : rSel;
       if (!un || !nm || (!id && !pw)) return toast('Lengkapi data', 'error');
@@ -9711,13 +9981,7 @@
             const priLabel = d.prioritas === 'Kritis' ? '🔴 Kritis' : d.prioritas === 'Mendesak' ? '🟡 Mendesak' : '🟢 Normal';
             let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
             const canDel = currentUser.username === d.createdBy && (d.status === 'Pending HR' || d.status === 'Pending Team Leader');
-            const canApr = (
-              (currentUser.role === 'admin') ||
-              (currentUser.role === 'Team Leader' && d.status === 'Pending Team Leader') ||
-              ((currentUser.role === 'Vice Supervisor' || userPerms.includes('aksesViceSpv')) && d.status === 'Pending Vice Supervisor') ||
-              ((currentUser.role === 'Supervisor' || userPerms.includes('aksesSpv')) && d.status === 'Pending Supervisor') ||
-              ((currentUser.role === 'HR' || userPerms.includes('aksesHr')) && d.status === 'Pending HR')
-            );
+            const canApr = canApprove(d.status, currentUser.role);
             if (d.status === 'Disetujui') appr++;
             else if (d.status === 'Ditolak') rej++;
             else pend++;
@@ -9800,7 +10064,8 @@
         const sel = parseFloat(d.selisih) || 0;
         const selClass = sel > 0 ? 'positive' : (sel < 0 ? 'negative' : '');
         const stClass = d.status === 'Approved' ? 'order-terkirim' : 'order-pending';
-        const canApproveOp = d.status === 'Pending' && (currentUser.role === 'admin' || currentUser.role === 'Supervisor');
+        const role = currentUser.role || '';
+        const canApproveOp = d.status === 'Pending' && (role === 'admin' || role === 'Supervisor' || role === 'SPV');
         tb.innerHTML += `<tr>
       <td>${formatDate(d.tanggal)}</td>
       <td><strong>${d.sku}</strong><br><small>${d.nama}</small></td>
