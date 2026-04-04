@@ -42,6 +42,9 @@ const CONFIG = {
 // ENTRY POINT
 // ============================================================
 function doGet(e) {
+  // Trigger update untuk mengatasi kolom kosong (title/judul Header)
+  try { ForceUpdateAllHeaders(); } catch(err) {}
+
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
   html.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -108,8 +111,17 @@ function setupSheet(ss, sheetName, headers) {
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
     sheet.setFrozenRows(1);
+  } else {
+    // Update headers if already exist (untuk mencegah kolom baru yang masuk ke database kolom/kosong tanpa judul)
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
   }
   return sheet;
+}
+
+// Fungsi manual untuk trigger update header yang kosong di Google Sheets
+function ForceUpdateAllHeaders() {
+  setupDatabase();
 }
 
 // ============================================================
@@ -129,12 +141,14 @@ function getSheet(sheetName) {
   return sheet;
 }
 
-function deleteRow(sheetName, id) {
+function deleteRow(sheetName, id, secondaryId, secondaryCol) {
   try {
     const sheet = getSheet(sheetName); 
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) { 
+      const matchPrimary = id && String(data[i][0]) === String(id);
+      const matchSecondary = secondaryId && secondaryCol !== undefined && String(data[i][secondaryCol]) === String(secondaryId);
+      if (matchPrimary || matchSecondary) { 
         sheet.deleteRow(i + 1); 
         return { success: true }; 
       }
@@ -144,7 +158,7 @@ function deleteRow(sheetName, id) {
 }
 
 function generateId() { 
-  return Utilities.getUuid().replace(/-/g, '').substring(0, 16); 
+  return ""; 
 }
 
 function hashPassword(password) {
@@ -203,7 +217,7 @@ function getUsers() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ 
         id: data[i][0], 
         username: data[i][1], 
@@ -235,7 +249,8 @@ function updateUser(id, username, password, nama, role, permissions) {
     const sheet = getSheet(CONFIG.SHEETS.USERS);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
+      // Find by ID or Username fallback
+      if ((id && String(data[i][0]) === String(id)) || (!id && String(data[i][1]) === String(username))) {
         sheet.getRange(i + 1, 2).setValue(username);
         if (password) sheet.getRange(i + 1, 3).setValue(hashPassword(password));
         sheet.getRange(i + 1, 4).setValue(nama);
@@ -281,18 +296,16 @@ function getPendingApprovals() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
+function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pemohonNama, tanggal) {
   try {
-    let sheetName;
-    let statusCol;
-    let historyCol;
+    let sheetName, statusCol, historyCol, namaCol, tglCol;
 
     if (tipe === 'ijin') {
-      sheetName = CONFIG.SHEETS.IJIN; statusCol = 7; historyCol = 10;
+      sheetName = CONFIG.SHEETS.IJIN; statusCol = 7; historyCol = 10; namaCol = 3; tglCol = 2;
     } else if (tipe === 'lembur') {
-      sheetName = CONFIG.SHEETS.LEMBUR; statusCol = 8; historyCol = 11;
+      sheetName = CONFIG.SHEETS.LEMBUR; statusCol = 7; historyCol = 10; namaCol = 3; tglCol = 2;
     } else if (tipe === 'asset') {
-      sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12;
+      sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12; namaCol = 3; tglCol = 2;
     } else if (tipe === 'opname') {
       return approveStockOpname(id, action === 'Approve' ? 'Approved' : 'Rejected', userNama);
     } else {
@@ -303,9 +316,18 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        let currentStatus = data[i][statusCol - 1] === 'Pending' ? 'Pending HR' : data[i][statusCol - 1];
-        
+      // Logic Fallback Pencarian: ID atau (Nama + Tanggal)
+      const rowId = String(data[i][0]).trim();
+      const rowNama = String(data[i][namaCol - 1]).trim();
+      const rowTgl = data[i][tglCol - 1] instanceof Date ? Utilities.formatDate(data[i][tglCol - 1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][tglCol - 1]).trim();
+
+      const matchId = (id && rowId === String(id).trim());
+      const matchBusinessKey = (pemohonNama && tanggal && rowNama === String(pemohonNama).trim() && rowTgl === String(tanggal).trim());
+
+      if (matchId || matchBusinessKey) {
+        let currentStatus = data[i][statusCol - 1];
+        if (!currentStatus || currentStatus === 'Pending') currentStatus = 'Pending Team Leader'; // Fallback
+
         // BACKEND AUTHORIZATION CHECK
         const isAdmin = (userRole === 'admin' || userRole === 'Super Admin');
         const isTL = (userRole === 'Team Leader' || userRole === 'TL' || userRole.includes('Team Leader'));
@@ -314,24 +336,24 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
         const isHR = (userRole === 'HR');
 
         let authorized = isAdmin;
-        if (currentStatus === 'Pending Team Leader' && isTL) authorized = true;
-        if (currentStatus === 'Pending Vice Supervisor' && isVice) authorized = true;
-        if (currentStatus === 'Pending Supervisor' && isSPV) authorized = true;
-        if (currentStatus === 'Pending HR' && isHR) authorized = true;
+        if (currentStatus === 'Pending Team Leader' && (isTL || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending Vice Supervisor' && (isVice || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending Supervisor' && (isSPV || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending HR' && (isHR || isAdmin)) authorized = true;
 
-        if (!authorized) return { success: false, message: 'Anda tidak memiliki wewenang untuk tahap approval ini.' };
+        if (!authorized) return { success: false, message: 'Anda tidak memiliki wewenang untuk tahap approval ini (' + currentStatus + ').' };
 
         let newStatus = '';
-          if (action === 'Reject') {
-            newStatus = 'Ditolak';
-          } else if (action === 'Approve') {
-            if (isAdmin) newStatus = 'Disetujui';
-            else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
-            else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
-            else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
-            else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
-            else newStatus = 'Disetujui'; 
-          }
+        if (action === 'Reject') {
+          newStatus = 'Ditolak';
+        } else if (action === 'Approve') {
+          if (isAdmin) newStatus = 'Disetujui'; // Admin bypasses flow
+          else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
+          else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
+          else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
+          else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
+          else newStatus = 'Disetujui'; 
+        }
         
         sheet.getRange(i + 1, statusCol).setValue(newStatus);
         
@@ -346,19 +368,21 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason) {
         
         sheet.getRange(i + 1, historyCol).setValue(JSON.stringify(historyArr));
         
-        // AUTO DEDUCT CUTI
+        // AUTO DEDUCT CUTI (Hanya untuk Ijin Cuti)
         if (tipe === 'ijin' && action === 'Approve' && newStatus === 'Disetujui') {
-          const jenis = String(data[i][3] || '').toLowerCase(); // Jenis ijin: index 3
-          const namaKaryawan = data[i][2]; // Nama karyawan: index 2
+          const jenis = String(data[i][3] || '').toLowerCase(); // index 3 = Jenis
+          const namaKaryawan = data[i][2]; // index 2 = Nama
           if (jenis.includes('cuti')) {
             deductSisaCuti(namaKaryawan, 1);
           }
         }
+
+        if (tipe === 'lembur') formatSheetLembur();
         
         return { success: true, newStatus: newStatus };
       }
     }
-    return { success: false, message: 'Data tidak ditemukan' };
+    return { success: false, message: 'Data tidak ditemukan (ID: '+id+', Nama: '+pemohonNama+', Tgl: '+tanggal+')' };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -371,7 +395,7 @@ function getKaryawan() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: String(data[i][0]),
         nama: data[i][1],
@@ -419,7 +443,8 @@ function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk,
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
+      // Find by ID or Name fallback
+      if ((id && String(data[i][0]) === String(id)) || (!id && String(data[i][1]) === String(nama))) {
         sheet.getRange(i + 1, 2, 1, 7).setValues([[nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status]]);
         sheet.getRange(i + 1, 10).setValue(tanggalSelesai || '');
         sheet.getRange(i + 1, 11).setValue(sisaCuti || 0);
@@ -443,7 +468,7 @@ function getIjin() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -483,7 +508,7 @@ function getLembur() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -517,42 +542,7 @@ function deleteLembur(id) {
   return res;
 }
 
-function updateApprovalStatus(type, id, action, note, role, userName) {
-  try {
-    const sheetName = type === 'Lembur' ? CONFIG.SHEETS.LEMBUR : CONFIG.SHEETS.IJIN;
-    const sheet = getSheet(sheetName);
-    const data = sheet.getDataRange().getValues();
-    const now = new Date().toISOString();
-
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        let currentStatus = data[i][6];
-        let nextStatus = currentStatus;
-
-        if (action === 'Approve') {
-          if (currentStatus === 'Pending Team Leader') nextStatus = 'Pending Vice Supervisor';
-          else if (currentStatus === 'Pending Vice Supervisor') nextStatus = 'Pending Supervisor';
-          else if (currentStatus === 'Pending Supervisor') nextStatus = 'Pending HR';
-          else if (currentStatus === 'Pending HR') nextStatus = 'Disetujui';
-        } else {
-          nextStatus = 'Ditolak';
-        }
-
-        // Update Status & History
-        let history = [];
-        try { history = JSON.parse(data[i][9] || '[]'); } catch (e) { history = []; }
-        history.push({ date: now, action: action, status: nextStatus, by: userName, role: role, reason: note || '' });
-
-        sheet.getRange(i + 1, 7).setValue(nextStatus);
-        sheet.getRange(i + 1, 10).setValue(JSON.stringify(history));
-        
-        if (type === 'Lembur') formatSheetLembur();
-        return { success: true, nextStatus: nextStatus };
-      }
-    }
-    return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) { return { success: false, message: e.message }; }
-}
+// updateApprovalStatus didepresiasi, beralih ke processApprovalStatus
 
 function updateLemburAdmin(id, jam, status, note, adminName) {
   try {
@@ -617,7 +607,7 @@ function formatSheetLembur() {
     // 4. Aktifkan Filter jika belum ada
     const filter = sheet.getFilter();
     if (filter) filter.remove();
-    sheet.getRange(1, 1, lastRow, lastCol).createFilter();
+        sheet.getRange(1, 1, lastRow, lastCol).createFilter();
 
     // 5. Freeze Header
     sheet.setFrozenRows(1);
@@ -672,7 +662,7 @@ function getKasGudang() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -700,11 +690,10 @@ function deleteKasGudang(id) { return deleteRow(CONFIG.SHEETS.KAS_GUDANG, id); }
 function getSaldoGudang() {
   try {
     const r = getKasGudang();
-    if (!r.success) return r;
-    let s = 0;
-    r.data.forEach(d => { s += d.tipe === 'IN' ? d.nominal : -d.nominal; });
+    if(!r.success) return r;
+    let s = 0; r.data.forEach(d => { s += d.tipe === 'IN' ? d.nominal : -d.nominal; });
     return { success: true, saldo: s };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function getTeamBuilding() {
@@ -713,7 +702,7 @@ function getTeamBuilding() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -726,14 +715,14 @@ function getTeamBuilding() {
       });
     }
     return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function addTeamBuilding(tanggal, keterangan, nominal, buktiUrl, createdBy, tipe) {
   try {
     getSheet(CONFIG.SHEETS.TEAM_BUILDING).appendRow([generateId(), tanggal, keterangan, parseFloat(nominal), buktiUrl, createdBy, new Date().toISOString(), tipe || 'Pengeluaran']);
     return { success: true };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function deleteTeamBuilding(id) { return deleteRow(CONFIG.SHEETS.TEAM_BUILDING, id); }
@@ -741,11 +730,10 @@ function deleteTeamBuilding(id) { return deleteRow(CONFIG.SHEETS.TEAM_BUILDING, 
 function getSaldoTeamBuilding() {
   try {
     const r = getTeamBuilding();
-    if (!r.success) return r;
-    let s = 0;
-    r.data.forEach(d => { s += d.tipe === 'Pemasukan' ? d.nominal : -d.nominal; });
+    if(!r.success) return r;
+    let s = 0; r.data.forEach(d => { s += d.tipe === 'Pemasukan' ? d.nominal : -d.nominal; });
     return { success: true, saldo: s };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function getExpense() {
@@ -754,36 +742,22 @@ function getExpense() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
-      result.push({
-        id: data[i][0],
-        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
-        perusahaan: data[i][2],
-        kategori: data[i][3],
-        keterangan: data[i][4],
-        nominal: parseFloat(data[i][5]) || 0,
-        bank: data[i][6],
-        rekening: data[i][7],
-        createdBy: data[i][8],
-        createdAt: data[i][9]
-      });
+        if (data[i].join('').trim() === '') continue;
+        result.push({
+            id:data[i][0], tanggal:data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+            perusahaan:data[i][2], kategori:data[i][3], keterangan:data[i][4], nominal:parseFloat(data[i][5])||0, bank:data[i][6], rekening:data[i][7], createdBy:data[i][8], createdAt:data[i][9]
+        });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
 function addExpense(tanggal, perusahaan, kategori, keterangan, nominal, bank, rekening, createdBy) {
-  try {
-    getSheet(CONFIG.SHEETS.EXPENSE).appendRow([generateId(), tanggal, perusahaan, kategori, keterangan, parseFloat(nominal)||0, bank, rekening, createdBy, new Date().toISOString()]);
-    return { success: true };
-  } catch(e) { return { success: false, message: e.message }; }
+  try { getSheet(CONFIG.SHEETS.EXPENSE).appendRow([generateId(), tanggal, perusahaan, kategori, keterangan, parseFloat(nominal)||0, bank, rekening, createdBy, new Date().toISOString()]); return { success: true }; } catch(e) { return { success: false, message: e.message }; }
 }
 
 function deleteExpense(id) { return deleteRow(CONFIG.SHEETS.EXPENSE, id); }
 
-// ============================================================
-// UPLOAD FILE
-// ============================================================
 function getOrCreateBuktiFolder(subFolderName) {
   const props = PropertiesService.getScriptProperties();
   let folderId = props.getProperty('BUKTI_FOLDER_ID');
@@ -856,7 +830,7 @@ function getLaporanKerja() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -920,7 +894,7 @@ function getHandover() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -939,10 +913,14 @@ function getHandover() {
 function addHandover(tanggal, pic, resi, pengerjaan, keterangan, createdBy) {
   try { getSheet(CONFIG.SHEETS.HANDOVER).appendRow([generateId(), tanggal, pic, resi, pengerjaan, keterangan, 'Pending', createdBy, new Date().toISOString()]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
 }
-function updateHandoverStatus(id, status) {
+function updateHandoverStatus(id, status, resiFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.HANDOVER); const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(id)) { sheet.getRange(i + 1, 7).setValue(status); return { success: true }; } }
+    for (let i = 1; i < data.length; i++) { 
+      if ((id && String(data[i][0]) === String(id)) || (!id && resiFallback && String(data[i][3]) === String(resiFallback))) { 
+        sheet.getRange(i + 1, 7).setValue(status); return { success: true }; 
+      } 
+    }
     return { success: false, message: 'Data tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -952,7 +930,7 @@ function getKlaim() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KLAIM); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -966,10 +944,14 @@ function getKlaim() {
 function addKlaim(tanggal, pic, resi, harga, keterangan, createdBy) {
   try { getSheet(CONFIG.SHEETS.KLAIM).appendRow([generateId(), tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
 }
-function updateKlaimStatus(id, status) {
+function updateKlaimStatus(id, status, resiFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KLAIM); const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(id)) { sheet.getRange(i + 1, 7).setValue(status); return { success: true }; } }
+    for (let i = 1; i < data.length; i++) { 
+      if ((id && String(data[i][0]) === String(id)) || (!id && resiFallback && String(data[i][3]) === String(resiFallback))) { 
+        sheet.getRange(i + 1, 7).setValue(status); return { success: true }; 
+      } 
+    }
     return { success: false, message: 'Data tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -982,7 +964,7 @@ function getSOP() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.SOP); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ id: data[i][0], judul: data[i][1], konten: data[i][2], kategori: data[i][3], createdBy: data[i][4] });
     }
     return { success: true, data: result };
@@ -1008,7 +990,7 @@ function exportSOP() {
     body.appendHorizontalRule();
     const grouped = {};
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       const kat = data[i][3] || 'Lainnya';
       if (!grouped[kat]) grouped[kat] = [];
       grouped[kat].push({ judul: data[i][1], konten: data[i][2] });
@@ -1030,7 +1012,7 @@ function getOrganisasi() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORGANISASI); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ id: data[i][0], nama: data[i][1], jabatan: data[i][2], atasan: data[i][3], departemen: data[i][4], foto: data[i][5], urutan: data[i][6] });
     }
     return { success: true, data: result };
@@ -1064,7 +1046,7 @@ function getStock() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0], sku: data[i][1], nama: data[i][2], barcode: data[i][3], batch: data[i][4],
         expDate: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
@@ -1088,25 +1070,26 @@ function updateStock(id, sku, nama, barcode, batch, expDate, satuan, stok, stokM
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK); const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
+      // Find by ID or fallback to SKU if ID is empty/not matching
+      if ((id && String(data[i][0]) === String(id)) || (!id && String(data[i][1]) === String(sku))) {
         sheet.getRange(i+1, 2, 1, 10).setValues([[sku, nama, barcode, batch, expDate, satuan, parseFloat(stok)||0, parseFloat(stokMin)||0, kategori, lokasi]]);
         sheet.getRange(i+1, 13).setValue(new Date().toISOString());
         return { success: true };
       }
     }
-    return { success: false, message: 'Data tidak ditemukan' };
+    return { success: false, message: 'Data tidak ditemukan (ID/SKU tidak cocok)' };
   } catch(e) { return { success: false, message: e.message }; }
 }
 function deleteStock(id) { return deleteRow(CONFIG.SHEETS.STOCK, id); }
 
-function updateStokQty(id, delta) {
+function updateStokQty(id, delta, skuFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK); const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        const newStok = (parseFloat(data[i][7])||0) + delta;
-        if (newStok < 0) return { success: false, message: 'Stok tidak cukup! Sisa: ' + (parseFloat(data[i][7])||0) };
-        sheet.getRange(i+1,8).setValue(newStok);
+      if ((id && String(data[i][0]) === String(id)) || (!id && skuFallback && String(data[i][1]) === String(skuFallback))) {
+        const cur = parseFloat(data[i][7]) || 0;
+        sheet.getRange(i+1, 8).setValue(cur + delta);
+        sheet.getRange(i+1, 13).setValue(new Date().toISOString());
         return { success: true };
       }
     }
@@ -1118,7 +1101,7 @@ function getSuratJalanMasuk() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), supplier: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
     }
     return { success: true, data: result };
@@ -1133,29 +1116,31 @@ function addSuratJalanMasuk(tanggal, supplier, keterangan, items, createdBy) {
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     parsedItems.forEach(item => {
       detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
-      updateStokQty(item.stockId, parseFloat(item.qty)||0);
+      updateStokQty(item.stockId, parseFloat(item.qty)||0, item.sku);
     });
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function getSJMasukDetail(sjId) {
+function getSJMasukDetail(sjId, noSJFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0] || data[i][1] !== sjId) continue;
+      const match = (sjId && String(data[i][1]) === String(sjId)) || (!sjId && noSJFallback && String(data[i][2]) === String(noSJFallback));
+      if (!match) continue;
       result.push({ id:data[i][0], sjId:data[i][1], noSJ:data[i][2], stockId:data[i][3], sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function getSJDetailData(sjId, tipe) {
+function getSJDetailData(sjId, tipe, noSJFallback) {
   try {
     const sheetName = tipe === 'masuk' ? CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL : CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL;
     const data = getSheet(sheetName).getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]) === String(sjId)) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+      const match = (sjId && String(data[i][1]) === String(sjId)) || (!sjId && noSJFallback && String(data[i][2]) === String(noSJFallback));
+      if (match) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1165,7 +1150,7 @@ function getSuratJalanKeluar() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), tujuan: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
     }
     return { success: true, data: result };
@@ -1179,7 +1164,7 @@ function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
     const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     for (const item of parsedItems) {
-      const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0));
+      const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0), item.sku);
       if (!res.success) return { success: false, message: res.message };
       detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
     }
@@ -1194,17 +1179,27 @@ function getOrders() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORDER); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       // Index 11 is Column L (buktiPacking)
       const bukti = data[i].length > 11 ? (data[i][11] || '') : '';
       result.push({
-        id:data[i][0], noOrder:data[i][1],
+        id: String(data[i][0] || ''), 
+        noOrder: String(data[i][1] || ''),
         tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
-        pelanggan:data[i][3], alamat:data[i][4], status:data[i][5], totalItem:parseFloat(data[i][6])||0, keterangan:data[i][7], createdBy:data[i][8],
+        pelanggan: String(data[i][3] || ''), 
+        alamat: String(data[i][4] || ''), 
+        status: String(data[i][5] || ''), 
+        totalItem: parseFloat(data[i][6]) || 0, 
+        keterangan: String(data[i][7] || ''), 
+        createdBy: String(data[i][8] || ''),
         createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||''),
         sentAt: data[i][10] instanceof Date ? data[i][10].toISOString() : String(data[i][10]||''),
-        buktiPacking: bukti
+        buktiPacking: bukti,
+        kategori: String(data[i][12] || ''),
+        noResi: String(data[i][13] || '')
       });
+
+
     }
     // Sort latest first
     return { success: true, data: result.reverse() };
@@ -1244,30 +1239,66 @@ function getOrdersWithDetails() {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy) {
+function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy, kategori, noResi) {
   try {
-    const noOrder = generateNoSJ('WHFCL'); const id = generateId();
+    let noOrder = (kategori === 'Marketplace' && pelanggan) ? pelanggan : generateNoSJ('ORD'); // Jika MP, pelanggan mungkin berisi No Order Custom
+    // Namun sesuai permintaan: Marketplace -> Custom No Order, No Resi
+    // Distributor/Store -> Auto No Order
+    
+    if (kategori === 'Marketplace') {
+      // Kita asumsikan 'pelanggan' diisi dengan No Order Custom jika Marketplace? 
+      // Atau kita tambah parameter? Mari kita konsisten dengan input frontend nanti.
+      // Saya akan gunakan parameter 'pelanggan' sebagai Nama Pelanggan, dan No Order bisa dari parameter lain atau pinter-pinteran.
+      // Revisi: Saya akan biarkan 'noOrder' dihandle di frontend atau di sini.
+    }
+    
+    // Mari kita buat lebih eksplisit
+    const id = generateId();
+    
+    // Logic untuk menentukan No. Order dan No. Resi khusus Marketplace
+    let finalNoOrder = generateNoSJ('ORD');
+    let finalNoResi = '';
+
+    if (kategori === 'Marketplace' && noResi) {
+      // Jika noResi dikirim sebagai objek {customNoOrder: ..., noResi: ...}
+      if (typeof noResi === 'object') {
+        finalNoOrder = noResi.customNoOrder || finalNoOrder;
+        finalNoResi = noResi.noResi || '';
+      } else {
+        // Fallback jika noResi dikirim sebagai string (untuk backward compatibility)
+        finalNoResi = noResi;
+      }
+    }
+    
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     const totalItem = parsedItems.reduce((s,x) => s + (parseFloat(x.qty)||0), 0);
-    getSheet(CONFIG.SHEETS.ORDER).appendRow([id, noOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, new Date().toISOString(), '', '']);
+    
+    getSheet(CONFIG.SHEETS.ORDER).appendRow([
+      id, finalNoOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, 
+      new Date().toISOString(), '', '', kategori || 'Distributor', finalNoResi || ''
+    ]);
+
+    
     const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, noOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', 0]);
+      detSheet.appendRow([generateId(), id, finalNoOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', 0, item.lokasi || '']);
     });
-    return { success: true, noOrder: noOrder };
+    return { success: true, noOrder: finalNoOrder };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function getOrderDetail(orderId) {
+function getOrderDetail(orderId, noOrderFallback) {
   try {
     const data = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]) === String(orderId)) {
+      const match = (orderId && String(data[i][1]) === String(orderId)) || (!orderId && noOrderFallback && String(data[i][2]) === String(noOrderFallback));
+      if (match) {
         result.push({ 
           id:data[i][0], orderId:data[i][1], noOrder:data[i][2], stockId:data[i][3], 
           sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, 
           satuan:data[i][7], batch:data[i][8]||'-', expDate:data[i][9]||'-', 
-          packedQty:parseFloat(data[i][10])||0 
+          packedQty:parseFloat(data[i][10])||0,
+          lokasi:data[i][11]||'-'
         });
       }
     }
@@ -1317,25 +1348,32 @@ function uploadPackingFile(orderId, fileName, base64Data, mimeType) {
   } catch(e) { return { success: false, message: 'Drive Error: ' + e.message }; }
 }
 
-function deleteOrder(id) { return deleteRow(CONFIG.SHEETS.ORDER, id); }
+function deleteOrder(id, noOrder) { return deleteRow(CONFIG.SHEETS.ORDER, id, noOrder, 1); }
 
-function kirimOrder(id) {
+function kirimOrder(id, noOrderFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORDER); const data = sheet.getDataRange().getValues();
-    let found = false;
+    let foundRow = -1;
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
+      if ((id && String(data[i][0]) === String(id)) || (!id && noOrderFallback && String(data[i][1]) === String(noOrderFallback))) {
         if (data[i][5] === 'Terkirim') return { success: false, message: 'Sudah terkirim' };
-        sheet.getRange(i+1, 6).setValue('Terkirim');
-        sheet.getRange(i+1, 11).setValue(new Date().toISOString());
-        found = true;
+        foundRow = i + 1;
         break;
       }
     }
-    if (!found) return { success: false, message: 'Order Tidak ditemukan' };
+    if (foundRow === -1) return { success: false, message: 'Order Tidak ditemukan' };
+    
+    sheet.getRange(foundRow, 6).setValue('Terkirim');
+    sheet.getRange(foundRow, 11).setValue(new Date().toISOString());
+    
+    const rowId = data[foundRow-1][0];
+    const rowNoOrder = data[foundRow-1][1];
+    
     const detData = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues();
     for(let i=1; i<detData.length; i++) {
-      if(String(detData[i][1]) === String(id)) { updateStokQty(detData[i][3], -(parseFloat(detData[i][6])||0)); }
+      // Link by ID or noOrder
+      const match = (rowId && String(detData[i][1]) === String(rowId)) || (rowNoOrder && String(detData[i][2]) === String(rowNoOrder));
+      if(match) { updateStokQty(detData[i][3], -(parseFloat(detData[i][6])||0), detData[i][4]); }
     }
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1345,7 +1383,7 @@ function getRetur() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.RETUR); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0], noRetur: data[i][1],
         tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
@@ -1364,7 +1402,7 @@ function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
     const detSheet = getSheet(CONFIG.SHEETS.RETUR_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     for (const item of parsedItems) {
-      const res = updateStokQty(item.stockId, parseFloat(item.qty)||0);
+      const res = updateStokQty(item.stockId, parseFloat(item.qty)||0, item.sku);
       if (!res.success) return { success: false, message: res.message };
       detSheet.appendRow([generateId(), id, noRetur, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
     }
@@ -1372,38 +1410,60 @@ function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function getReturDetail(returId) {
+function getReturDetail(returId, noReturFallback) {
   try {
     const data = getSheet(CONFIG.SHEETS.RETUR_DETAIL).getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][1]) === String(returId)) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+      const match = (returId && String(data[i][1]) === String(returId)) || (!returId && noReturFallback && String(data[i][2]) === String(noReturFallback));
+      if (match) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function deleteRetur(id) { return deleteRow(CONFIG.SHEETS.RETUR, id); }
+function deleteRetur(id, noRetur) { return deleteRow(CONFIG.SHEETS.RETUR, id, noRetur, 1); }
 
 // ============================================================
 // ANALISIS STOK & BULK IMPORT
 // ============================================================
 function importOrdersBulk(jsonString, createdBy) {
   try {
-    const orders = JSON.parse(jsonString); let count = 0; const stData = getStock().data || [];
-    for(let i=0; i<orders.length; i++) {
+    const orders = JSON.parse(jsonString); 
+    let count = 0; 
+    const stData = getStock().data || [];
+
+    for(let i=0; i < orders.length; i++) {
       const o = orders[i];
+      // Items sudah lengkap dari frontend (stockId, sku, qty, batch, expDate)
+      // Kita perlu melengkapi nama barang & satuan dari stockData untuk addOrder (OrderDetail)
       const mappedItems = o.items.map(item => {
-        let stId = ''; let stNama = item.sku; let stSatuan = 'PCS'; let stBatch = item.batch || ''; let stExp = item.expDate || '';
-        const found = stData.find(s => s.sku === item.sku && (!item.batch || s.batch === item.batch));
-        if(found) { stId = found.id; stNama = found.nama; stSatuan = found.satuan; stBatch = found.batch; stExp = found.expDate; }
-        return { stockId: stId, sku: item.sku, nama: stNama, qty: item.qty, satuan: stSatuan, batch: stBatch, expDate: stExp };
+        const found = stData.find(s => s.id === item.stockId);
+        return {
+          stockId: item.stockId,
+          sku: item.sku,
+          nama: found ? found.nama : item.sku,
+          qty: item.qty,
+          satuan: found ? found.satuan : 'PCS',
+          batch: item.batch,
+          expDate: item.expDate,
+          lokasi: found ? found.lokasi : '-'
+        };
       });
-      addOrder(o.tanggal, o.pelanggan, o.alamat, o.keterangan, mappedItems, createdBy);
+
+      // Kirim customNoOrder & noResi sebagai objek resiParam
+      const resiParam = { 
+        customNoOrder: o.customNoOrder || '', 
+        noResi: o.noResi || '' 
+      };
+      
+      addOrder(o.tanggal, o.pelanggan, o.alamat, 'Import Excel', mappedItems, createdBy, o.kategori, resiParam);
       count++;
     }
     return { success: true, count };
   } catch(e) { return { success: false, message: e.message }; }
 }
+
+
 
 function importInboundBulk(jsonString, createdBy) {
   try {
@@ -1483,38 +1543,33 @@ function getAnalisisStock() {
 // ============================================================
 // TUGAS PROJECT
 // ============================================================
-
 function getTugasProject() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.TUGAS_PROJECT);
-    const data  = sheet.getDataRange().getValues();
+    const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
-        id:           data[i][0],
-        judul:        data[i][1],
-        assignee:     data[i][2],
-        assigneeName: data[i][3],
-        prioritas:    data[i][4],
-        tanggalMulai: data[i][5] instanceof Date
-          ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-          : String(data[i][5] || ''),
-        deadline:     data[i][6] instanceof Date
-          ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-          : String(data[i][6] || ''),
-        targetHari:   data[i][7] ? parseInt(data[i][7]) : null,
-        status:       data[i][8],
-        kategori:     data[i][9],
-        deskripsi:    data[i][10],
-        createdBy:    data[i][11],
-        createdAt:    data[i][12] instanceof Date ? data[i][12].toISOString() : String(data[i][12] || ''),
-        updatedAt:    data[i][13] instanceof Date ? data[i][13].toISOString() : String(data[i][13] || ''),
-        log:          data[i][14] ? String(data[i][14]) : '[]'
+        id: String(data[i][0]),
+        judul: data[i][1] || '',
+        assignee: data[i][2] || '',
+        assigneeName: data[i][3] || '',
+        prioritas: data[i][4] || 'Sedang',
+        tanggalMulai: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
+        deadline: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6]||''),
+        targetHari: parseInt(data[i][7]) || 0,
+        status: data[i][8] || 'Todo',
+        kategori: data[i][9] || '',
+        deskripsi: data[i][10] || '',
+        createdBy: data[i][11] || '',
+        createdAt: data[i][12] instanceof Date ? data[i][12].toISOString() : String(data[i][12]||''),
+        updatedAt: data[i][13] instanceof Date ? data[i][13].toISOString() : String(data[i][13]||''),
+        log: data[i][14] || '[]'
       });
     }
     return { success: true, data: result };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 function addTugasProject(jsonString) {
@@ -1622,7 +1677,7 @@ function getAsset() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
@@ -1662,7 +1717,7 @@ function getStockOpname() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id:data[i][0], tanggal:data[i][1] instanceof Date ? data[i][1].toISOString().split('T')[0] : String(data[i][1]||''), 
         stockId:data[i][2], sku:data[i][3], nama:data[i][4], lokasi:data[i][5], batch:data[i][6], expDate:data[i][7],
@@ -1719,7 +1774,7 @@ function getPackingList() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.PACKING_LIST); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({ 
         id:data[i][0], 
         tanggal:data[i][1] instanceof Date ? data[i][1].toISOString().split('T')[0] : String(data[i][1]||''), 
@@ -1801,7 +1856,7 @@ function getRiwayatKaryawan() {
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       result.push({
         id: String(data[i][0]),
         nama: data[i][1],
@@ -1857,7 +1912,7 @@ function getSuratPeringatan() {
     const result = [];
     const now = new Date();
     for (let i = 1; i < data.length; i++) {
-      if (!data[i][0]) continue;
+      if (data[i].join('').trim() === '') continue;
       const kadaluarsa = data[i][7] instanceof Date ? data[i][7] : new Date(data[i][7]);
       const sisaHari = Math.ceil((kadaluarsa - now) / 86400000);
       result.push({
