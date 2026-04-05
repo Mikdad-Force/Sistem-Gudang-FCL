@@ -158,7 +158,7 @@ function deleteRow(sheetName, id, secondaryId, secondaryCol) {
 }
 
 function generateId() { 
-  return ""; 
+  return Utilities.getUuid(); 
 }
 
 function hashPassword(password) {
@@ -331,9 +331,9 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
         // BACKEND AUTHORIZATION CHECK
         const isAdmin = (userRole === 'admin' || userRole === 'Super Admin');
         const isTL = (userRole === 'Team Leader' || userRole === 'TL' || userRole.includes('Team Leader'));
-        const isVice = (userRole === 'Vice Supervisor' || userRole === 'Vice SPV' || userRole === 'Vice VPV');
-        const isSPV = (userRole === 'Supervisor' || userRole === 'SPV');
-        const isHR = (userRole === 'HR');
+        const isVice = (userRole === 'Vice Supervisor' || userRole === 'Vice SPV' || userRole === 'Vice VPV' || userRole.includes('Vice'));
+        const isSPV = (userRole === 'Supervisor' || userRole === 'SPV' || userRole === 'Supervisor HR' || (userRole.includes('Supervisor') && !userRole.includes('Vice')));
+        const isHR = (userRole === 'HR' || userRole === 'Supervisor HR' || userRole.includes('HR'));
 
         let authorized = isAdmin;
         if (currentStatus === 'Pending Team Leader' && (isTL || isAdmin)) authorized = true;
@@ -385,6 +385,83 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
     return { success: false, message: 'Data tidak ditemukan (ID: '+id+', Nama: '+pemohonNama+', Tgl: '+tanggal+')' };
   } catch (e) { return { success: false, message: e.message }; }
 }
+
+/**
+ * Mendapatkan semua data approval pending yang sudah dilengkapi dengan data Divisi
+ * untuk keperluan Approval Massal.
+ */
+function getBulkApprovalData() {
+  try {
+    const res = getPendingApprovals();
+    if (!res.success) return res;
+
+    // Ambil mapping Nama -> Departemen dari Struktur Organisasi
+    const orgRes = getOrganisasi();
+    const orgMap = {};
+    if (orgRes.success && orgRes.data) {
+      orgRes.data.forEach(o => { if (o.nama) orgMap[o.nama.trim()] = o.departemen || 'Lainnya'; });
+    }
+
+    const processList = (list, type, module) => {
+      return (list || []).map(item => {
+        // Tentukan divisi: Prioritaskan field 'divisi' (Lembur), fallback ke Organisasi
+        let div = item.divisi || orgMap[(item.nama || item.karyawan || '').trim()] || 'Lainnya';
+        return {
+          ...item,
+          _type: type,
+          _module: module,
+          _divisi: div
+        };
+      });
+    };
+
+    return {
+      success: true,
+      data: [
+        ...processList(res.ijin, 'Ijin/Cuti', 'ijin'),
+        ...processList(res.lembur, 'Lembur', 'lembur'),
+        ...processList(res.asset, 'Asset', 'asset'),
+        ...processList(res.stockOpname, 'Stock Opname', 'opname')
+      ]
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Memproses approval banyak item sekaligus (Batch)
+ * @param {Array} items - List of {tipe, id, action, nama, tanggal}
+ */
+function processBatchApproval(items, userNama, userRole) {
+  try {
+    const results = { success: 0, failed: 0, errors: [] };
+    
+    // Batasi batch agar tidak timeout (maks 50)
+    const batch = items.slice(0, 50);
+    
+    batch.forEach(item => {
+      try {
+        const res = processApprovalStatus(item.tipe, item.id, item.action, userNama, userRole, item.reason || '', item.nama, item.tanggal);
+        if (res.success) results.success++;
+        else {
+          results.failed++;
+          results.errors.push(item.nama + ': ' + res.message);
+        }
+      } catch(err) {
+        results.failed++;
+        results.errors.push(item.nama + ': ' + err.message);
+      }
+    });
+
+    return { 
+      success: true, 
+      processed: results.success, 
+      failed: results.failed, 
+      errors: results.errors,
+      total: items.length
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 
 // ============================================================
 // DATA KARYAWAN
@@ -812,12 +889,24 @@ function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
       if (isSplit) { fullBase64 += (cache.get(key + '_a') || '') + (cache.get(key + '_b') || ''); } 
       else { fullBase64 += cache.get(key) || ''; }
     }
-    const folder = getOrCreateBuktiFolder(folderName);
+    let folder;
+    if (folderName === 'Bukti Packing') {
+      try {
+        folder = DriveApp.getFolderById('1lE_NWzThv9MdODkmtYjScWz-Bb3N8ocA');
+      } catch(e) {
+        return { success: false, message: 'Gagal akses folder Bukti Packing: ' + e.message };
+      }
+    } else {
+      folder = getOrCreateBuktiFolder(folderName);
+    }
+    
     const decoded = Utilities.base64Decode(fullBase64);
     const blob = Utilities.newBlob(decoded, mimeType || 'application/octet-stream', fileName);
     const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return { success: true, url: 'https://drive.google.com/file/d/' + file.getId() + '/view' };
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(err) {} // abaikan error permission domain
+    return { success: true, url: file.getUrl() };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -862,8 +951,24 @@ function getLaporanKerja() {
 
 function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound) {
   try {
-    getSheet(CONFIG.SHEETS.LAPORAN_KERJA).appendRow([
-      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
+    const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
+    const data = sheet.getDataRange().getValues();
+    const targetDateStr = String(tanggal).split('T')[0];
+    const targetShift = shift || 'Pagi';
+
+    for (let i = 1; i < data.length; i++) {
+      const rowDate = data[i][1];
+      const rowDateStr = rowDate instanceof Date ? Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(rowDate).split('T')[0];
+      const rowDivisi = String(data[i][2]);
+      const rowShift = String(data[i][17] || 'Pagi');
+
+      if (rowDateStr === targetDateStr && rowDivisi === divisi && rowShift === targetShift) {
+        return { success: false, message: `Laporan untuk ${divisi} (${targetShift}) pada tanggal ${targetDateStr} sudah ada. Silakan gunakan fitur Edit.` };
+      }
+    }
+
+    sheet.appendRow([
+      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -1306,46 +1411,24 @@ function getOrderDetail(orderId, noOrderFallback) {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function uploadPackingFile(orderId, fileName, base64Data, mimeType) {
+function updateBuktiPackingUrl(orderId, noOrderFallback, url) {
   try {
-    const folderId = '1lE_NWzThv9MdODkmtYjScWz-Bb3N8ocA';
-    let folder;
-    try {
-      folder = DriveApp.getFolderById(folderId);
-    } catch(err) {
-      return { success: false, message: 'Gagal akses folder Drive. Pastikan Otorisasi di Editor Script sudah dilakukan.' };
-    }
-    
-    const decoded = Utilities.base64Decode(base64Data);
-    const blob = Utilities.newBlob(decoded, mimeType, fileName);
-    const file = folder.createFile(blob);
-    
-    // Set file to be viewable by anyone with link (optional, depends on domain policy)
-    try {
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch(err) {
-      // Jika error karena kebijakan organisasi, abaikan dan lanjut ambil URL
-    }
-    
-    const url = file.getUrl();
-
     const sheet = getSheet(CONFIG.SHEETS.ORDER);
     const data = sheet.getDataRange().getValues();
     let updated = false;
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(orderId)) {
+      const matchId = orderId && String(data[i][0]).trim() === String(orderId).trim();
+      const matchNo = !orderId && noOrderFallback && String(data[i][1]).trim() === String(noOrderFallback).trim();
+      
+      if (matchId || matchNo) {
         sheet.getRange(i+1, 12).setValue(url); // Col L (buktiPacking)
         updated = true;
         break;
       }
     }
-    
-    if (!updated) {
-      return { success: false, message: 'File masuk Drive, tapi gagal mencatat ke database (ID Order tidak ditemukan).' };
-    }
-
+    if (!updated) return { success: false, message: 'ID/No Order tidak ditemukan di database.' };
     return { success: true, url: url };
-  } catch(e) { return { success: false, message: 'Drive Error: ' + e.message }; }
+  } catch(e) { return { success: false, message: 'Simpan URL Error: ' + e.message }; }
 }
 
 function deleteOrder(id, noOrder) { return deleteRow(CONFIG.SHEETS.ORDER, id, noOrder, 1); }
@@ -1799,55 +1882,7 @@ function addPackingList(tanggal, noPL, keterangan, fileUrl, createdBy) {
   } catch(e) { return { success: false, message: 'Gagal Simpan ke Tabel: ' + e.message }; }
 }
 
-// UPLOAD HANDLER
-function uploadChunk(data, index, uploadId) {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    if (!uploadId) uploadId = 'UP_' + new Date().getTime() + '_' + Math.random().toString(36).substring(7);
-    props.setProperty(uploadId + '_' + index, data);
-    return { success: true, uploadId: uploadId };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function finalizeChunkedUpload(uploadId, fileName, contentType, folderName) {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    let b64 = ''; let index = 0;
-    while (true) {
-      const chunk = props.getProperty(uploadId + '_' + index);
-      if (chunk === null) break;
-      b64 += chunk;
-      props.deleteProperty(uploadId + '_' + index);
-      index++;
-    }
-    const blob = Utilities.newBlob(Utilities.base64Decode(b64), contentType, fileName);
-    let folder;
-    try {
-      folder = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-    } catch(e) {
-      // Fallback or specific subfolder if needed
-      folder = DriveApp.getRootFolder(); 
-    }
-    
-    // Create subfolder if needed
-    if (folderName) {
-      const subFolders = folder.getFoldersByName(folderName);
-      if (subFolders.hasNext()) folder = subFolders.next();
-      else folder = folder.createFolder(folderName);
-    }
-
-    const file = folder.createFile(blob);
-    try {
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch(e) {
-      // Jika kebijakan admin melarang sharing publik, abaikan agar proses simpan tetap lanjut
-      Logger.log('Gagal set sharing: ' + e.message);
-    }
-    return { success: true, url: file.getUrl() };
-  } catch (e) { return { success: false, message: 'Gagal Unggah: ' + e.message }; }
-}
-
-// ============================================================
+// UPLOAD HANDLER DUPLIKAT DIHAPUS - MENGGUNAKAN VERSI CACHESERVICE DI ATAS
 // RIWAYAT KARYAWAN (RESIGN)
 // ============================================================
 function getRiwayatKaryawan() {
