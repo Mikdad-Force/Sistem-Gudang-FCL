@@ -33,7 +33,12 @@ const CONFIG = {
     STOCK_OPNAME: 'StockOpname',
     PACKING_LIST: 'PackingList',
     RIWAYAT_KARYAWAN: 'RiwayatKaryawan',
-    SURAT_PERINGATAN: 'SuratPeringatan'
+    SURAT_PERINGATAN: 'SuratPeringatan',
+    TGL_MERAH: 'TglMerah',
+    ASSET_WAREHOUSE: 'AssetWarehouse',
+    BOOKING_MOBIL: 'BookingMobil',
+    TUGAS_CONSUMABLE: 'TugasConsumable',
+    ABSENSI_LEMBUR: 'AbsensiLembur'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -52,6 +57,33 @@ function doGet(e) {
   return html;
 }
 
+/**
+ * Handle API requests from external domains (Netlify, etc.)
+ */
+function doPost(e) {
+  const result = { success: false, message: 'Invalid Request' };
+  
+  try {
+    const postData = JSON.parse(e.postData.contents);
+    const funcName = postData.func;
+    const args = postData.args || [];
+    
+    // Security check: Only allow direct execution of defined functions
+    if (typeof this[funcName] === 'function') {
+      const data = this[funcName].apply(null, args);
+      return ContentService.createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
+    } else {
+      result.message = 'Function ' + funcName + ' not found or access denied.';
+    }
+  } catch (err) {
+    result.message = 'API Error: ' + err.toString();
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 // ============================================================
 // SETUP DATABASE
 // ============================================================
@@ -68,14 +100,14 @@ function setupDatabase() {
     ss = SpreadsheetApp.openById(ssId);
   }
 
-  setupSheet(ss, CONFIG.SHEETS.USERS, ['id', 'username', 'password', 'nama', 'role', 'createdAt', 'permissions']);
+  setupSheet(ss, CONFIG.SHEETS.USERS, ['id', 'username', 'password', 'nama', 'role', 'createdAt', 'permissions', 'divisi']);
   setupSheet(ss, CONFIG.SHEETS.KAS_GUDANG, ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.EXPENSE, ['id', 'tanggal', 'perusahaan', 'kategori', 'keterangan', 'nominal', 'bank', 'rekening', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti']);
   setupSheet(ss, CONFIG.SHEETS.IJIN, ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history']);
   setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jumlahJam', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
-  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames', 'shift', 'totalPHL', 'jamKerjaPHL', 'totalPO', 'totalQty', 'totalInbound']);
+  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames', 'shift', 'totalPHL', 'jamKerjaPHL', 'totalPO', 'totalQty', 'totalInbound', 'pendapatanPotongBubble', 'pendapatanBuatBubble', 'alasanPengurangan']);
   setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
   setupSheet(ss, CONFIG.SHEETS.STOCK, ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt']);
@@ -95,6 +127,11 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['id', 'tanggal', 'pemberiTugas', 'picName', 'targetPotong', 'targetBuat', 'actualPotong', 'actualBuat', 'status', 'catatan', 'createdAt', 'updatedAt']);
+  setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty']);
+  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.ABSENSI_LEMBUR, ['id', 'tanggal', 'jam', 'nama', 'divisi', 'karyawanId', 'status', 'createdAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -187,7 +224,9 @@ function login(username, password) {
             username: data[i][1], 
             nama: data[i][3], 
             role: data[i][4], 
-            permissions: data[i][6] || '[]' 
+            permissions: data[i][6] || '[]',
+            divisi: data[i][7] || '',
+            isDefaultPassword: (password === '1')
           } 
         };
       }
@@ -224,11 +263,40 @@ function getUsers() {
         nama: data[i][3], 
         role: data[i][4], 
         createdAt: data[i][5], 
-        permissions: data[i][6] || '[]' 
+        permissions: data[i][6] || '[]',
+        divisi: data[i][7] || ''
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
+}
+
+function importUsersBulk(userList) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.USERS);
+    const data = sheet.getDataRange().getValues();
+    const existingUsernames = new Set(data.slice(1).map(row => String(row[1]).trim().toLowerCase()));
+    
+    let addedCount = 0;
+    userList.forEach(u => {
+      const username = String(u.Username || u.username || '').trim();
+      const password = String(u.Password || u.password || '').trim();
+      const nama = String(u.Nama_Lengkap || u['Nama Lengkap'] || u.nama || '').trim();
+      const role = String(u.Role || u.role || 'user').trim();
+      const permissions = '[]';
+      
+      if (username && password && !existingUsernames.has(username.toLowerCase())) {
+        const id = generateId();
+        sheet.appendRow([id, username, hashPassword(password), nama, role, new Date().toISOString(), permissions]);
+        existingUsernames.add(username.toLowerCase());
+        addedCount++;
+      }
+    });
+    
+    return { success: true, message: addedCount + ' akun berhasil diimpor.' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
 }
 
 function addUser(username, password, nama, role, permissions) {
@@ -239,7 +307,7 @@ function addUser(username, password, nama, role, permissions) {
       if (data[i][1] === username) return { success: false, message: 'Username sudah ada' };
     }
     const id = generateId();
-    sheet.appendRow([id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]']);
+    sheet.appendRow([id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]', arguments[5] || '']);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -256,6 +324,7 @@ function updateUser(id, username, password, nama, role, permissions) {
         sheet.getRange(i + 1, 4).setValue(nama);
         sheet.getRange(i + 1, 5).setValue(role);
         sheet.getRange(i + 1, 7).setValue(permissions || '[]');
+        sheet.getRange(i + 1, 8).setValue(arguments[6] || '');
         return { success: true };
       }
     }
@@ -536,6 +605,51 @@ function deleteKaryawan(id) {
   return deleteRow(CONFIG.SHEETS.KARYAWAN, id); 
 }
 
+function addBulkKaryawan(items) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const now = new Date().toISOString();
+    let updated = 0, added = 0;
+
+    items.forEach(item => {
+      let foundIndex = -1;
+      for (let i = 1; i < data.length; i++) {
+        // Match by ID if provided, otherwise by Name
+        if ((item.id && String(data[i][0]) === String(item.id)) || (!item.id && String(data[i][1]).toLowerCase() === String(item.nama).toLowerCase())) {
+          foundIndex = i;
+          break;
+        }
+      }
+
+      const rowData = [
+        item.id || generateId(),
+        item.nama,
+        item.jabatan,
+        item.cabang || '',
+        item.telepon || '',
+        item.email || '',
+        item.tanggalMasuk || '',
+        item.status || 'Tetap',
+        now,
+        item.tanggalSelesai || '',
+        item.sisaCuti || 12
+      ];
+
+      if (foundIndex > -1) {
+        sheet.getRange(foundIndex + 1, 1, 1, rowData.length).setValues([rowData]);
+        updated++;
+      } else {
+        sheet.appendRow(rowData);
+        added++;
+      }
+    });
+
+    return { success: true, updated, added };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 // ============================================================
 // PENGAJUAN IJIN / CUTI
 // ============================================================
@@ -619,6 +733,46 @@ function deleteLembur(id) {
   return res;
 }
 
+// ============================================================
+// LEMBUR TANGGAL MERAH
+// ============================================================
+function getTglMerahData() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TGL_MERAH);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        nama: data[i][2],
+        divisi: data[i][3],
+        jamEstimasi: data[i][4],
+        createdBy: data[i][5],
+        createdAt: data[i][6]
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addTglMerahPersonel(tanggal, dataArray, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TGL_MERAH);
+    const now = new Date().toISOString();
+    dataArray.forEach(d => {
+      sheet.appendRow([generateId(), tanggal, d.nama, d.divisi, d.jamEstimasi, createdBy, now]);
+    });
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteTglMerah(id) {
+  return deleteRow(CONFIG.SHEETS.TGL_MERAH, id);
+}
+
+
 // updateApprovalStatus didepresiasi, beralih ke processApprovalStatus
 
 function updateLemburAdmin(id, jam, status, note, adminName) {
@@ -684,7 +838,7 @@ function formatSheetLembur() {
     // 4. Aktifkan Filter jika belum ada
     const filter = sheet.getFilter();
     if (filter) filter.remove();
-        sheet.getRange(1, 1, lastRow, lastCol).createFilter();
+    sheet.getRange(1, 1, lastRow, lastCol).createFilter();
 
     // 5. Freeze Header
     sheet.setFrozenRows(1);
@@ -692,6 +846,56 @@ function formatSheetLembur() {
   } catch (e) {
     Logger.log('Error formatSheetLembur: ' + e.message);
   }
+}
+
+// ============================================================
+// ABSENSI LEMBUR (QR Code)
+// ============================================================
+function getAbsensiLembur(tanggal) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    const data = sheet.getDataRange().getValues();
+    const targetDate = tanggal || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const result = [];
+    
+    for (let i = 1; i < data.length; i++) {
+        const rowDate = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+        if (rowDate === targetDate) {
+            result.push({
+                id: data[i][0],
+                tanggal: rowDate,
+                jam: data[i][2],
+                nama: data[i][3],
+                divisi: data[i][4],
+                karyawanId: data[i][5],
+                status: data[i][6],
+                createdAt: data[i][7]
+            });
+        }
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addAbsensiLembur(nama, divisi, karyawanId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    const now = new Date();
+    const tanggal = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const jam = Utilities.formatDate(now, Session.getScriptTimeZone(), 'HH:mm:ss');
+    
+    // Check if already clocked in today
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        const rowDate = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+        if (rowDate === tanggal && String(data[i][3]) === String(nama)) {
+            return { success: false, message: nama + ' sudah absen hari ini pada ' + data[i][2] };
+        }
+    }
+    
+    sheet.appendRow([generateId(), tanggal, jam, nama, divisi, karyawanId || '', 'Clock IN', now.toISOString()]);
+    return { success: true, data: { nama, jam, tanggal } };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 // ============================================================
@@ -942,14 +1146,17 @@ function getLaporanKerja() {
         jamKerjaPHL: parseFloat(data[i][19]) || 0,
         totalPO: parseInt(data[i][20]) || 0,
         totalQty: parseInt(data[i][21]) || 0,
-        totalInbound: parseInt(data[i][22]) || 0
+        totalInbound: parseInt(data[i][22]) || 0,
+        pendapatanPotongBubble: parseFloat(data[i][23]) || 0,
+        pendapatanBuatBubble: parseFloat(data[i][24]) || 0,
+        alasanPengurangan: data[i][25] || ''
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound) {
+function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
     const data = sheet.getDataRange().getValues();
@@ -968,20 +1175,20 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
     }
 
     sheet.appendRow([
-      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
+      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || ''
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
 function deleteLaporanKerja(id) { return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id); }
-function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound) {
+function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        sheet.getRange(i + 1, 2, 1, 22).setValues([[
-          tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0
+        sheet.getRange(i + 1, 2, 1, 25).setValues([[
+          tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || ''
         ]]);
         return { success: true };
       }
@@ -1919,16 +2126,10 @@ function addRiwayatKaryawan(karyawanId, nama, jabatan, cabang, telepon, tanggalM
       tanggalMasuk, tanggalResign, alasanResign, keterangan || '',
       createdBy, new Date().toISOString()
     ]);
-    // 2. Ubah status karyawan menjadi 'Resign' di sheet Karyawan
-    const karSheet = getSheet(CONFIG.SHEETS.KARYAWAN);
-    const karData = karSheet.getDataRange().getValues();
-    for (let i = 1; i < karData.length; i++) {
-      if (String(karData[i][0]) === String(karyawanId)) {
-        karSheet.getRange(i + 1, 8).setValue('Resign');
-        karSheet.getRange(i + 1, 10).setValue(tanggalResign);
-        break;
-      }
-    }
+    
+    // 2. Hapus dari sheet Karyawan (Pindah resmi)
+    deleteRow(CONFIG.SHEETS.KARYAWAN, karyawanId);
+    
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -2002,3 +2203,331 @@ function getKaryawanFullData() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
+// ============================================================
+// ASSET WAREHOUSE
+// ============================================================
+function getAssetWarehouseData() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+        if (data[i].join('').trim() === '') continue;
+        result.push({
+            id: data[i][0],
+            code: data[i][1],
+            nama: data[i][2],
+            tanggalMasuk: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][3]||''),
+            divisi: data[i][4],
+            status: data[i][5] || 'Aktif',
+            createdBy: data[i][6],
+            createdAt: data[i][7],
+            history: data[i][8],
+            qty: data[i][9] || 1
+        });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty) {
+  try {
+    const id = generateId();
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const code = codePrefix ? `${codePrefix}-${randomNum}` : `AW-${randomNum}`;
+    const createdAt = new Date().toISOString();
+    const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
+    
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, qty || 1]);
+    return { success: true, code: code };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 3).setValue(nama);
+        sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
+        sheet.getRange(i + 1, 6).setValue(status);
+        sheet.getRange(i + 1, 10).setValue(qty || 1);
+        
+        let oldHist = data[i][8] || '';
+        const now = new Date().toLocaleString('id-ID');
+        const entry = `✏️ Diperbarui oleh ${userNama} pada ${now}`;
+        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+        
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Asset tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function moveAssetWarehouse(assetId, targetDivisi, userNama) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(assetId)) {
+        const oldDiv = data[i][4];
+        const oldHist = data[i][8] || '';
+        const now = new Date().toLocaleString('id-ID');
+        const entry = `📦 Dipindah dari ${oldDiv} ke ${targetDivisi} oleh ${userNama} pada ${now}`;
+        
+        sheet.getRange(i + 1, 5).setValue(targetDivisi);
+        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Asset tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteAssetWarehouse(id) {
+  return deleteRow(CONFIG.SHEETS.ASSET_WAREHOUSE, id);
+}
+
+// ============================================================
+// BOOKING MOBIL
+// ============================================================
+function getBookingMobil() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return { success: true, data: [] };
+    
+    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 10
+    const data = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    const result = [];
+    
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        if (!row[0]) continue; // Skip jika ID kosong
+        
+        result.push({
+            id: String(row[0]),
+            tanggal: row[1] instanceof Date ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(row[1]||''),
+            pic: String(row[2] || '-'),
+            jamBerangkat: (function(val) {
+                if (!val) return '-';
+                const str = val instanceof Date ? Utilities.formatDate(val, Session.getScriptTimeZone(), 'HH:mm') : String(val);
+                const match = str.match(/(\d{2}:\d{2})/);
+                return match ? match[1] : str;
+            })(row[3]),
+            tujuan: String(row[4] || '-'),
+            keterangan: String(row[5] || '-'),
+            rute: String(row[6] || '-'),
+            status: String(row[7] || 'Belum Jalan'),
+            createdBy: String(row[8] || '-'),
+            createdAt: row[9]
+        });
+    }
+    return { success: true, data: result, totalOnSheet: lastRow - 1 };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    
+    // Check for overlap (Same Date and Same Time)
+    for (let i = 1; i < data.length; i++) {
+      const rowTgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+      const rowJam = String(data[i][3]);
+      
+      if (rowTgl === String(tanggal) && rowJam === String(jamBerangkat)) {
+        return { success: false, message: 'Waktu tersebut sudah di-booking (' + rowJam + '). Silakan pilih waktu lain.' };
+      }
+    }
+
+    const id = generateId();
+    const createdAt = new Date().toISOString();
+    sheet.appendRow([id, tanggal, pic, jamBerangkat, tujuan, keterangan, rute, 'Belum Jalan', createdBy, createdAt]);
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteBookingMobil(id) {
+  return deleteRow(CONFIG.SHEETS.BOOKING_MOBIL, id);
+}
+
+function updateBookingStatus(id, newStatus) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(id)) {
+            sheet.getRange(i + 1, 8).setValue(newStatus);
+            return { success: true };
+        }
+    }
+    return { success: false, message: 'ID tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+// ============================================================
+// MODUL TUGAS CONSUMABLE
+// ============================================================
+function getTugasConsumable() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] ? Utilities.formatDate(new Date(data[i][1]), Session.getScriptTimeZone(), "yyyy-MM-dd") : '',
+        pemberiTugas: data[i][2],
+        picName: data[i][3],
+        targetPotong: parseInt(data[i][4]) || 0,
+        targetBuat: parseInt(data[i][5]) || 0,
+        actualPotong: parseInt(data[i][6]) || 0,
+        actualBuat: parseInt(data[i][7]) || 0,
+        status: data[i][8],
+        catatan: data[i][9],
+        createdAt: data[i][10],
+        updatedAt: data[i][11],
+        finishedBy: data[i][12] || '-'
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addTugasConsumable(data) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    sheet.appendRow([
+      generateId(), 
+      data.tanggal, 
+      data.pemberiTugas, 
+      data.picName, 
+      parseInt(data.targetPotong)||0, 
+      parseInt(data.targetBuat)||0, 
+      0, 0, 'Pending', '', 
+      new Date().toISOString(), 
+      new Date().toISOString(),
+      '' // finishedBy
+    ]);
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateTugasConsumable(data) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const values = sheet.getDataRange().getValues();
+    for (let i = 1; i < values.length; i++) {
+        if (String(values[i][0]) === String(data.id)) {
+            const row = i + 1;
+            // Jika status Selesai, update hasil aktual
+            if (data.status === 'Selesai') {
+                sheet.getRange(row, 7).setValue(parseInt(data.actualPotong) || 0);
+                sheet.getRange(row, 8).setValue(parseInt(data.actualBuat) || 0);
+                sheet.getRange(row, 9).setValue('Selesai');
+                sheet.getRange(row, 10).setValue(data.catatan || '');
+                sheet.getRange(row, 12).setValue(new Date().toISOString()); // updatedAt
+                sheet.getRange(row, 13).setValue(data.finishedBy || ''); // finishedBy
+            } else {
+                // Update basic info (Edit mode)
+                sheet.getRange(row, 2).setValue(data.tanggal);
+                sheet.getRange(row, 4).setValue(data.picName);
+                sheet.getRange(row, 5).setValue(parseInt(data.targetPotong) || 0);
+                sheet.getRange(row, 6).setValue(parseInt(data.targetBuat) || 0);
+                sheet.getRange(row, 12).setValue(new Date().toISOString());
+            }
+            return { success: true };
+        }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteTugasConsumable(id) {
+  return deleteRow(CONFIG.SHEETS.TUGAS_CONSUMABLE, id);
+}
+
+function addBulkTugasConsumable(rows) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const now = new Date().toISOString();
+    const rowsToAdd = rows.map(r => [
+      generateId(), r.tanggal, r.pemberiTugas, r.picName, parseInt(r.targetPotong)||0, parseInt(r.targetBuat)||0, 0, 0, 'Pending', '', now, now
+    ]);
+    if (rowsToAdd.length > 0) {
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 12).setValues(rowsToAdd);
+    }
+    return { success: true, count: rowsToAdd.length };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// MODUL ABSENSI LEMBUR (SERVER SIDE)
+// ============================================================
+function getAbsensiLembur() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const rowTgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+      
+      // Filter hanya untuk hari ini
+      if (rowTgl === today) {
+        result.push({
+          id: data[i][0],
+          tanggal: rowTgl,
+          jam: data[i][2],
+          nama: data[i][3],
+          divisi: data[i][4],
+          karyawanId: data[i][5],
+          status: data[i][6],
+          createdAt: data[i][7]
+        });
+      }
+    }
+    // Urutkan berdasarkan jam terbaru di atas
+    result.sort((a, b) => b.jam.localeCompare(a.jam));
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addAbsensiLembur(nama, divisi, karyawanId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    const data = sheet.getDataRange().getValues();
+    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const jam = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm:ss');
+
+    // Cek duplikasi hari ini
+    for (let i = 1; i < data.length; i++) {
+      const rowTgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+      const rowNama = String(data[i][3]).toLowerCase();
+      if (rowTgl === today && rowNama === String(nama).toLowerCase()) {
+        return { success: false, message: nama + ' sudah Clock IN hari ini.' };
+      }
+    }
+
+    const id = generateId();
+    sheet.appendRow([
+      id, 
+      today, 
+      jam, 
+      nama, 
+      divisi || '-', 
+      karyawanId || '', 
+      'Clock IN', 
+      new Date().toISOString()
+    ]);
+    
+    return { success: true, message: 'Clock IN Berhasil: ' + nama, data: { id, today, jam, nama } };
+  } catch (e) { return { success: false, message: e.message }; }
+}
