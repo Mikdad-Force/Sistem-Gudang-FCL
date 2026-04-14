@@ -30,15 +30,16 @@ const CONFIG = {
     KLAIM: 'Klaim',
     TUGAS_PROJECT: 'TugasProject',
     ASSET: 'PengajuanAsset',
+    ASSET_WAREHOUSE: 'AssetWarehouse',
     STOCK_OPNAME: 'StockOpname',
     PACKING_LIST: 'PackingList',
     RIWAYAT_KARYAWAN: 'RiwayatKaryawan',
     SURAT_PERINGATAN: 'SuratPeringatan',
-    TGL_MERAH: 'TglMerah',
-    ASSET_WAREHOUSE: 'AssetWarehouse',
-    BOOKING_MOBIL: 'BookingMobil',
     TUGAS_CONSUMABLE: 'TugasConsumable',
-    ABSENSI_LEMBUR: 'AbsensiLembur'
+    TGL_MERAH: 'TglMerah',
+    BOOKING_MOBIL: 'BookingMobil',
+    ABSENSI_LEMBUR: 'AbsensiLembur',
+    WAREHOUSE_MAP: 'WarehouseMap'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -64,20 +65,27 @@ function doPost(e) {
   const result = { success: false, message: 'Invalid Request' };
   
   try {
+    if (!e.postData || !e.postData.contents) {
+      result.message = 'No post data received.';
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const postData = JSON.parse(e.postData.contents);
     const funcName = postData.func;
     const args = postData.args || [];
     
-    // Security check: Only allow direct execution of defined functions
-    if (typeof this[funcName] === 'function') {
-      const data = this[funcName].apply(null, args);
+    // Mencari fungsi di scope global (this atau globalThis)
+    const context = typeof globalThis !== 'undefined' ? globalThis : this;
+    
+    if (funcName && typeof context[funcName] === 'function') {
+      const data = context[funcName].apply(null, args);
       return ContentService.createTextOutput(JSON.stringify(data))
         .setMimeType(ContentService.MimeType.JSON);
     } else {
-      result.message = 'Function ' + funcName + ' not found or access denied.';
+      result.message = 'Gagal: Fungsi "' + funcName + '" tidak ditemukan atau tidak dapat diakses di server.';
     }
   } catch (err) {
-    result.message = 'API Error: ' + err.toString();
+    result.message = 'API Backend Error: ' + err.toString();
   }
   
   return ContentService.createTextOutput(JSON.stringify(result))
@@ -129,7 +137,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['id', 'tanggal', 'pemberiTugas', 'picName', 'targetPotong', 'targetBuat', 'actualPotong', 'actualBuat', 'status', 'catatan', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty']);
+  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
+  setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_LEMBUR, ['id', 'tanggal', 'jam', 'nama', 'divisi', 'karyawanId', 'status', 'createdAt']);
 
@@ -851,31 +860,6 @@ function formatSheetLembur() {
 // ============================================================
 // ABSENSI LEMBUR (QR Code)
 // ============================================================
-function getAbsensiLembur(tanggal) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
-    const data = sheet.getDataRange().getValues();
-    const targetDate = tanggal || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    const result = [];
-    
-    for (let i = 1; i < data.length; i++) {
-        const rowDate = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
-        if (rowDate === targetDate) {
-            result.push({
-                id: data[i][0],
-                tanggal: rowDate,
-                jam: data[i][2],
-                nama: data[i][3],
-                divisi: data[i][4],
-                karyawanId: data[i][5],
-                status: data[i][6],
-                createdAt: data[i][7]
-            });
-        }
-    }
-    return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
-}
 
 function addAbsensiLembur(nama, divisi, karyawanId) {
   try {
@@ -910,6 +894,29 @@ function getDashboardData() {
     const lk = getLaporanKerja();
     let history = [];
     
+    // Helper untuk memastikan data aman dikirim via JSON (google.script.run)
+    const sanitize = (arr) => (arr || []).map(obj => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const newObj = {};
+      for (let key in obj) {
+        const val = obj[key];
+        if (val instanceof Date) {
+          // Jika tahun di bawah 1920, biasanya Google Sheets menganggapnya sebagai "Time" (Jam)
+          // Kita format ulang menjadi HH:mm:ss agar tidak muncul 1899-12-30...
+          if (val.getFullYear() < 1920) {
+            newObj[key] = Utilities.formatDate(val, Session.getScriptTimeZone(), 'HH:mm:ss');
+          } else {
+            newObj[key] = val.toISOString();
+          }
+        } else if (val !== null && typeof val === 'object' && !(val instanceof Array)) {
+          newObj[key] = String(val);
+        } else {
+          newObj[key] = val;
+        }
+      }
+      return newObj;
+    });
+
     if (kg.success && kg.data) { 
       kg.data.forEach(k => { history.push({ tanggal: k.tanggal, tipe: k.tipe === 'IN' ? 'Kas Masuk' : 'Kas Keluar', keterangan: k.keterangan, nominal: k.nominal, kategori: 'Kas Gudang' }); }); 
     }
@@ -920,19 +927,22 @@ function getDashboardData() {
     history.sort((a, b) => new Date(b.tanggal||0) - new Date(a.tanggal||0)); 
     history = history.slice(0, 20);
     
-    const totalKasIn = (kg.data||[]).filter(k => k.tipe === 'IN').reduce((s, k) => s + k.nominal, 0); 
-    const totalKasOut = (kg.data||[]).filter(k => k.tipe === 'OUT').reduce((s, k) => s + k.nominal, 0);
+    const totalKasIn = (kg.data||[]).filter(k => k.tipe === 'IN').reduce((s, k) => s + (k.nominal || 0), 0); 
+    const totalKasOut = (kg.data||[]).filter(k => k.tipe === 'OUT').reduce((s, k) => s + (k.nominal || 0), 0);
+    
+    const absensiLembur = getAbsensiLembur();
     
     return { 
       success: true, 
       saldoGudang: sG.saldo || 0, 
       saldoTB: sTB.saldo || 0, 
-      history: history, 
+      history: sanitize(history), 
       totalKasIn: totalKasIn, 
       totalKasOut: totalKasOut, 
-      kasData: kg.data || [], 
-      tbData: tb.data || [], 
-      laporanData: lk.success ? lk.data : [] 
+      kasData: sanitize(kg.data), 
+      tbData: sanitize(tb.data), 
+      laporanData: sanitize(lk.success ? lk.data : []),
+      absensiLembur: sanitize(absensiLembur.success ? absensiLembur.data : [])
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -1420,14 +1430,39 @@ function getSuratJalanMasuk() {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
+function getSJMasukWithDetails() {
+  try {
+    const sjRes = getSuratJalanMasuk(); if (!sjRes.success) return sjRes;
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL);
+    const detData = sheet.getLastRow() > 1 ? sheet.getDataRange().getValues() : [];
+    const map = {};
+    for (let i = 1; i < detData.length; i++) {
+      const row = detData[i];
+      if (!row || row.length < 5) continue;
+      const sjId = String(row[1]); if (!map[sjId]) map[sjId] = [];
+      map[sjId].push({ 
+        sku: row[4], 
+        nama: row[5], 
+        qty: parseFloat(row[6])||0, 
+        satuan: row[7], 
+        batch: row[8] || '-', 
+        expDate: row[9] || '-', 
+        lokasi: row[10] || '-' 
+      });
+    }
+    sjRes.data.forEach(d => d.items = map[String(d.id)] || []);
+    return sjRes;
+  } catch(e) { return { success: false, message: "Err SJM Detail: " + e.message }; }
+}
+
 function addSuratJalanMasuk(tanggal, supplier, keterangan, items, createdBy) {
   try {
-    const noSJ = generateNoSJ('SJM'); const id = generateId();
-    getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK).appendRow([id, noSJ, tanggal, supplier, keterangan, createdBy, new Date().toISOString()]);
+    const noSJ = generateNoSJ('SJM'); const id = generateId(); const now = new Date().toISOString();
+    getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK).appendRow([id, noSJ, tanggal, supplier, keterangan, createdBy, now]);
     const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||'']);
       updateStokQty(item.stockId, parseFloat(item.qty)||0, item.sku);
     });
     return { success: true };
@@ -1449,10 +1484,18 @@ function getSJMasukDetail(sjId, noSJFallback) {
 function getSJDetailData(sjId, tipe, noSJFallback) {
   try {
     const sheetName = tipe === 'masuk' ? CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL : CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL;
-    const data = getSheet(sheetName).getDataRange().getValues(); const result = [];
+    const data = getSheet(sheetName).getDataRange().getDisplayValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       const match = (sjId && String(data[i][1]) === String(sjId)) || (!sjId && noSJFallback && String(data[i][2]) === String(noSJFallback));
-      if (match) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+      if (match) result.push({ 
+        sku:data[i][4], 
+        nama:data[i][5], 
+        qty:parseFloat(data[i][6])||0, 
+        satuan:data[i][7], 
+        batch:data[i][8]||'-', 
+        expDate:data[i][9]||'-',
+        lokasi:data[i][10]||'-'
+      });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1469,6 +1512,31 @@ function getSuratJalanKeluar() {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
+function getSJKeluarWithDetails() {
+  try {
+    const sjRes = getSuratJalanKeluar(); if (!sjRes.success) return sjRes;
+    const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL);
+    const detData = sheet.getLastRow() > 1 ? sheet.getDataRange().getValues() : [];
+    const map = {};
+    for (let i = 1; i < detData.length; i++) {
+      const row = detData[i];
+      if (!row || row.length < 5) continue;
+      const sjId = String(row[1]); if (!map[sjId]) map[sjId] = [];
+      map[sjId].push({ 
+        sku: row[4], 
+        nama: row[5], 
+        qty: parseFloat(row[6])||0, 
+        satuan: row[7], 
+        batch: row[8] || '-', 
+        expDate: row[9] || '-', 
+        lokasi: row[10] || '-' 
+      });
+    }
+    sjRes.data.forEach(d => d.items = map[String(d.id)] || []);
+    return sjRes;
+  } catch(e) { return { success: false, message: "Err SJK Detail: " + e.message }; }
+}
+
 function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
   try {
     const noSJ = generateNoSJ('SJK'); const id = generateId();
@@ -1478,7 +1546,7 @@ function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
     for (const item of parsedItems) {
       const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0), item.sku);
       if (!res.success) return { success: false, message: res.message };
-      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||'']);
     }
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1523,32 +1591,10 @@ function getOrdersWithDetails() {
     const ordRes = getOrders();
     if (!ordRes.success) return ordRes;
     
-    const orders = ordRes.data;
-    const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
-    const detData = detSheet.getDataRange().getValues();
-    
-    // Create a map for quick lookup
-    const detailsMap = {};
-    for (let i = 1; i < detData.length; i++) {
-      const orderId = String(detData[i][1]);
-      if (!detailsMap[orderId]) detailsMap[orderId] = [];
-      detailsMap[orderId].push({
-        sku: detData[i][4],
-        nama: detData[i][5],
-        qty: parseFloat(detData[i][6]) || 0,
-        satuan: detData[i][7],
-        batch: detData[i][8] || '-',
-        expDate: detData[i][9] || '-'
-      });
-    }
-    
-    // Merge details into orders
-    orders.forEach(o => {
-      o.items = detailsMap[String(o.id)] || [];
-    });
-    
-    return { success: true, data: orders };
-  } catch(e) { return { success: false, message: e.message }; }
+    // Sederhanakan: Jangan muat detail dulu untuk tes stabilitas
+    ordRes.data.forEach(o => o.items = []);
+    return ordRes;
+  } catch(e) { return { success: false, message: "Err Order Detail Test: " + e.message }; }
 }
 
 function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy, kategori, noResi) {
@@ -1601,7 +1647,7 @@ function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy, kate
 
 function getOrderDetail(orderId, noOrderFallback) {
   try {
-    const data = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues(); const result = [];
+    const data = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getDisplayValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       const match = (orderId && String(data[i][1]) === String(orderId)) || (!orderId && noOrderFallback && String(data[i][2]) === String(noOrderFallback));
       if (match) {
@@ -1616,6 +1662,55 @@ function getOrderDetail(orderId, noOrderFallback) {
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Mendapatkan detail lengkap (Header & Item) dalam 1 kali hit server
+ * untuk mempercepat proses Cetak SJ dan menghindari blokir popup browser.
+ */
+function getOrderDetailFull(orderId, noOrderFallback) {
+  try {
+    const ss = getSpreadsheet();
+    
+    // 1. Ambil Header Order
+    const orderSheet = ss.getSheetByName(CONFIG.SHEETS.ORDER);
+    const orderData = orderSheet.getDataRange().getValues();
+    let orderHeader = null;
+    
+    for (let i = 1; i < orderData.length; i++) {
+      const match = (orderId && String(orderData[i][0]) === String(orderId)) || 
+                    (!orderId && noOrderFallback && String(orderData[i][1]) === String(noOrderFallback));
+      if (match) {
+        orderHeader = {
+          id: String(orderData[i][0] || ''),
+          noOrder: String(orderData[i][1] || ''),
+          tanggal: orderData[i][2] instanceof Date ? Utilities.formatDate(orderData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(orderData[i][2]||''),
+          pelanggan: String(orderData[i][3] || ''),
+          alamat: String(orderData[i][4] || ''),
+          status: String(orderData[i][5] || ''),
+          totalItem: parseFloat(orderData[i][6]) || 0,
+          keterangan: String(orderData[i][7] || ''),
+          kategori: String(orderData[i][12] || ''),
+          noResi: String(orderData[i][13] || '')
+        };
+        break;
+      }
+    }
+    
+    if (!orderHeader) return { success: false, message: 'Header order tidak ditemukan' };
+    
+    // 2. Ambil Item Detail
+    const detailRes = getOrderDetail(orderId, noOrderFallback);
+    if (!detailRes.success) return detailRes;
+    
+    return {
+      success: true,
+      header: orderHeader,
+      items: detailRes.data
+    };
+  } catch(e) {
+    return { success: false, message: 'Server Error: ' + e.message };
+  }
 }
 
 function updateBuktiPackingUrl(orderId, noOrderFallback, url) {
@@ -1685,6 +1780,31 @@ function getRetur() {
   } catch(e) { return { success: false, message: e.message }; }
 }
 
+function getReturWithDetails() {
+  try {
+    const retRes = getRetur(); if (!retRes.success) return retRes;
+    const sheet = getSheet(CONFIG.SHEETS.RETUR_DETAIL);
+    const detData = sheet.getLastRow() > 1 ? sheet.getDataRange().getValues() : [];
+    const map = {};
+    for (let i = 1; i < detData.length; i++) {
+      const row = detData[i];
+      if (!row || row.length < 5) continue;
+      const retId = String(row[1]); if (!map[retId]) map[retId] = [];
+      map[retId].push({ 
+        sku: row[4], 
+        nama: row[5], 
+        qty: parseFloat(row[6])||0, 
+        satuan: row[7], 
+        batch: row[8] || '-', 
+        expDate: row[9] || '-', 
+        lokasi: row[11] || '-' 
+      });
+    }
+    retRes.data.forEach(d => d.items = map[String(d.id)] || []);
+    return retRes;
+  } catch(e) { return { success: false, message: "Err Retur Detail: " + e.message }; }
+}
+
 function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
   try {
     const noRetur = generateNoSJ('RTR'); const id = generateId();
@@ -1702,10 +1822,18 @@ function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
 
 function getReturDetail(returId, noReturFallback) {
   try {
-    const data = getSheet(CONFIG.SHEETS.RETUR_DETAIL).getDataRange().getValues(); const result = [];
+    const data = getSheet(CONFIG.SHEETS.RETUR_DETAIL).getDataRange().getDisplayValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       const match = (returId && String(data[i][1]) === String(returId)) || (!returId && noReturFallback && String(data[i][2]) === String(noReturFallback));
-      if (match) result.push({ sku:data[i][4], nama:data[i][5], qty:parseFloat(data[i][6])||0, satuan:data[i][7], batch:data[i][8], expDate:data[i][9] });
+      if (match) result.push({ 
+        sku:data[i][4], 
+        nama:data[i][5], 
+        qty:parseFloat(data[i][6])||0, 
+        satuan:data[i][7], 
+        batch:data[i][8]||'-', 
+        expDate:data[i][9]||'-',
+        lokasi:data[i][11]||'-'
+      });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -2223,14 +2351,15 @@ function getAssetWarehouseData() {
             createdBy: data[i][6],
             createdAt: data[i][7],
             history: data[i][8],
-            qty: data[i][9] || 1
+            qty: data[i][9] || 1,
+            zoneId: data[i][10] || ''
         });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty) {
+function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty, zoneId) {
   try {
     const id = generateId();
     const randomNum = Math.floor(10000 + Math.random() * 90000);
@@ -2239,12 +2368,12 @@ function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, creat
     const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
     
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
-    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, qty || 1]);
+    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, qty || 1, zoneId || '']);
     return { success: true, code: code };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty) {
+function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty, zoneId) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
@@ -2254,6 +2383,7 @@ function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty) {
         sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
         sheet.getRange(i + 1, 6).setValue(status);
         sheet.getRange(i + 1, 10).setValue(qty || 1);
+        if (zoneId !== undefined) sheet.getRange(i + 1, 11).setValue(zoneId || '');
         
         let oldHist = data[i][8] || '';
         const now = new Date().toLocaleString('id-ID');
@@ -2290,6 +2420,40 @@ function moveAssetWarehouse(assetId, targetDivisi, userNama) {
 
 function deleteAssetWarehouse(id) {
   return deleteRow(CONFIG.SHEETS.ASSET_WAREHOUSE, id);
+}
+
+// Map Data Sync
+function getWarehouseMapData() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.WAREHOUSE_MAP);
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, data: [] };
+    // We only take the first row of data (index 1) as our primary config
+    let config = [];
+    try {
+      config = JSON.parse(data[1][1] || '[]');
+    } catch(e) { config = []; }
+    return { success: true, data: config };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function saveWarehouseMapData(jsonData) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.WAREHOUSE_MAP);
+    const data = sheet.getDataRange().getValues();
+    const updatedBy = 'system';
+    const now = new Date().toISOString();
+    
+    if (data.length > 1) {
+      // Update existing
+      sheet.getRange(2, 2).setValue(jsonData);
+      sheet.getRange(2, 3).setValue(now);
+    } else {
+      // Create new
+      sheet.appendRow(['MAIN_CONFIG', jsonData, now]);
+    }
+    return { success: true };
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 // ============================================================
@@ -2469,22 +2633,51 @@ function addBulkTugasConsumable(rows) {
 // ============================================================
 // MODUL ABSENSI LEMBUR (SERVER SIDE)
 // ============================================================
-function getAbsensiLembur() {
+function getAbsensiLembur(startDate, endDate) {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    const ss = getSpreadsheet();
+    const tz = ss.getSpreadsheetTimeZone();
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.ABSENSI_LEMBUR);
+    if (!sheet) return { success: true, data: [] };
+    
     const data = sheet.getDataRange().getValues();
     const result = [];
-    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const todayStr = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+    
+    // Konversi parameter tanggal ke objek Date untuk perbandingan
+    const startObj = startDate ? new Date(startDate) : null;
+    const endObj = endDate ? new Date(endDate) : null;
+    if (startObj) startObj.setHours(0, 0, 0, 0);
+    if (endObj) endObj.setHours(23, 59, 59, 999);
 
     for (let i = 1; i < data.length; i++) {
-      if (data[i].join('').trim() === '') continue;
-      const rowTgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+      if (!data[i][1]) continue; // Skip jika tanggal kosong
       
-      // Filter hanya untuk hari ini
-      if (rowTgl === today) {
+      let rowTglObj;
+      let rowTglStr = '';
+      
+      if (data[i][1] instanceof Date) {
+        rowTglObj = data[i][1];
+        rowTglStr = Utilities.formatDate(rowTglObj, tz, 'yyyy-MM-dd');
+      } else {
+        rowTglStr = String(data[i][1]).trim().split('T')[0];
+        rowTglObj = new Date(rowTglStr);
+      }
+      
+      // Logika Filter
+      let isMatch = false;
+      if (startObj && endObj) {
+        const compareDate = new Date(rowTglStr);
+        compareDate.setHours(0, 0, 0, 0);
+        isMatch = (compareDate >= startObj && compareDate <= endObj);
+      } else {
+        isMatch = (rowTglStr === todayStr);
+      }
+      
+      if (isMatch) {
         result.push({
           id: data[i][0],
-          tanggal: rowTgl,
+          tanggal: rowTglStr,
           jam: data[i][2],
           nama: data[i][3],
           divisi: data[i][4],
@@ -2494,40 +2687,12 @@ function getAbsensiLembur() {
         });
       }
     }
-    // Urutkan berdasarkan jam terbaru di atas
-    result.sort((a, b) => b.jam.localeCompare(a.jam));
+    // Urutkan berdasarkan tanggal & jam terbaru di atas
+    result.sort((a, b) => {
+      const dateTimeA = a.tanggal + ' ' + a.jam;
+      const dateTimeB = b.tanggal + ' ' + b.jam;
+      return dateTimeB.localeCompare(dateTimeA);
+    });
     return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function addAbsensiLembur(nama, divisi, karyawanId) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
-    const data = sheet.getDataRange().getValues();
-    const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    const jam = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH:mm:ss');
-
-    // Cek duplikasi hari ini
-    for (let i = 1; i < data.length; i++) {
-      const rowTgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
-      const rowNama = String(data[i][3]).toLowerCase();
-      if (rowTgl === today && rowNama === String(nama).toLowerCase()) {
-        return { success: false, message: nama + ' sudah Clock IN hari ini.' };
-      }
-    }
-
-    const id = generateId();
-    sheet.appendRow([
-      id, 
-      today, 
-      jam, 
-      nama, 
-      divisi || '-', 
-      karyawanId || '', 
-      'Clock IN', 
-      new Date().toISOString()
-    ]);
-    
-    return { success: true, message: 'Clock IN Berhasil: ' + nama, data: { id, today, jam, nama } };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { return { success: false, message: e.messsage }; }
 }
