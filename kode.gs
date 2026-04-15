@@ -1404,6 +1404,95 @@ function updateStock(id, sku, nama, barcode, batch, expDate, satuan, stok, stokM
 }
 function deleteStock(id) { return deleteRow(CONFIG.SHEETS.STOCK, id); }
 
+// ============================================================
+// MOVE STOCK - Pindah Stok ke Lokasi Lain
+// ============================================================
+function moveStock(stockId, jumlah, lokasiTujuan, keterangan, createdBy) {
+  try {
+    jumlah = parseFloat(jumlah) || 0;
+    if (!stockId || jumlah <= 0 || !lokasiTujuan) {
+      return { success: false, message: 'Parameter tidak lengkap' };
+    }
+
+    const sheet = getSheet(CONFIG.SHEETS.STOCK);
+    const data = sheet.getDataRange().getValues();
+    let foundRow = -1;
+    let stockRow = null;
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(stockId)) {
+        foundRow = i + 1; // 1-indexed sheet row
+        stockRow = data[i];
+        break;
+      }
+    }
+
+    if (foundRow === -1) return { success: false, message: 'Stok tidak ditemukan' };
+
+    const stokSaatIni = parseFloat(stockRow[7]) || 0;
+    if (jumlah > stokSaatIni) {
+      return { success: false, message: `Jumlah (${jumlah}) melebihi stok tersedia (${stokSaatIni})` };
+    }
+
+    const now = new Date().toISOString();
+
+    if (jumlah === stokSaatIni) {
+      // Pindah seluruh stok: cukup update lokasi di baris yang ada
+      sheet.getRange(foundRow, 11).setValue(lokasiTujuan); // Kolom 11 = Lokasi
+      sheet.getRange(foundRow, 13).setValue(now);
+    } else {
+      // Pindah sebagian: kurangi stok asal, buat baris baru di lokasi tujuan
+      // 1. Kurangi stok di lokasi asal
+      sheet.getRange(foundRow, 8).setValue(stokSaatIni - jumlah); // Kolom 8 = Stok
+      sheet.getRange(foundRow, 13).setValue(now);
+
+      // 2. Cek apakah sudah ada baris dengan SKU yang sama di lokasi tujuan
+      const skuAsal = String(stockRow[1]);
+      const batchAsal = String(stockRow[4] || '');
+      let targetRow = -1;
+
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][1]) === skuAsal &&
+            String(data[i][10]) === lokasiTujuan &&
+            String(data[i][4] || '') === batchAsal) {
+          targetRow = i + 1;
+          break;
+        }
+      }
+
+      if (targetRow !== -1) {
+        // Tambah ke baris yang sudah ada di lokasi tujuan
+        const existingStok = parseFloat(data[targetRow - 1][7]) || 0;
+        sheet.getRange(targetRow, 8).setValue(existingStok + jumlah);
+        sheet.getRange(targetRow, 13).setValue(now);
+      } else {
+        // Buat entri baru di lokasi tujuan
+        const newRow = [
+          generateId(),
+          skuAsal,                  // SKU
+          stockRow[2],              // Nama
+          stockRow[3] || '',        // Barcode
+          stockRow[4] || '',        // Batch
+          stockRow[5] || '',        // Exp Date
+          stockRow[6] || '',        // Satuan
+          jumlah,                   // Stok
+          stockRow[8] || 0,         // Stok Min
+          stockRow[9] || '',        // Kategori
+          lokasiTujuan,             // Lokasi (baru)
+          now,                      // Created At
+          now                       // Updated At
+        ];
+        sheet.appendRow(newRow);
+      }
+    }
+
+    return { success: true, message: `${jumlah} unit berhasil dipindah ke ${lokasiTujuan}` };
+  } catch (e) {
+    return { success: false, message: 'Error moveStock: ' + e.message };
+  }
+}
+
+
 function updateStokQty(id, delta, skuFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK); const data = sheet.getDataRange().getValues();
@@ -1418,6 +1507,7 @@ function updateStokQty(id, delta, skuFallback) {
     return { success: false, message: 'Barang tidak ditemukan' };
   } catch(e) { return { success: false, message: e.message }; }
 }
+
 
 function getSuratJalanMasuk() {
   try {
