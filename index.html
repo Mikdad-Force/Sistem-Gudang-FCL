@@ -4455,6 +4455,7 @@
                     style="padding:8px 12px;background:#ffffff0d;border:1px solid #ffffff18;border-radius:8px;color:#f0f6ff;font-family:inherit;font-size:13px;width:200px;"
                     oninput="filterStock()">
                   <button class="btn btn-ghost" onclick="doExportStock()">📤 Export CSV</button>
+                  <button class="btn btn-teal" onclick="openMoveStockModal(null)" title="Pindah Stok ke Lokasi Lain">🔄 Move Stock</button>
                   <button class="btn btn-primary" onclick="openModal('modalStock')">+ Tambah Barang</button>
                 </div>
               </div>
@@ -6223,6 +6224,49 @@
               <div class="modal-footer"><button class="btn btn-ghost"
                   onclick="closeModal('modalStock')">Batal</button><button class="btn btn-primary"
                   onclick="submitStock()">💾 Simpan</button></div>
+            </div>
+          </div>
+
+          <!-- MODAL MOVE STOCK -->
+          <div class="modal-overlay" id="modalMoveStock">
+            <div class="custom-modal" style="width:520px">
+              <button class="modal-close" onclick="closeModal('modalMoveStock')">✕</button>
+              <h3>🔄 Move Stock ke Lokasi Lain</h3>
+              <input type="hidden" id="msStockId">
+              <div class="mb-3">
+                <label class="form-label">Pilih Barang (SKU)</label>
+                <select class="form-select" id="msSkuSelect" onchange="onMoveStockSkuChange()">
+                  <option value="">-- Pilih SKU --</option>
+                </select>
+              </div>
+              <div id="msInfoBox" style="display:none; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.2); border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px;">
+                <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                  <div><span style="color:var(--text-muted); font-size:11px; font-weight:700;">NAMA BARANG</span><br><strong id="msNamaInfo">-</strong></div>
+                  <div><span style="color:var(--text-muted); font-size:11px; font-weight:700;">LOKASI ASAL</span><br><strong id="msLokasiInfo" style="color:var(--teal);">-</strong></div>
+                  <div><span style="color:var(--text-muted); font-size:11px; font-weight:700;">STOK TERSEDIA</span><br><strong id="msStokInfo" style="color:var(--accent); font-size:18px;">-</strong></div>
+                  <div><span style="color:var(--text-muted); font-size:11px; font-weight:700;">BATCH</span><br><span id="msBatchInfo" style="color:var(--gray);">-</span></div>
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Jumlah yang Dipindah</label>
+                  <input type="number" class="form-control" id="msJumlah" placeholder="Qty" min="1"
+                    oninput="validateMoveStockQty()" style="font-size:18px; font-weight:800; border-color:var(--teal);">
+                  <small id="msQtyWarning" style="color:var(--red); display:none; font-weight:600;">⚠️ Jumlah melebihi stok tersedia!</small>
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Lokasi Tujuan (Baru)</label>
+                  <input type="text" class="form-control" id="msLokasiTujuan" placeholder="Contoh: RAK-B2, Gudang C">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Keterangan <span style="color:var(--gray);font-weight:400">(opsional)</span></label>
+                <input type="text" class="form-control" id="msKeterangan" placeholder="Alasan pemindahan...">
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalMoveStock')">Batal</button>
+                <button class="btn btn-teal" onclick="submitMoveStock()">🔄 Pindah Stok</button>
+              </div>
             </div>
           </div>
           <!-- MODAL ASSET WAREHOUSE -->
@@ -11833,11 +11877,29 @@
       const now = new Date(); data.forEach(d => {
         let sCls = 'stok-aman', sTxt = 'Aman'; if (d.stok <= 0) { sCls = 'stok-kritis'; sTxt = 'Habis'; } else if (d.stok <= d.stokMin) { sCls = 'stok-rendah'; sTxt = 'Rendah'; }
         let expHtml = formatDate(d.expDate); if (d.expDate) { const diff = (new Date(d.expDate) - now) / 86400000; if (diff <= 30) expHtml = `<span class="exp-warning">⚠️ ${expHtml}</span>`; }
-        tb.innerHTML += `<tr><td><strong>${d.sku}</strong></td><td>${d.nama}</td><td>${d.barcode || '-'}</td><td>${d.batch || '-'}</td><td>${expHtml}</td><td><strong style="font-size:16px">${d.stok}</strong></td><td>${d.stokMin}</td><td>${d.satuan}</td><td>${d.kategori}</td><td>${d.lokasi}</td><td><span class="stok-badge ${sCls}">${sTxt}</span></td><td><button class="btn btn-ghost btn-sm" onclick="editStock('${d.id}')">✏️</button></td></tr>`;
+        tb.innerHTML += `<tr><td><strong>${d.sku}</strong></td><td>${d.nama}</td><td>${d.barcode || '-'}</td><td>${d.batch || '-'}</td><td>${expHtml}</td><td><strong style="font-size:16px">${d.stok}</strong></td><td>${d.stokMin}</td><td>${d.satuan}</td><td>${d.kategori}</td><td>${d.lokasi}</td><td><span class="stok-badge ${sCls}">${sTxt}</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="editStock('${d.id}')" title="Edit">✏️</button><button class="btn btn-teal btn-sm" onclick="openMoveStockModal('${d.id}')" title="Move Stock ke Lokasi Lain">🔄</button></div></td></tr>`;
       });
     }
     function filterStock() { const q = v('stockSearch').toLowerCase(); renderStock(stockData.filter(d => d.sku.toLowerCase().includes(q) || d.nama.toLowerCase().includes(q) || d.kategori.toLowerCase().includes(q))); }
-    function editStock(id) { const d = stockData.find(x => x.id === id); if (!d) return; setVal('stockId', d.id); document.getElementById('stockModalTitle').textContent = '✏️ Edit Barang';['SKU', 'Nama', 'Barcode', 'Batch', 'ExpDate', 'Satuan', 'Stok', 'StokMin', 'Kategori', 'Lokasi'].forEach(f => setVal('st' + f, d[f.charAt(0).toLowerCase() + f.slice(1)])); openModal('modalStock'); }
+
+    // FIX: Perbaikan editStock - SKU undefined bug karena mapping key salah
+    function editStock(id) {
+      const d = stockData.find(x => x.id === id); if (!d) return;
+      setVal('stockId', d.id);
+      document.getElementById('stockModalTitle').textContent = '✏️ Edit Barang';
+      // Mapping eksplisit untuk menghindari bug capitalisation (sKU -> undefined)
+      setVal('stSKU', d.sku || '');
+      setVal('stNama', d.nama || '');
+      setVal('stBarcode', d.barcode || '');
+      setVal('stBatch', d.batch || '');
+      setVal('stExpDate', d.expDate || '');
+      setVal('stSatuan', d.satuan || 'PCS');
+      setVal('stStok', d.stok !== undefined ? d.stok : '');
+      setVal('stStokMin', d.stokMin !== undefined ? d.stokMin : '');
+      setVal('stKategori', d.kategori || '');
+      setVal('stLokasi', d.lokasi || '');
+      openModal('modalStock');
+    }
     function submitStock() {
       const id = v('stockId'), s = v('stSKU'), n = v('stNama'), bc = v('stBarcode'), b = v('stBatch'), exp = v('stExpDate'), sat = v('stSatuan'), stk = v('stStok'), stkm = v('stStokMin'), k = v('stKategori'), l = v('stLokasi');
       if (!n) return toast('Nama wajib', 'error');
@@ -11950,7 +12012,14 @@
         }
         inputs[5].value = d;
 
-        toast(`✅ Sync: ${match.lokasi} - ${match.batch || '-'}`, 'success');
+        // Simpan stok tersedia di data-attribute input qty untuk validasi
+        const qtyInput = inputs[6];
+        qtyInput.setAttribute('data-max-stok', match.stok || 0);
+        qtyInput.setAttribute('data-lokasi-label', `${match.lokasi} (Stok: ${match.stok})`);
+        qtyInput.max = match.stok || 9999;
+        setOrderQtyValidation(qtyInput, match.stok);
+
+        toast(`✅ Sync: ${match.lokasi} | Stok tersedia: ${match.stok} ${match.satuan || ''}`, 'success');
       } else {
         // Fallback for direct typing or partial matches
         const directMatch = stockData.find(x => x.sku === sku && x.lokasi === val);
@@ -11973,18 +12042,56 @@
     }
     function handleItemSelect(sel) { /* Legacy support if needed */ }
     function removeItemRow(btn) { btn.parentElement.remove(); }
+
+    // Validasi qty order tidak melebihi stok di lokasi
+    function setOrderQtyValidation(qtyInput, maxStok) {
+      // Hapus listener lama dulu
+      qtyInput.oninput = null;
+      qtyInput.oninput = function() {
+        const val = parseFloat(this.value) || 0;
+        const max = parseFloat(this.getAttribute('data-max-stok')) || 0;
+        const label = this.getAttribute('data-lokasi-label') || '';
+        let warn = this.parentElement.querySelector('.stok-warn');
+        if (!warn) {
+          warn = document.createElement('small');
+          warn.className = 'stok-warn';
+          warn.style.cssText = 'color:var(--red);font-weight:700;font-size:10px;display:block;margin-top:2px;';
+          this.parentElement.appendChild(warn);
+        }
+        if (max > 0 && val > max) {
+          warn.textContent = `⚠️ Melebihi stok! Max: ${max}`;
+          this.style.borderColor = 'var(--red)';
+        } else if (max > 0) {
+          warn.textContent = `✓ Stok: ${max}`;
+          warn.style.color = 'var(--green)';
+          this.style.borderColor = 'var(--teal)';
+        } else {
+          warn.textContent = '';
+        }
+      };
+    }
+
     function collectItems(containerId, type) {
       const items = []; let valid = true;
+      let overStockMsg = '';
       document.querySelectorAll(`#${containerId} .item-row`).forEach(row => {
         const sId = row.querySelector('.stock-id').value;
         const inputs = row.querySelectorAll('input');
         // Indexing: 0:hidden_stockid, 1:lokasi, 2:sku, 3:nama, 4:batch, 5:exp, 6:qty
         if (sId && inputs[6].value) {
+          const qty = parseFloat(inputs[6].value) || 0;
+          const maxStok = parseFloat(inputs[6].getAttribute('data-max-stok') || 0);
+          // Validasi: hanya untuk form order, stok tidak boleh melebihi
+          if (type === 'order' && maxStok > 0 && qty > maxStok) {
+            overStockMsg = `SKU ${inputs[2].value}: Qty ${qty} melebihi stok di lokasi (${maxStok})`;
+            valid = false;
+            return;
+          }
           const itm = {
             stockId: sId,
             sku: inputs[2].value,
             nama: inputs[3].value,
-            qty: parseFloat(inputs[6].value) || 0,
+            qty: qty,
             satuan: row.querySelector('.satuan-label').textContent,
             batch: inputs[4].value,
             expDate: inputs[5].value,
@@ -11993,7 +12100,94 @@
           items.push(itm);
         } else valid = false;
       });
+      if (overStockMsg) { toast('❌ ' + overStockMsg, 'error'); return null; }
       return valid && items.length > 0 ? items : null;
+    }
+
+    // ============================================================
+    // MOVE STOCK - Pindah Stok ke Lokasi Lain
+    // ============================================================
+    function openMoveStockModal(stockId) {
+      // Populate SKU dropdown
+      const sel = document.getElementById('msSkuSelect');
+      sel.innerHTML = '<option value="">-- Pilih SKU --</option>';
+      const seen = new Set();
+      stockData.forEach(s => {
+        const key = s.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          sel.innerHTML += `<option value="${s.id}">${s.sku} — ${s.nama} (${s.lokasi}, Stok: ${s.stok})</option>`;
+        }
+      });
+      // Reset fields
+      setVal('msStockId', '');
+      setVal('msJumlah', '');
+      setVal('msLokasiTujuan', '');
+      setVal('msKeterangan', '');
+      document.getElementById('msInfoBox').style.display = 'none';
+      document.getElementById('msQtyWarning').style.display = 'none';
+      // Pre-select if stockId given
+      if (stockId) { sel.value = stockId; onMoveStockSkuChange(); }
+      openModal('modalMoveStock');
+    }
+
+    function onMoveStockSkuChange() {
+      const sel = document.getElementById('msSkuSelect');
+      const sId = sel.value;
+      const d = stockData.find(x => x.id === sId);
+      const box = document.getElementById('msInfoBox');
+      if (!d) { box.style.display = 'none'; return; }
+      setVal('msStockId', d.id);
+      document.getElementById('msNamaInfo').textContent = d.nama;
+      document.getElementById('msLokasiInfo').textContent = d.lokasi;
+      document.getElementById('msStokInfo').textContent = d.stok + ' ' + (d.satuan || '');
+      document.getElementById('msBatchInfo').textContent = d.batch || '-';
+      const qtyInput = document.getElementById('msJumlah');
+      qtyInput.max = d.stok;
+      qtyInput.setAttribute('data-max-stok', d.stok);
+      setVal('msJumlah', '');
+      document.getElementById('msQtyWarning').style.display = 'none';
+      box.style.display = 'block';
+    }
+
+    function validateMoveStockQty() {
+      const qty = parseFloat(v('msJumlah')) || 0;
+      const max = parseFloat(document.getElementById('msJumlah').getAttribute('data-max-stok') || 0);
+      const warn = document.getElementById('msQtyWarning');
+      warn.style.display = (max > 0 && qty > max) ? 'block' : 'none';
+    }
+
+    function submitMoveStock() {
+      const sId = v('msStockId');
+      const jumlah = parseFloat(v('msJumlah')) || 0;
+      const lokasiTujuan = v('msLokasiTujuan').trim();
+      const ket = v('msKeterangan').trim();
+      if (!sId) return toast('Pilih barang (SKU) terlebih dahulu!', 'error');
+      if (!jumlah || jumlah <= 0) return toast('Jumlah harus lebih dari 0!', 'error');
+      if (!lokasiTujuan) return toast('Lokasi tujuan wajib diisi!', 'error');
+
+      const d = stockData.find(x => x.id === sId);
+      if (!d) return toast('Data stok tidak ditemukan!', 'error');
+      if (jumlah > d.stok) return toast(`❌ Jumlah (${jumlah}) melebihi stok tersedia (${d.stok})!`, 'error');
+      if (lokasiTujuan.toLowerCase() === (d.lokasi || '').toLowerCase()) return toast('Lokasi tujuan sama dengan lokasi asal!', 'warning');
+
+      const btn = document.querySelector('#modalMoveStock .btn-teal');
+      const oldTxt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Memproses...';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false; btn.textContent = oldTxt;
+          if (res.success) {
+            toast(`✅ Stok dipindah! ${jumlah} ${d.satuan} dari ${d.lokasi} → ${lokasiTujuan}`, 'success');
+            closeModal('modalMoveStock');
+            loadStock();
+          } else toast('❌ ' + res.message, 'error');
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false; btn.textContent = oldTxt;
+          toast('Error: ' + err, 'error');
+        })
+        .moveStock(sId, jumlah, lokasiTujuan, ket, currentUser.username);
     }
 
     // INBOUND, OUTBOUND, RETUR
@@ -12258,6 +12452,7 @@
             const uploadBtn = `<button class="btn btn-accent btn-sm" onclick="openUploadPackingModal('${d.id}','${d.noOrder}')">${hasBukti ? '📸' : '📤'}</button>`;
             const buyBtn = hasBukti ? `<a href="${d.buktiPacking}" target="_blank" class="btn btn-ghost btn-sm" title="Foto">🖼️</a>` : '';
             const sendBtn = !isSent ? `<button class="btn btn-teal btn-sm" onclick="kirimOrder('${d.id}', '${d.noOrder}')">Kirim</button>` : '';
+            const printBtn = `<button class="btn btn-ghost btn-sm" onclick="printOrder('${d.id}','${d.noOrder}')" title="Print / Cetak Order" style="color:var(--accent);">🖨️</button>`;
 
             const rowId = `order-main-${d.id}`;
             const detailRowId = `order-detail-${d.id}`;
@@ -12285,7 +12480,7 @@
                   <td><span class="badge-tb">${d.kategori || '-'}</span></td>
                   <td><strong>${d.totalItem}</strong></td>
                   <td>${buyBtn || '-'}</td>
-                  <td></td>
+                  <td><div style="display:flex; gap:4px; align-items:center;">${printBtn}</div></td>
                 </tr>
                 <tr id="${detailRowId}" class="row-detail" style="display:none;">
                   <td colspan="7"><div class="detail-container">${detailHeaderHtml}<div class="loading-inline">Memuat item...</div></div></td>
@@ -12304,7 +12499,7 @@
                   <td>${kat === 'marketplace' ? (d.noResi || '-') : (d.alamat || '-')}</td>
                   <td><strong>${d.totalItem || 0}</strong></td>
                   <td><span class="${statusCls}">${d.status}</span></td>
-                  <td><div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">${sendBtn} ${uploadBtn} ${buyBtn}</div></td>
+                  <td><div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">${sendBtn} ${uploadBtn} ${buyBtn} ${printBtn}</div></td>
                 </tr>
                 <tr id="${detailRowId}" class="row-detail" style="display:none;">
                   <td colspan="7"><div class="detail-container">${detailHeaderHtml}<div class="loading-inline">Memuat item...</div></div></td>
@@ -12333,6 +12528,247 @@
         toast('Gagal memuat Order: ' + err, 'error');
         console.error('Order Load Error:', err);
       }).getOrders();
+    }
+
+    // ============================================================
+    // PRINT ORDER - Cetak Packing Slip Detail
+    // ============================================================
+    function printOrder(orderId, noOrder) {
+      toast('⏳ Memproses cetak order...', 'info');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res || !res.success) {
+            return toast('Gagal mengambil data: ' + (res ? res.message : 'Server error'), 'error');
+          }
+          _doPrintOrder(res.header, res.items);
+        })
+        .withFailureHandler(function(err) {
+          toast('Error server: ' + err, 'error');
+        })
+        .getOrderDetailFull(orderId, noOrder);
+    }
+
+    function _doPrintOrder(header, items) {
+      const printDate = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      const printTime = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+
+      const statusClass = header.status === 'Terkirim' ? 'status-sent' : 'status-pending';
+      const statusLabel = header.status === 'Terkirim' ? '✅ TERKIRIM' : '⏳ PENDING';
+      const kategoriIco = (header.kategori || '').toLowerCase() === 'marketplace' ? '🛒' : (header.kategori || '').toLowerCase() === 'store' ? '🏬' : '🏢';
+
+      let totalQty = 0;
+      const itemRows = (items || []).map((item, idx) => {
+        totalQty += parseFloat(item.qty) || 0;
+        const expDate = item.expDate && item.expDate !== '-' ? item.expDate : '-';
+        const batch   = item.batch && item.batch !== '-' ? item.batch : '-';
+        const lokasi  = item.lokasi && item.lokasi !== '-' ? item.lokasi : '-';
+        return `
+          <tr>
+            <td style="text-align:center;font-weight:700;color:#666;">${idx + 1}</td>
+            <td><strong style="color:#1a1a2e;font-size:13px;">${item.sku || '-'}</strong></td>
+            <td style="max-width:200px;">${item.nama || '-'}</td>
+            <td style="text-align:center;"><span class="lokasi-badge">${lokasi}</span></td>
+            <td style="text-align:center;font-family:monospace;font-size:11px;color:#555;">${batch}</td>
+            <td style="text-align:center;font-size:11px;color:${expDate !== '-' ? '#c0392b' : '#555'};">${expDate}</td>
+            <td style="text-align:center;"><strong style="font-size:16px;color:#e67e22;">${item.qty || 0}</strong></td>
+            <td style="text-align:center;color:#666;font-size:11px;">${item.satuan || '-'}</td>
+          </tr>`;
+      }).join('');
+
+      const printHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print Order - ${header.noOrder}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:#f8f9fa; color:#1a1a2e; font-size:13px; }
+    .print-page { background:#fff; max-width:820px; margin:20px auto; padding:0; border-radius:12px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.12); }
+    /* HEADER */
+    .print-header { background:linear-gradient(135deg,#1a3a5c 0%,#0a1628 100%); color:#fff; padding:28px 36px; display:flex; align-items:center; justify-content:space-between; }
+    .print-header .company { }
+    .print-header .company h1 { font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; letter-spacing:-0.5px; color:#fff; }
+    .print-header .company p { font-size:12px; color:rgba(255,255,255,0.65); margin-top:3px; }
+    .print-header .doc-info { text-align:right; }
+    .print-header .doc-title { font-family:'Outfit',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:#f59e0b; }
+    .print-header .doc-no { font-family:'Outfit',sans-serif; font-size:26px; font-weight:800; color:#fff; margin-top:4px; letter-spacing:-0.5px; }
+    .print-header .doc-date { font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px; }
+    /* STATUS BANNER */
+    .status-banner { padding:10px 36px; display:flex; align-items:center; justify-content:space-between; }
+    .status-banner.status-sent { background:linear-gradient(90deg,#10b98115,#10b98108); border-bottom:2px solid #10b981; }
+    .status-banner.status-pending { background:linear-gradient(90deg,#f59e0b15,#f59e0b08); border-bottom:2px solid #f59e0b; }
+    .status-label { font-weight:800; font-size:13px; }
+    .status-banner.status-sent .status-label { color:#059669; }
+    .status-banner.status-pending .status-label { color:#d97706; }
+    .print-meta { font-size:11px; color:#888; }
+    /* INFO SECTION */
+    .info-section { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:24px 36px; border-bottom:1px solid #eee; }
+    .info-card { }
+    .info-card h3 { font-family:'Outfit',sans-serif; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#94a3b8; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid #f1f5f9; }
+    .info-row { display:flex; gap:8px; margin-bottom:8px; align-items:flex-start; }
+    .info-label { font-size:11px; color:#888; font-weight:600; min-width:80px; flex-shrink:0; padding-top:1px; }
+    .info-value { font-size:13px; color:#1a1a2e; font-weight:600; flex:1; line-height:1.4; }
+    .info-value.highlight { color:#1a3a5c; font-weight:800; font-family:'Outfit',sans-serif; }
+    .info-value.resi { font-family:monospace; background:#f8f9fa; padding:2px 8px; border-radius:4px; font-size:12px; }
+    /* ITEMS TABLE */
+    .items-section { padding:0 36px 24px; }
+    .items-section h3 { font-family:'Outfit',sans-serif; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1.5px; color:#94a3b8; padding:20px 0 12px; border-bottom:2px solid #f1f5f9; margin-bottom:0; }
+    table.print-table { width:100%; border-collapse:collapse; margin-top:0; }
+    .print-table thead tr { background:#f8f9fa; }
+    .print-table th { padding:11px 12px; text-align:left; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; border-bottom:2px solid #e2e8f0; white-space:nowrap; }
+    .print-table td { padding:11px 12px; border-bottom:1px solid #f1f5f9; font-size:13px; vertical-align:middle; }
+    .print-table tr:last-child td { border-bottom:2px solid #e2e8f0; }
+    .print-table tr:nth-child(even) td { background:#fafafa; }
+    .lokasi-badge { background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; font-family:monospace; }
+    /* FOOTER */
+    .print-footer { padding:20px 36px 28px; }
+    .totals-row { background:#f8f9fa; border-radius:8px; padding:14px 20px; display:flex; justify-content:flex-end; align-items:center; gap:20px; margin-bottom:24px; }
+    .total-label { font-size:13px; color:#555; font-weight:600; }
+    .total-value { font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; color:#1a3a5c; }
+    .total-satuan { font-size:12px; color:#888; }
+    .sign-section { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:20px; }
+    .sign-box { text-align:center; }
+    .sign-box .sign-title { font-size:11px; font-weight:800; color:#888; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:60px; }
+    .sign-box .sign-line { border-top:1.5px solid #444; padding-top:6px; font-size:12px; font-weight:600; color:#444; }
+    .print-watermark { text-align:center; margin-top:24px; font-size:10px; color:#ccc; padding-top:16px; border-top:1px solid #f0f0f0; }
+    /* PRINT CONTROLS OVERLAY */
+    .print-controls { position:fixed; bottom:24px; right:24px; display:flex; gap:10px; z-index:9999; }
+    .btn-print { background:linear-gradient(135deg,#1a3a5c,#0a1628); color:#fff; border:none; padding:14px 28px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(26,58,92,0.4); transition:all 0.2s; }
+    .btn-print:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(26,58,92,0.5); }
+    .btn-close-print { background:#fff; color:#555; border:2px solid #ddd; padding:14px 20px; border-radius:10px; font-family:'Outfit',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+    .btn-close-print:hover { border-color:#999; color:#333; }
+    @media print {
+      body { background:#fff; }
+      .print-page { box-shadow:none; margin:0; border-radius:0; }
+      .print-controls { display:none !important; }
+      @page { margin:10mm 12mm; size:A4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-controls">
+    <button class="btn-close-print" onclick="window.close()">✕ Tutup</button>
+    <button class="btn-print" onclick="window.print()">🖨️ Cetak Sekarang</button>
+  </div>
+  <div class="print-page">
+    <!-- HEADER -->
+    <div class="print-header">
+      <div class="company">
+        <h1>GUDANG FCL GROUP</h1>
+        <p>Sistem Pengelola Gudang &amp; Distribusi</p>
+      </div>
+      <div class="doc-info">
+        <div class="doc-title">Packing Slip / Surat Jalan</div>
+        <div class="doc-no">${header.noOrder || '-'}</div>
+        <div class="doc-date">Dicetak: ${printDate} ${printTime}</div>
+      </div>
+    </div>
+
+    <!-- STATUS BANNER -->
+    <div class="status-banner ${statusClass}">
+      <div class="status-label">${statusLabel} — ${kategoriIco} ${header.kategori || 'Distributor'}</div>
+      <div class="print-meta">Tanggal Order: <strong>${header.tanggal || '-'}</strong>${header.noResi ? ' &nbsp;|&nbsp; No. Resi: <strong>' + header.noResi + '</strong>' : ''}</div>
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="info-section">
+      <div class="info-card">
+        <h3>📦 Informasi Pengiriman</h3>
+        <div class="info-row">
+          <span class="info-label">Pelanggan</span>
+          <span class="info-value highlight">${header.pelanggan || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Alamat</span>
+          <span class="info-value">${header.alamat || '-'}</span>
+        </div>
+        ${header.noResi ? `<div class="info-row"><span class="info-label">No. Resi</span><span class="info-value resi">${header.noResi}</span></div>` : ''}
+        <div class="info-row">
+          <span class="info-label">Kategori</span>
+          <span class="info-value">${kategoriIco} ${header.kategori || 'Distributor'}</span>
+        </div>
+      </div>
+      <div class="info-card">
+        <h3>📋 Detail Dokumen</h3>
+        <div class="info-row">
+          <span class="info-label">No. Order</span>
+          <span class="info-value highlight">${header.noOrder || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Tanggal</span>
+          <span class="info-value">${header.tanggal || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status</span>
+          <span class="info-value">${header.status || '-'}</span>
+        </div>
+        ${header.keterangan ? `<div class="info-row"><span class="info-label">Keterangan</span><span class="info-value">${header.keterangan}</span></div>` : ''}
+        <div class="info-row">
+          <span class="info-label">Total Item</span>
+          <span class="info-value highlight">${header.totalItem || items.length} Jenis</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <div class="items-section">
+      <h3>📦 Daftar Barang</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="text-align:center;width:36px;">#</th>
+            <th>SKU</th>
+            <th>Nama Barang</th>
+            <th style="text-align:center;">Lokasi</th>
+            <th style="text-align:center;">Batch</th>
+            <th style="text-align:center;">Exp Date</th>
+            <th style="text-align:center;">Qty</th>
+            <th style="text-align:center;">Satuan</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Tidak ada item</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="print-footer">
+      <div class="totals-row">
+        <span class="total-label">Total Qty Keseluruhan:</span>
+        <span class="total-value">${totalQty}</span>
+        <span class="total-satuan">Unit</span>
+      </div>
+
+      <div class="sign-section">
+        <div class="sign-box">
+          <div class="sign-title">Disiapkan Oleh</div>
+          <div class="sign-line">( ................................ )</div>
+        </div>
+        <div class="sign-box">
+          <div class="sign-title">Diperiksa Oleh</div>
+          <div class="sign-line">( ................................ )</div>
+        </div>
+        <div class="sign-box">
+          <div class="sign-title">Diterima Oleh</div>
+          <div class="sign-line">( ................................ )</div>
+        </div>
+      </div>
+
+      <div class="print-watermark">
+        Dokumen ini dicetak secara otomatis oleh Sistem Gudang FCL Group &bull; ${printDate} ${printTime}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      const printWin = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+      if (!printWin) return toast('Popup diblokir browser! Izinkan popup untuk website ini.', 'error');
+      printWin.document.write(printHtml);
+      printWin.document.close();
     }
 
 
