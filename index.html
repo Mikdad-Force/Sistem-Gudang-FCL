@@ -9,7 +9,7 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
   <!-- Menambahkan CDN Chart.js untuk Grafik -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <!-- Menambahkan Pustaka SheetJS untuk Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Bootstrap 5 CSS -->
@@ -4041,6 +4041,10 @@
                   <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #f472b6;">
                     🫧 Consumable</h5><canvas id="chartConsumable" style="max-height: 250px;"></canvas>
                 </div>
+                <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
+                  <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #38bdf8;">
+                    🛒📦 Mp & Dist Surabaya</h5><canvas id="chartMpDistSurabaya" style="max-height: 250px;"></canvas>
+                </div>
               </div>
               <div class="table-wrap">
                 <h4 style="font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;margin-bottom:12px;">Ringkasan
@@ -5666,6 +5670,7 @@
                     class="form-select" id="lapDivisi" onchange="updateLapFields()">
                     <option value="Marketplace">🛒 Marketplace</option>
                     <option value="Distributor">📦 Distributor</option>
+                    <option value="Marketplace & Distributor Surabaya">🛒📦 Marketplace & Distributor Surabaya</option>
                     <option value="Return">↩️ Return</option>
                     <option value="KOL">🎥 KOL</option>
                     <option value="Inbound">📥 Inbound</option>
@@ -5767,9 +5772,12 @@
                     type="number" class="form-control" id="lapBuatBubble" placeholder="0" min="0"
                     oninput="calcJamKerja()"></div>
               </div>
-              <div class="row mb-3">
-                <div class="col-md mb-2"><label style="color:var(--green)">KPI (Total Output / Total Jam
-                    Kerja)</label><input type="text" class="form-control" id="lapKPI" readonly placeholder="Otomatis"
+              <div class="row mb-3" id="wrapLapKPIOrder">
+                <div class="col-md mb-2"><label style="color:var(--green)">KPI Order (Order / Jam Kerja)</label><input type="text" class="form-control" id="lapKPI" readonly placeholder="Otomatis"
+                    value="0"></div>
+              </div>
+              <div class="row mb-3" id="wrapLapKPIQty" style="display:none;">
+                <div class="col-md mb-2"><label style="color:var(--green)">KPI Qty (Qty / Jam Kerja)</label><input type="text" class="form-control" id="lapKPIQty" readonly placeholder="Otomatis"
                     value="0"></div>
               </div>
               <div class="row mb-3">
@@ -6789,6 +6797,12 @@
                   </select>
                 </div>
               </div>
+              <div class="mb-3">
+                <label class="form-label">Ubah Zona Lokasi (Opsional)</label>
+                <select class="form-select" id="mAwZoneId">
+                  <option value="">-- Tanpa Zona --</option>
+                </select>
+              </div>
               <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('modalMoveAsset')" data-i18n="batal">Batal</button>
                 <button class="btn btn-primary" onclick="submitMoveAsset()" data-i18n="simpan">💾 Update Lokasi</button>
@@ -6814,7 +6828,6 @@
                   <label class="form-label">Jumlah (Qty) *</label>
                   <input type="number" class="form-control" id="eAwQty" placeholder="1" min="1">
                 </div>
-              </div>
                 <div class="col-md mb-2">
                   <label class="form-label" data-i18n="status">Status Asset</label>
                   <select class="form-select" id="eAwStatus">
@@ -11157,10 +11170,23 @@
         else labelOrd.textContent = 'Total Order KOL';
       } else if (div === 'Distributor') {
         if(wDist) wDist.style.display = 'block';
+      } else if (div === 'Marketplace & Distributor Surabaya') {
+        if(wOrd) wOrd.style.display = 'block';
+        if(wDist) wDist.style.display = 'block';
+        if(labelOrd) labelOrd.textContent = 'Total Order Marketplace';
+        // Show second KPI field for Surabaya
+        document.getElementById('wrapLapKPIOrder').querySelector('label').textContent = 'KPI Order (Order / Jam Kerja)';
+        document.getElementById('wrapLapKPIQty').style.display = 'block';
       } else if (div === 'Inbound') {
         if(wInb) wInb.style.display = 'block';
       } else if (div === 'Consumable') {
         if(wCon) wCon.style.display = 'block';
+      }
+
+      // Reset KPI label if not Surabaya
+      if (div !== 'Marketplace & Distributor Surabaya') {
+        document.getElementById('wrapLapKPIOrder').querySelector('label').textContent = 'KPI (Total Output / Total Jam Kerja)';
+        document.getElementById('wrapLapKPIQty').style.display = 'none';
       }
       calcJamKerja();
     }
@@ -11183,9 +11209,18 @@
       setVal('lapTotalJam', tot > 0 ? tot : 0);
 
       const kpiInput = document.getElementById('lapKPI');
+      const kpiQtyInput = document.getElementById('lapKPIQty');
+
       if (div === 'Inbound' || div === 'Return' || div === 'KOL') {
         setVal('lapKPI', '-');
         if (kpiInput) kpiInput.style.opacity = '0.3';
+      } else if (div === 'Marketplace & Distributor Surabaya') {
+        const orderVal = parseInt(v('lapOrder')) || 0;
+        const qtyVal = parseInt(v('lapQty')) || 0;
+        setVal('lapKPI', tot > 0 ? (orderVal / tot).toFixed(3) : 0);
+        setVal('lapKPIQty', tot > 0 ? (qtyVal / tot).toFixed(3) : 0);
+        if (kpiInput) kpiInput.style.opacity = '1';
+        if (kpiQtyInput) kpiQtyInput.style.opacity = '1';
       } else {
         setVal('lapKPI', tot > 0 ? (output / tot).toFixed(3) : 0);
         if (kpiInput) kpiInput.style.opacity = '1';
@@ -11405,9 +11440,16 @@
         g.jamLembur += (d.jamLembur || 0);
         g.totalPHL += (d.totalPHL || 0);
         g.totalOrder += (d.totalOrder || 0);
-        g.totalPO += (d.totalPO || 0);
+        g.totalPO += (d.totalPo || 0);
         g.totalInbound += (d.totalInbound || 0);
         g.totalQty += (d.totalQty || (d.totalQtyInb || 0) || 0);
+
+        if (d.divisi === 'Marketplace & Distributor Surabaya') {
+          if (!g.surabayaOrder) g.surabayaOrder = 0;
+          if (!g.surabayaQty) g.surabayaQty = 0;
+          g.surabayaOrder += (d.totalOrder || 0);
+          g.surabayaQty += (d.totalQty || 0);
+        }
 
         // Track specific Distributor Qty for group KPI
         if (d.divisi === 'Distributor') {
@@ -11427,12 +11469,22 @@
         const picStr = Array.from(g.pic).join(', ');
 
         // Output sums: MP Orders + Dist Qty (user requirement) + Inb SJ
-        const totalOutput = g.totalOrder + (g.distQty || 0) + g.totalInbound;
+        // For Surabaya, we keep them separated in display but group sum for global total if needed
+        const totalOutput = g.totalOrder + (g.distQty || 0) + (g.surabayaOrder || 0) + (g.surabayaQty || 0) + g.totalInbound;
 
-        // Sembunyikan KPI jika semua divisi dalam grup adalah Inbound/Return/KOL
-        const hideKPI = divList.every(d => ['Inbound', 'Return', 'KOL'].includes(d));
-        const rawKpi = (g.totalJamKerja > 0 && !hideKPI) ? (totalOutput / g.totalJamKerja) : 0;
-        const kpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
+        // KPI calculation
+        let kpi = '-';
+        if (g.totalJamKerja > 0) {
+          if (divList.includes('Marketplace & Distributor Surabaya')) {
+             const kpiOrd = Math.round(g.surabayaOrder / g.totalJamKerja) || 0;
+             const kpiQty = Math.round(g.surabayaQty / g.totalJamKerja) || 0;
+             kpi = `${kpiOrd} (O) / ${kpiQty} (Q)`;
+          } else {
+             const hideKPI = divList.every(d => ['Inbound', 'Return', 'KOL'].includes(d));
+             const rawKpi = !hideKPI ? (totalOutput / g.totalJamKerja) : 0;
+             kpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
+          }
+        }
 
         tb.innerHTML += `<tr>
       <td>${formatDate(t)}</td>
@@ -11476,8 +11528,8 @@
         <div>Pekerja: ${r.totalOrang} | Admin: ${r.totalAdmin || 0}</div>
         <div>PHL: ${r.totalPHL || 0} | Lembur: ${r.jamLembur} Jam</div>
         <div style="grid-column: span 2; border-top:1px solid #ffffff0a; padding-top:5px; margin-top:5px;">
-          Output: <b>${r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)}</b> 
-          ${!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja > 0 ? ((r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)) / r.totalJamKerja).toFixed(3) : 0}</b>` : ''}
+          Output: <b>${r.divisi === 'Marketplace & Distributor Surabaya' ? `Ord: ${r.totalOrder} | Qty: ${r.totalQty}` : (r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0))}</b> 
+          ${r.divisi === 'Marketplace & Distributor Surabaya' ? `| KPI: <b>${r.totalJamKerja > 0 ? `${(r.totalOrder / r.totalJamKerja).toFixed(1)} (O) / ${(r.totalQty / r.totalJamKerja).toFixed(1)} (Q)` : 0}</b>` : (!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja > 0 ? ((r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)) / r.totalJamKerja).toFixed(3) : 0}</b>` : '')}
         </div>
       </div>
       ${r.staffLemburNames ? `
@@ -11643,14 +11695,20 @@
     function filterGrafik() {
       const ym = v('filterBulanGrafik'); const y = ym.split('-')[0], m = ym.split('-')[1];
       const filtered = laporanKerjaData.filter(d => d.tanggal.startsWith(ym));
-      const maps = { Marketplace: {}, Distributor: {}, Return: {}, KOL: {}, Inbound: {}, Consumable: {} };
+      const maps = { Marketplace: {}, Distributor: {}, "Marketplace & Distributor Surabaya": {}, Return: {}, KOL: {}, Inbound: {}, Consumable: {} };
       const dInM = new Date(y, m, 0).getDate();
       for (let i = 1; i <= dInM; i++) { const ds = i.toString().padStart(2, '0'); Object.keys(maps).forEach(k => maps[k][ds] = { ord: 0, jm: 0 }); }
       filtered.forEach(d => {
         const day = d.tanggal.split('-')[2].substring(0, 2);
         if (maps[d.divisi] && maps[d.divisi][day]) {
-          const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
-          maps[d.divisi][day].ord += currentOutput;
+          if (d.divisi === 'Marketplace & Distributor Surabaya') {
+            maps[d.divisi][day].ord += (d.totalOrder || 0);
+            if (maps[d.divisi][day].qty === undefined) maps[d.divisi][day].qty = 0;
+            maps[d.divisi][day].qty += (d.totalQty || 0);
+          } else {
+            const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
+            maps[d.divisi][day].ord += currentOutput;
+          }
           maps[d.divisi][day].jm += d.totalJamKerja;
         }
       });
@@ -11666,12 +11724,22 @@
 
       createChart('chartMarketplace', 'mp', labels, cData('Marketplace').ord, cData('Marketplace').kpi, '#f59e0b');
       createChart('chartDistributor', 'dist', labels, cData('Distributor').ord, cData('Distributor').kpi, '#0ea5e9');
+      
+      // Dual-metrical chart for Surabaya
+      if (cData('Marketplace & Distributor Surabaya').ord.length) {
+         // Aggregating Order and Qty for Surabaya. 
+         // Since cData logic only takes maps[div][day].ord (which we will split below)
+         // I'll need a way to pass both to createChart. 
+         // Let's modify filterGrafik to handle Surabaya specially.
+         createSurabayaChart('chartMpDistSurabaya', labels, maps["Marketplace & Distributor Surabaya"]);
+      }
+
       createChart('chartReturn', 'ret', labels, cData('Return').ord, cData('Return').kpi, '#ef4444');
       if (cData('KOL').ord.length) createChart('chartKOL', 'kol', labels, cData('KOL').ord, cData('KOL').kpi, '#10b981');
       if (cData('Inbound').ord.length) createChart('chartInbound', 'inb', labels, cData('Inbound').ord, cData('Inbound').kpi, '#8b5cf6');
       if (cData('Consumable').ord.length) createChart('chartConsumable', 'con', labels, cData('Consumable').ord, cData('Consumable').kpi, '#f472b6');
 
-      const summary = { Marketplace: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Distributor: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Return: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, KOL: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Inbound: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Consumable: { rep: 0, p: 0, l: 0, j: 0, o: 0 } };
+      const summary = { Marketplace: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Distributor: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, "Marketplace & Distributor Surabaya": { rep: 0, p: 0, l: 0, j: 0, o: 0, q: 0 }, Return: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, KOL: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Inbound: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Consumable: { rep: 0, p: 0, l: 0, j: 0, o: 0 } };
       filtered.forEach(d => {
         if (summary[d.divisi]) {
           summary[d.divisi].rep++;
@@ -11679,30 +11747,45 @@
           summary[d.divisi].l += d.jamLembur;
           summary[d.divisi].j += d.totalJamKerja;
 
-          const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
-          summary[d.divisi].o += currentOutput;
+          if (d.divisi === 'Marketplace & Distributor Surabaya') {
+            summary[d.divisi].o += (d.totalOrder || 0);
+            summary[d.divisi].q += (d.totalQty || 0);
+          } else {
+            const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
+            summary[d.divisi].o += currentOutput;
+          }
         }
       });
       const tb = document.getElementById('tableRingkasanGrafik'); tb.innerHTML = '';
       Object.keys(summary).forEach(k => {
         const s = summary[k];
-        const rawKpi = (s.j > 0 && !['Inbound', 'Return', 'KOL', 'Consumable'].includes(k)) ? (s.o / s.j) : 0;
-        const roundedKpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
+        let displayOutput = s.o.toLocaleString('id-ID');
+        let displayKpi = '-';
+
+        if (k === 'Marketplace & Distributor Surabaya') {
+           displayOutput = `Ord: ${s.o.toLocaleString('id-ID')}<br>Qty: ${s.q.toLocaleString('id-ID')}`;
+           if (s.j > 0) {
+              displayKpi = `${Math.round(s.o / s.j)} (O) / ${Math.round(s.q / s.j)} (Q)`;
+           }
+        } else {
+           const rawKpi = (s.j > 0 && !['Inbound', 'Return', 'KOL', 'Consumable'].includes(k)) ? (s.o / s.j) : 0;
+           displayKpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
+        }
         
         let kpiStyle = 'color:var(--green)';
         let targetMsg = '';
         
-        if (roundedKpi !== '-') {
-          if (k === 'Marketplace' && roundedKpi < 95) {
+        if (displayKpi !== '-') {
+          if (k === 'Marketplace' && displayKpi < 95) {
             kpiStyle = 'color:var(--red)';
             targetMsg = '<br><small style="color:var(--red); font-size:9px; font-weight:800;">(Target Tidak Tercapai)</small>';
-          } else if (k === 'Distributor' && roundedKpi < 1875) {
+          } else if (k === 'Distributor' && displayKpi < 1875) {
             kpiStyle = 'color:var(--red)';
             targetMsg = '<br><small style="color:var(--red); font-size:9px; font-weight:800;">(Target Tidak Tercapai)</small>';
           }
         }
 
-        tb.innerHTML += `<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep > 0 ? Math.round(s.p / s.rep) : 0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${s.o.toLocaleString('id-ID')}</strong></td><td style="${kpiStyle}"><strong>${roundedKpi}</strong>${targetMsg}</td></tr>`;
+        tb.innerHTML += `<tr><td><strong>${k}</strong></td><td>${s.rep} Laporan</td><td>${s.rep > 0 ? Math.round(s.p / s.rep) : 0} Org/hari</td><td>${s.l} Jam</td><td>${s.j} Jam</td><td style="color:var(--teal)"><strong>${displayOutput}</strong></td><td style="${kpiStyle}"><strong>${displayKpi}</strong>${targetMsg}</td></tr>`;
       });
     }
     function createChart(id, instKey, labels, dOrd, dKpi, color) {
@@ -11755,6 +11838,36 @@
           plugins: { 
             legend: { labels: { color: '#e2e8f0' } } 
           } 
+        } 
+      });
+    }
+    function createSurabayaChart(id, labels, dayMap) {
+      const ctx = document.getElementById(id); if (chartInstances['surabaya']) chartInstances['surabaya'].destroy();
+      
+      const dOrd = labels.map(l => dayMap[l].ord);
+      const dQty = labels.map(l => dayMap[l].qty || 0);
+      const dKpiOrd = labels.map(l => dayMap[l].jm > 0 ? Math.round(dayMap[l].ord / dayMap[l].jm) : 0);
+      const dKpiQty = labels.map(l => dayMap[l].jm > 0 ? Math.round(dayMap[l].qty / dayMap[l].jm) : 0);
+
+      chartInstances['surabaya'] = new Chart(ctx, { 
+        type: 'bar', 
+        data: { 
+          labels: labels, 
+          datasets: [
+            { label: 'Total Order', data: dOrd, backgroundColor: '#f59e0b88', borderColor: '#f59e0b', borderWidth: 1, yAxisID: 'y' }, 
+            { label: 'Total Qty', data: dQty, backgroundColor: '#0ea5e988', borderColor: '#0ea5e9', borderWidth: 1, yAxisID: 'y' },
+            { label: 'KPI Ord/Jam', data: dKpiOrd, type: 'line', borderColor: '#10b981', pointBackgroundColor: '#10b981', borderWidth: 2, tension: 0.3, yAxisID: 'y1' },
+            { label: 'KPI Qty/Jam', data: dKpiQty, type: 'line', borderColor: '#8b5cf6', pointBackgroundColor: '#8b5cf6', borderWidth: 2, tension: 0.3, yAxisID: 'y1' }
+          ] 
+        }, 
+        options: { 
+          responsive: true, maintainAspectRatio: false, 
+          scales: { 
+            y: { type: 'linear', display: true, position: 'left', grid: { color: '#ffffff10' } }, 
+            y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }, 
+            x: { grid: { color: '#ffffff10' } } 
+          }, 
+          plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } } 
         } 
       });
     }
@@ -14662,8 +14775,10 @@
       tbody.innerHTML = '';
 
       let filtered = assetWarehouseData.filter(d => {
-        const matchesSearch = (d.nama || '').toLowerCase().includes(q) || (d.code || '').toLowerCase().includes(q);
-        const matchesDivisi = !divFilter || d.divisi === divFilter;
+        const strNama = d.nama != null ? String(d.nama).toLowerCase() : '';
+        const strCode = d.code != null ? String(d.code).toLowerCase() : '';
+        const matchesSearch = strNama.includes(q) || strCode.includes(q);
+        const matchesDivisi = !divFilter || String(d.divisi) === divFilter;
         return matchesSearch && matchesDivisi;
       });
 
@@ -14697,13 +14812,14 @@
         const zoneObj = awMapZones.find(z => String(z.id) === String(d.zoneId) || z.name === d.zoneId);
         const displayName = zoneObj ? zoneObj.name : (d.zoneId || '- Unassigned -');
         const zoneStr = (d.zoneId && d.zoneId !== '-') ? `<span style="font-size:10px; font-weight:700; background:var(--accent); color:#000; padding:2px 8px; border-radius:10px; border:1px solid var(--accent);">${displayName}</span>` : '<span style="font-size:10px; color:var(--gray)">- Unassigned -</span>';
+        const statusKey = d.status ? String(d.status).replace(/\s+/g,'').toLowerCase() : 'aktif';
         tbody.innerHTML += `
           <tr style="border-bottom:1px solid var(--border-color);">
             <td style="padding:12px; font-size:12px;">${formatDate(d.tanggalMasuk)}</td>
             <td style="padding:12px;"><code style="background:var(--bg-panel); padding:4px 8px; border-radius:6px; font-weight:800; color:var(--accent); font-size:11px;">${d.code}</code></td>
             <td style="padding:12px; font-weight:600;"><div style="line-height:1.2;">
               <div>${d.nama}</div>
-              <div style="font-size:10px; font-weight:400; color:var(--text-muted); margin-top:3px;">Qty: ${d.qty || 1} | Status: ${d.status}</div>
+              <div style="font-size:10px; font-weight:400; color:var(--text-muted); margin-top:3px;">Qty: ${d.qty || 1} | Status: <span class="status-badge status-${statusKey}" style="padding:2px 6px; font-size:10px;">${d.status}</span></div>
             </div></td>
             <td style="padding:12px;"><span style="background:var(--navy3); color:var(--teal); font-weight:700; font-size:11px; padding:4px 10px; border-radius:12px;">${d.divisi}</span></td>
             <td style="padding:12px;">${zoneStr}</td>
@@ -14794,13 +14910,13 @@
       setVal('mAwNama', d.nama);
       setVal('mAwDivisiLama', d.divisi);
       setVal('mAwDivisiBaru', d.divisi);
+      awPopulateZoneSelect('mAwZoneId', d.zoneId);
       openModal('modalMoveAsset');
     }
 
     function submitMoveAsset() {
-      const id = v('mAwId'), target = v('mAwDivisiBaru');
-      if (target === v('mAwDivisiLama')) return toast('Pilih divisi yang berbeda', 'error');
-
+      const id = v('mAwId'), targetDiv = v('mAwDivisiBaru'), targetZone = v('mAwZoneId');
+      
       const btn = document.querySelector('#modalMoveAsset .btn-primary');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Memproses...'; }
 
@@ -14811,7 +14927,7 @@
           closeModal('modalMoveAsset');
           loadAssetWarehouse();
         } else toast(res.message, 'error');
-      }).moveAssetWarehouse(id, target, currentUser.nama);
+      }).moveAssetWarehouse(id, targetDiv, targetZone, currentUser.nama);
     }
 
     function doDeleteAssetWarehouse(id) {
@@ -15441,13 +15557,13 @@
       });
     }
 
-    function awSaveMap() {
+    function awSaveMap(renderAfter = true) {
       // localStorage.setItem('fcl_warehouse_map', JSON.stringify(awMapZones));
       toast('⏳ Sinkronisasi denah ke server...', 'info');
       google.script.run.withSuccessHandler(res => {
         if(res.success) {
           toast('✅ Denah Peta Disimpan!', 'success');
-          awRenderMap();
+          if (renderAfter) awRenderMap();
         } else toast('❌ Gagal Simpan: ' + res.message, 'error');
       }).saveWarehouseMapData(JSON.stringify(awMapZones));
     }
@@ -15585,7 +15701,7 @@
     }
 
     function awStopDrag() {
-      if (awDragIndex !== -1) awSaveMap();
+      if (awDragIndex !== -1) awSaveMap(false);
       awDragIndex = -1;
       document.removeEventListener('mousemove', awDoDrag);
       document.removeEventListener('mouseup', awStopDrag);
