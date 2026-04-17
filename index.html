@@ -3320,7 +3320,7 @@
             <div class="nav-item" onclick="showPage('sop')" data-i18n="sop"><span class="icon">📋</span> SOP Gudang
             </div>
             <div class="nav-item" onclick="showPage('packingList')" data-i18n="packingList"><span class="icon">📁</span>
-              Packing List</div>
+              Dokumen INBOUND</div>
 
             <div class="nav-section" data-i18n="inventory">Inventory</div>
             <div class="nav-item" onclick="showPage('stock')" data-i18n="stock"><span class="icon">📦</span> Stock
@@ -3422,6 +3422,7 @@
                   <thead>
                     <tr>
                       <th>Nama Karyawan</th>
+                      <th>Shift</th>
                       <th>Tanggal</th>
                       <th>Divisi</th>
                       <th>ID Finger</th>
@@ -3443,56 +3444,13 @@
 
           <!-- PAGE: JADWAL SHIFT -->
           <div class="page" id="page-jadwalShift" style="display:none;">
-            <!-- Sub Tabs -->
-            <div class="card mb-3" style="padding: 10px 24px 0 24px; border-bottom: none; background: var(--bg-panel); border-bottom-left-radius:0; border-bottom-right-radius:0;">
-              <div style="display:flex; gap:24px;">
-                <div class="sub-tab active" id="tabJadwalTipe" onclick="switchJadwalTab('tipe')">Tipe Shift</div>
-                <div class="sub-tab" id="tabJadwalRoster" onclick="switchJadwalTab('roster')">Roster Bulanan</div>
-              </div>
-            </div>
 
-            <!-- Pane 1: Tipe Shift (Existing Content) -->
-            <div id="paneJadwalTipe">
-              <div class="card mb-3" style="border-top-left-radius:0; border-top-right-radius:0;">
-                <div class="card-header">
-                  <h4>Pengaturan Jadwal Shift</h4>
-                  <button class="btn btn-primary btn-sm" onclick="openJadwalModal(null)">+ Tambah Jadwal</button>
-                </div>
-                <div style="padding:0 24px 12px 24px;">
-                  <p style="color:var(--gray);font-size:13px;margin:0;">
-                    Atur jadwal masuk dan pulang per divisi. Sistem akan otomatis mendeteksi Hadir atau Terlambat dari data fingerprint X900.
-                  </p>
-                </div>
-                <div class="table-wrap">
-                  <table class="table table-hover align-middle">
-                    <thead>
-                      <tr>
-                        <th>Nama Jadwal</th><th>Divisi</th><th>Tipe Shift</th>
-                        <th>Jam Masuk</th><th>Jam Pulang</th><th>Toleransi</th><th>Status</th><th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody id="jadwalTabelBody">
-                      <tr><td colspan="8" class="text-center py-4 text-muted">Memuat jadwal...</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="fp-info-box">
-                <div class="fp-title">Panduan Integrasi Fingerprint X900 ke Webhook</div>
-                <ul class="fp-steps">
-                  <li>Buka browser, ketik IP mesin X900 (contoh: 192.168.1.100) dan login admin</li>
-                  <li>Cari menu Communication atau HTTP Push / API Push</li>
-                  <li>Masukkan URL Webhook Google Apps Script (lihat halaman Absensi, klik Info Webhook)</li>
-                  <li>Set Method: POST, Content-Type: application/json</li>
-                  <li>Format body: {"func":"syncFingerprintData","args":[[{...data absensi...}]]}</li>
-                  <li>Setiap karyawan absen, data otomatis masuk ke Google Sheets dan dashboard</li>
-                </ul>
-              </div>
-            </div>
+
+
 
             <!-- Pane 2: Roster Bulanan (New Content) -->
-            <div id="paneJadwalRoster" style="display:none;">
-              <div class="card mb-3" style="border-top-left-radius:0; border-top-right-radius:0; padding:24px;">
+            <div id="paneJadwalRoster">
+              <div class="card mb-3" style="padding:24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
                   <div style="display:flex; align-items:center; gap:10px;">
                     <div style="position:relative;">
@@ -3538,9 +3496,16 @@
                            <input type="time" id="setRosterMalamOut" class="form-control form-control-sm">
                         </div>
                       </div>
-                      <div style="display:flex; align-items:flex-end;">
-                        <button class="btn btn-primary btn-sm w-100" onclick="saveRosterSettings()">Simpan Jam</button>
+                      <div class="row g-2">
+                        <div class="col-12">
+                           <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">TOLERANSI TERLAMBAT (MENIT)</label>
+                           <input type="number" id="setRosterToleransi" class="form-control form-control-sm" value="0" min="0">
+                        </div>
                       </div>
+                      <div style="display:flex; gap:10px; align-items:flex-end;">
+                         <button class="btn btn-primary btn-sm" style="flex:2;" onclick="saveRosterSettings()">Simpan Setelan</button>
+                         <button class="btn btn-teal btn-sm" style="flex:1;" onclick="openRosterSpecialDatesModal()"><i class="bi bi-calendar-event"></i> Jadwal Khusus</button>
+                       </div>
                    </div>
                 </div>
 
@@ -5414,7 +5379,7 @@
           <div class="page" id="page-packingList">
             <div class="card">
               <div class="card-header">
-                <h4>📋 Packing List Dokumentasi</h4><button class="btn btn-primary"
+                <h4>📋 Dokumen INBOUND</h4><button class="btn btn-primary"
                   onclick="openModal('modalPackingList')">+ Tambah Dokumen</button>
               </div>
               <div class="table-wrap">
@@ -5423,6 +5388,8 @@
                     <tr>
                       <th>Tanggal</th>
                       <th>No. Packing List</th>
+                      <th>No. Order</th>
+                      <th>Supplier</th>
                       <th>Keterangan</th>
                       <th>Input By</th>
                       <th>File</th>
@@ -7329,12 +7296,16 @@
     <div class="modal-overlay" id="modalPackingList">
       <div class="custom-modal" style="width:580px"><button class="modal-close"
           onclick="closeModal('modalPackingList')">✕</button>
-        <h3 data-i18n="formPackingListTitle">📋 Tambah Packing List Dokumen</h3>
+        <h3 data-i18n="formPackingListTitle">📋 Tambah Dokumen INBOUND</h3>
         <div class="row mb-3">
           <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal</label><input type="date"
               class="form-control" id="plTanggal"></div>
-          <div class="col-md mb-2"><label class="form-label" data-i18n="noOrder">No. Packing List</label><input
+          <div class="col-md mb-2"><label class="form-label" data-i18n="noPl">No. Packing List</label><input
               type="text" class="form-control" id="plNo" placeholder="No. Dokumen / Resi"></div>
+          <div class="col-md mb-2"><label class="form-label" data-i18n="noOrder">No. Order</label><input
+              type="text" class="form-control" id="plOrder" placeholder="No. Order"></div>
+          <div class="col-md mb-2"><label class="form-label">Nama Supplier</label><input
+              type="text" class="form-control" id="plSupplier" placeholder="Nama Supplier"></div>
         </div>
         <div class="row mb-3">
           <div class="col-md mb-2"><label class="form-label" data-i18n="keterangan">Keterangan Dokumen</label><input
@@ -7528,7 +7499,7 @@
         organisasi: "Organisasi",
         gantiPass: "Ganti Password",
         sop: "SOP Gudang",
-        packingList: "Packing List",
+        packingList: "Dokumen INBOUND",
         stock: "Stock Inventory",
         inbound: "Inbound Barang",
         outbound: "Potong Stok",
@@ -7704,7 +7675,7 @@
         formReturTitle: "↩️ Form Retur Barang",
         formOrderTitle: "🛒 Buat Orderan Baru",
         formStockOpnameTitle: "⚖️ Pengajuan Stock Opname",
-        formPackingListTitle: "📋 Tambah Packing List Dokumen",
+        formPackingListTitle: "📋 Tambah Dokumen INBOUND",
         tglInbound: "Tanggal Inbound",
         supplier: "Supplier",
         tglPotong: "Tanggal Pemotongan",
@@ -7939,7 +7910,7 @@
         organisasi: "Organization",
         gantiPass: "Change Password",
         sop: "SOP Warehouse",
-        packingList: "Packing List",
+        packingList: "Inbound Document",
         stock: "Stock Inventory",
         inbound: "Inbound Goods",
         outbound: "Stock Outbound",
@@ -8117,7 +8088,7 @@
         formReturTitle: "↩️ Goods Return Form",
         formOrderTitle: "🛒 Create New Order",
         formStockOpnameTitle: "⚖️ Stock Audit Submission",
-        formPackingListTitle: "📋 Add Packing List Document",
+        formPackingListTitle: "📋 Add Inbound Document",
         tglInbound: "Inbound Date",
         supplier: "Supplier",
         tglPotong: "Outbound Date",
@@ -8351,7 +8322,7 @@
         organisasi: "组织结构",
         gantiPass: "修改密码",
         sop: "SOP 仓库",
-        packingList: "装箱单",
+        packingList: "入库文档",
         stock: "库存管理",
         inbound: "入库详情",
         outbound: "库存扣除",
@@ -8529,7 +8500,7 @@
         formReturTitle: "↩️ 退货表单",
         formOrderTitle: "🛒 创建新订单",
         formStockOpnameTitle: "⚖️ 提交库存盘点",
-        formPackingListTitle: "📋 添加装箱单文档",
+        formPackingListTitle: "📋 添加入库文档",
         tglInbound: "入库日期",
         supplier: "供应商",
         tglPotong: "扣减日期",
@@ -9376,7 +9347,7 @@
       handover: '📦 Laporan Hand Over', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
       ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', pengajuanAsset: '📦 Pengajuan Asset',
       organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
-      users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Packing List Dokumentasi',
+      users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Dokumen INBOUND',
       inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
       retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok',
       assetWarehouse: '🏪 Asset Warehouse',
@@ -13836,15 +13807,6 @@
         }).deleteAsset(id);
     }
 
-    function loadAnalisis() {
-      google.script.run.withSuccessHandler(res => {
-        const tb = document.getElementById('tblAnalisisFull'); tb.innerHTML = '';
-        res.data.forEach(d => {
-          const badge = `<span class="stok-badge stok-${d.statusStok.toLowerCase()}">${d.statusStok}</span>`;
-          tb.innerHTML += `<tr><td>${d.sku}</td><td>${d.nama}</td><td><strong>${d.stokSaat}</strong></td><td>${d.minggu}</td><td>${d.bulan}</td><td>${d.rataHarian}</td><td>${d.satuan}</td><td>${badge}</td></tr>`;
-        });
-      }).getAnalisisStock();
-    }
 
     // STOCK OPNAME LOGIC
     function loadStockOpname() {
@@ -14058,6 +14020,8 @@
           tb.innerHTML += `<tr>
         <td>${formatDate(d.tanggal)}</td>
         <td><strong>${d.noPL}</strong></td>
+        <td>${d.noOrder || '-'}</td>
+        <td>${d.supplier || '-'}</td>
         <td>${d.keterangan}</td>
         <td>${d.createdBy}</td>
         <td>${d.fileUrl ? `<a href="${d.fileUrl}" target="_blank" class="btn btn-ghost btn-sm">🔗 Buka</a>` : '-'}</td>
@@ -14067,7 +14031,7 @@
       }).getPackingList();
     }
     function submitPackingList() {
-      const t = v('plTanggal'), no = v('plNo'), ket = v('plKet');
+      const t = v('plTanggal'), no = v('plNo'), noOrd = v('plOrder'), supp = v('plSupplier'), ket = v('plKet');
       if (!t || !no) return toast('Lengkapi data', 'error');
 
       const btn = document.getElementById('btnSavePl');
@@ -14079,7 +14043,7 @@
         google.script.run.withSuccessHandler(res => {
           btn.disabled = false; btn.textContent = '💾 Simpan Dokumen';
           if (res.success) {
-            toast('Dokumen Tersimpan'); closeModal('modalPackingList'); loadPackingList(); resetForm(['plNo', 'plKet', 'plUrl']); removeFile('pl');
+            toast('Dokumen Tersimpan'); closeModal('modalPackingList'); loadPackingList(); resetForm(['plNo', 'plOrder', 'plSupplier', 'plKet', 'plUrl']); removeFile('pl');
           } else {
             console.error('Save Error:', res.message);
             toast(res.message, 'error');
@@ -14088,7 +14052,7 @@
           btn.disabled = false; btn.textContent = '💾 Simpan Dokumen';
           console.error('Script Run Error:', err);
           toast('Terjadi kesalahan sistem: ' + err.message, 'error');
-        }).addPackingList(t, no, ket, url, user);
+        }).addPackingList(t, no, noOrd, supp, ket, url, user);
       };
 
       const f = document.getElementById('plFile').files[0] || window['_droppedFile_pl'];
@@ -15790,6 +15754,7 @@
           : '<strong>' + (k.nama||'-') + '</strong>';
 
         rows += '<tr' + (k.isUnmapped ? ' style="background:rgba(220,53,69,0.05);"' : '') + '><td>' + nameHtml + '</td>' +
+          '<td><span class="badge" style="background:rgba(26,58,92,0.1); color:var(--primary); font-size:10px;">' + (k.shift||'-') + '</span></td>' +
           '<td style="font-size:12px;color:var(--gray);">' + (k.tanggal||'-') + '</td>' +
           '<td>' + (k.divisi||'-') + '</td>' +
           '<td style="font-size:11px;color:var(--gray);">' + fpId + '</td>' +
@@ -15809,7 +15774,9 @@
       var alfaHtml = '<div class="alfa-section"><h5>&#9888; Belum Absen <span style="font-size:12px;font-weight:600;color:var(--gray);">(' + res.belumAbsen.length + ' karyawan)</span></h5>';
       Object.keys(byDiv).sort().forEach(function(d) {
         alfaHtml += '<div class="alfa-div-group"><div class="alfa-div-title">&#127970; ' + d + ' (' + byDiv[d].length + ' orang)</div><div class="alfa-pill-wrap">';
-        byDiv[d].forEach(function(k) { alfaHtml += '<span class="alfa-pill">&#128100; ' + k.nama + '</span>'; });
+        byDiv[d].forEach(function(k) { 
+          alfaHtml += '<span class="alfa-pill">&#128100; ' + k.nama + ' <small style="opacity:0.6;font-size:9px;">(' + (k.shift||'-') + ')</small></span>'; 
+        });
         alfaHtml += '</div></div>';
       });
       alfaHtml += '</div>';
@@ -15962,47 +15929,7 @@
     // JADWAL SHIFT & ROSTER BULANAN
     // ==========================================
 
-    // TAB SWITCHER JADWAL SHIFT
-    function switchJadwalTab(tab) {
-      const tabs = ['tabJadwalTipe', 'tabJadwalRoster'];
-      const panes = ['paneJadwalTipe', 'paneJadwalRoster'];
-      
-      tabs.forEach(t => document.getElementById(t).classList.remove('active'));
-      panes.forEach(p => document.getElementById(p).style.display = 'none');
-      
-      if (tab === 'tipe') {
-        document.getElementById('tabJadwalTipe').classList.add('active');
-        document.getElementById('paneJadwalTipe').style.display = 'block';
-        loadJadwalShift(); // Refresh tipe shift
-      } else {
-        document.getElementById('tabJadwalRoster').classList.add('active');
-        document.getElementById('paneJadwalRoster').style.display = 'block';
-        
-        // Auto set current month if empty
-        const filter = document.getElementById('rosterFilterMonth');
-        if (!filter.value) {
-          const now = new Date();
-          filter.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-        }
-        loadShiftRoster();
-      }
-    }
 
-    function loadShiftRoster() {
-      const monthYear = document.getElementById('rosterFilterMonth').value;
-      if (!monthYear) return;
-      
-      const container = document.getElementById('rosterTableContainer');
-      container.innerHTML = '<div class="p-5 text-center text-muted"><div class="spinner-border text-primary mb-3"></div><br>Memuat roster ' + monthYear + '...</div>';
-      
-      google.script.run.withSuccessHandler(function(res) {
-        if (res.success) {
-          renderShiftRosterTable(res);
-        } else {
-          container.innerHTML = '<div class="p-5 text-center text-danger">Gagal memuat roster: ' + res.message + '</div>';
-        }
-      }).getShiftRoster(monthYear, currentUser.username);
-    }
 
     function renderShiftRosterTable(res) {
       const data = res.data || [];
@@ -16203,6 +16130,7 @@
           document.getElementById('setRosterPagiOut').value = res.data.pagiOut || '17:00';
           document.getElementById('setRosterMalamIn').value = res.data.malamIn || '20:00';
           document.getElementById('setRosterMalamOut').value = res.data.malamOut || '05:00';
+          document.getElementById('setRosterToleransi').value = res.data.toleransi || 0;
         }
       }).getRosterSettings();
     }
@@ -16212,7 +16140,8 @@
         pagiIn: document.getElementById('setRosterPagiIn').value,
         pagiOut: document.getElementById('setRosterPagiOut').value,
         malamIn: document.getElementById('setRosterMalamIn').value,
-        malamOut: document.getElementById('setRosterMalamOut').value
+        malamOut: document.getElementById('setRosterMalamOut').value,
+        toleransi: document.getElementById('setRosterToleransi').value
       };
       
       showToast('⏳ Menyimpan pengaturan roster...', 'info');
@@ -16224,6 +16153,82 @@
           showToast('Gagal simpan setelan: ' + res.message, 'error');
         }
       }).saveRosterSettings(settings, currentUser.username);
+    }
+
+    let _rosterSpecialDates = {};
+
+    function openRosterSpecialDatesModal() {
+      showToast('⏳ Memuat jadwal khusus...', 'info');
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          _rosterSpecialDates = res.data.specialDates || {};
+          renderSpecialDateList();
+          openModal('modalRosterSpecialDates');
+        }
+      }).getRosterSettings();
+    }
+
+    function renderSpecialDateList() {
+      const tb = document.getElementById('specialRosterTableBody');
+      tb.innerHTML = '';
+      const dates = Object.keys(_rosterSpecialDates).sort((a,b) => new Date(b) - new Date(a));
+      
+      if (dates.length === 0) {
+        tb.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada jadwal khusus</td></tr>';
+        return;
+      }
+
+      dates.forEach(d => {
+        const s = _rosterSpecialDates[d];
+        tb.innerHTML += `<tr>
+          <td><strong>${formatDate(d)}</strong></td>
+          <td><span class="badge bg-light text-dark">${s.pagiIn} - ${s.pagiOut}</span></td>
+          <td><span class="badge bg-light text-dark">${s.malamIn} - ${s.malamOut}</span></td>
+          <td>${s.toleransi}m</td>
+          <td>
+            <button class="btn btn-danger btn-sm p-0" style="width:24px; height:24px;" onclick="removeSpecialDateRecord('${d}')" title="Hapus">×</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    function addSpecialDateRecord() {
+      const date = document.getElementById('specialRosterDate').value;
+      if (!date) return showToast('Pilih tanggal!', 'warning');
+
+      _rosterSpecialDates[date] = {
+        pagiIn: document.getElementById('specialPagiIn').value,
+        pagiOut: document.getElementById('specialPagiOut').value,
+        malamIn: document.getElementById('specialMalamIn').value,
+        malamOut: document.getElementById('specialMalamOut').value,
+        toleransi: document.getElementById('specialToleransi').value
+      };
+      
+      renderSpecialDateList();
+      showToast('Ditambahkan ke daftar (Belum disimpan ke server)', 'info');
+    }
+
+    function removeSpecialDateRecord(date) {
+      if (confirm('Hapus jadwal khusus untuk tanggal ' + date + '?')) {
+        delete _rosterSpecialDates[date];
+        renderSpecialDateList();
+      }
+    }
+
+    function saveSpecialDatesToServer() {
+      const btn = document.getElementById('btnSaveSpecialRoster');
+      btn.disabled = true; btn.innerHTML = '⏳ Menyimpan...';
+      
+      const jsonStr = JSON.stringify(_rosterSpecialDates);
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false; btn.innerHTML = '💾 Simpan Semua Perubahan';
+        if (res.success) {
+          showToast('✅ Berhasil menyimpan jadwal khusus!', 'success');
+          closeModal('modalRosterSpecialDates');
+        } else {
+          showToast('Gagal simpan: ' + res.message, 'error');
+        }
+      }).saveRosterSpecialDates(jsonStr, currentUser.username);
     }
 
     function toggleRosterCell(monthYear, name, day, cell) {
@@ -16260,108 +16265,26 @@
     }
 
 
-    // JADWAL SHIFT (EXISTING)
-    function loadJadwalShift() {
-      document.getElementById('jadwalTabelBody').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">&#9203; Memuat jadwal...</td></tr>';
-      google.script.run.withSuccessHandler(function(res) {
-        if (!res.success) { showToast('Gagal: ' + res.message, 'error'); return; }
-        _jadwalDataCache = res.data || [];
-        renderJadwalTabel(_jadwalDataCache);
-      }).getJadwalShift('', currentUser.username);
-    }
-
-    function renderJadwalTabel(data) {
-      if (!data || data.length === 0) {
-        document.getElementById('jadwalTabelBody').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Belum ada jadwal. Klik + Tambah Jadwal.</td></tr>';
-        return;
+    function loadShiftRoster() {
+      const monthYear = document.getElementById('rosterFilterMonth').value;
+      if (!monthYear) {
+          // Fallback initialization if needed
+          const now = new Date();
+          const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+          document.getElementById('rosterFilterMonth').value = currentMonth;
+          return loadShiftRoster();
       }
-      var html = '';
-      data.forEach(function(j) {
-        var sb = j.shiftType === 'Pagi' ? '<span class="shift-pagi">Pagi</span>'
-          : j.shiftType === 'Malam' ? '<span class="shift-malam">Malam</span>'
-          : '<span class="shift-kustom">Kustom</span>';
-        var ab = (String(j.aktif).toLowerCase() === 'ya' || j.aktif === true)
-          ? '<span class="badge-hadir">Aktif</span>' : '<span class="badge-alfa">Nonaktif</span>';
-        html += '<tr>' +
-          '<td><strong>' + j.namaJadwal + '</strong></td>' +
-          '<td>' + j.divisi + '</td>' +
-          '<td>' + sb + '</td>' +
-          '<td><strong style="color:var(--teal);">' + j.jamMasuk + '</strong></td>' +
-          '<td><strong style="color:var(--accent);">' + j.jamPulang + '</strong></td>' +
-          '<td>' + (j.toleransiMenit || 0) + ' menit</td>' +
-          '<td>' + ab + '</td>' +
-          '<td>' +
-            '<button class="btn btn-ghost btn-sm" onclick="editJadwal(\'' + j.id + '\')">Edit</button> ' +
-            '<button class="btn btn-danger btn-sm" onclick="hapusJadwal(\'' + j.id + '\')">Hapus</button>' +
-          '</td></tr>';
-      });
-      document.getElementById('jadwalTabelBody').innerHTML = html;
-    }
-
-    function openJadwalModal(id) {
-      document.getElementById('jadwalFormId').value = id || '';
-      document.getElementById('jadwalModalTitle').textContent = id ? 'Edit' : 'Tambah';
-      if (id) {
-        var j = _jadwalDataCache.find(function(x){ return x.id === id; });
-        if (j) {
-          document.getElementById('jadwalNama').value = j.namaJadwal;
-          document.getElementById('jadwalDivisi').value = j.divisi;
-          document.getElementById('jadwalShiftType').value = j.shiftType;
-          document.getElementById('jadwalJamMasuk').value = j.jamMasuk;
-          document.getElementById('jadwalJamPulang').value = j.jamPulang;
-          document.getElementById('jadwalToleranci').value = j.toleransiMenit;
-          document.getElementById('jadwalAktif').value = (String(j.aktif).toLowerCase() === 'ya' || j.aktif === true) ? 'Ya' : 'Tidak';
+      
+      const container = document.getElementById('rosterTableContainer');
+      container.innerHTML = '<div class="p-5 text-center text-muted"><div class="spinner-border text-primary mb-3"></div><br>Memuat roster ' + monthYear + '...</div>';
+      
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          renderShiftRosterTable(res);
+        } else {
+          container.innerHTML = '<div class="p-5 text-center text-danger">Gagal memuat roster: ' + res.message + '</div>';
         }
-      } else {
-        document.getElementById('jadwalNama').value = '';
-        document.getElementById('jadwalDivisi').value = '';
-        document.getElementById('jadwalShiftType').value = 'Pagi';
-        document.getElementById('jadwalJamMasuk').value = '08:00';
-        document.getElementById('jadwalJamPulang').value = '17:00';
-        document.getElementById('jadwalToleranci').value = '15';
-        document.getElementById('jadwalAktif').value = 'Ya';
-      }
-      openModal('modalJadwalForm');
-    }
-
-    function editJadwal(id) { openJadwalModal(id); }
-
-    function simpanJadwalShift() {
-      var id = document.getElementById('jadwalFormId').value;
-      var nama = document.getElementById('jadwalNama').value.trim();
-      var div = document.getElementById('jadwalDivisi').value.trim();
-      var sType = document.getElementById('jadwalShiftType').value;
-      var jMasuk = document.getElementById('jadwalJamMasuk').value;
-      var jPulang = document.getElementById('jadwalJamPulang').value;
-      var tol = parseInt(document.getElementById('jadwalToleranci').value) || 0;
-      var aktif = document.getElementById('jadwalAktif').value;
-      if (!nama || !div || !jMasuk || !jPulang) { showToast('Semua field wajib diisi!', 'error'); return; }
-      var btn = document.getElementById('btnSimpanJadwal');
-      btn.disabled = true; btn.textContent = 'Menyimpan...';
-      google.script.run.withSuccessHandler(function(res) {
-        btn.disabled = false; btn.textContent = 'Simpan Jadwal';
-        if (res.success) { showToast((id ? 'Jadwal diperbarui!' : 'Jadwal baru disimpan!'), 'success'); closeModal('modalJadwalForm'); loadJadwalShift(); }
-        else showToast('Gagal: ' + res.message, 'error');
-      }).saveJadwalShift(id || null, nama, div, sType, jMasuk, jPulang, tol, aktif, currentUser.username);
-    }
-
-    function hapusJadwal(id) {
-      if (!confirm('Hapus jadwal shift ini?')) return;
-      google.script.run.withSuccessHandler(function(res) {
-        if (res.success) { showToast('Jadwal dihapus.', 'success'); loadJadwalShift(); }
-        else showToast('Gagal: ' + res.message, 'error');
-      }).deleteJadwalShift(id, currentUser.username);
-    }
-
-    function onJadwalShiftTypeChange() {
-      var v = document.getElementById('jadwalShiftType').value;
-      if (v === 'Pagi') {
-        document.getElementById('jadwalJamMasuk').value = '08:00';
-        document.getElementById('jadwalJamPulang').value = '17:00';
-      } else if (v === 'Malam') {
-        document.getElementById('jadwalJamMasuk').value = '20:00';
-        document.getElementById('jadwalJamPulang').value = '05:00';
-      }
+      }).getShiftRoster(monthYear, currentUser.username);
     }
 
     function loadAbsenDivisiList() {
@@ -16390,7 +16313,15 @@
             loadAbsensiKaryawan();
             loadAbsenDivisiList();
           }
-          if (name === 'jadwalShift') loadJadwalShift();
+          if (name === 'jadwalShift') {
+            // Auto set current month if empty
+            const filter = document.getElementById('rosterFilterMonth');
+            if (filter && !filter.value) {
+                const now = new Date();
+                filter.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            }
+            loadShiftRoster();
+          }
         };
       }
     })();
@@ -16483,52 +16414,74 @@
     </div>
   </div>
 
-  <!-- MODAL: Form Jadwal Shift -->
-  <div class="modal-overlay" id="modalJadwalForm">
-    <div class="custom-modal" style="width:500px;">
-      <button class="modal-close" onclick="closeModal('modalJadwalForm')">x</button>
-      <h3><span id="jadwalModalTitle">Tambah</span> Jadwal Shift</h3>
-      <input type="hidden" id="jadwalFormId">
-      <div class="row g-3">
-        <div class="col-12">
-          <label class="form-label">Nama Jadwal *</label>
-          <input type="text" id="jadwalNama" class="form-control" placeholder="Contoh: Shift Pagi Gudang">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Divisi *</label>
-          <input type="text" id="jadwalDivisi" class="form-control" placeholder="Nama divisi">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Tipe Shift</label>
-          <select id="jadwalShiftType" class="form-select" onchange="onJadwalShiftTypeChange()">
-            <option value="Pagi">Pagi (default 08:00 - 17:00)</option>
-            <option value="Malam">Malam (default 20:00 - 05:00)</option>
-            <option value="Kustom">Kustom</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Jam Masuk *</label>
-          <input type="time" id="jadwalJamMasuk" class="form-control" value="08:00">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Jam Pulang *</label>
-          <input type="time" id="jadwalJamPulang" class="form-control" value="17:00">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Toleransi Terlambat (menit)</label>
-          <input type="number" id="jadwalToleranci" class="form-control" value="15" min="0" max="120">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Status Jadwal</label>
-          <select id="jadwalAktif" class="form-select">
-            <option value="Ya">Aktif</option>
-            <option value="Tidak">Nonaktif</option>
-          </select>
+
+
+
+  <!-- MODAL: Kelola Jadwal Roster Khusus Tanggal -->
+  <div class="modal-overlay" id="modalRosterSpecialDates">
+    <div class="custom-modal" style="width:700px; max-height:90vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalRosterSpecialDates')">x</button>
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <h3 class="mb-0">🗓️ Jadwal Khusus Tanggal</h3>
+        <span class="badge bg-teal">Roster Bulanan</span>
+      </div>
+      
+      <div class="alert alert-info py-2" style="font-size:12px; border-radius:10px;">
+        <i class="bi bi-info-circle-fill"></i> Gunakan ini untuk mengatur jam masuk/pulang yang berbeda pada tanggal tertentu. Mengabaikan jam standar (global).
+      </div>
+
+      <!-- Form Tambah -->
+      <div class="card p-3 mb-4" style="background:var(--input-bg); border-style:dashed;">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label" style="font-size:11px;">PILIH TANGGAL</label>
+            <input type="date" id="specialRosterDate" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" style="font-size:11px;">JADWAL PAGI (IN-OUT)</label>
+            <div class="d-flex gap-1">
+              <input type="time" id="specialPagiIn" class="form-control form-control-sm" value="08:00">
+              <input type="time" id="specialPagiOut" class="form-control form-control-sm" value="17:00">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" style="font-size:11px;">JADWAL MALAM (IN-OUT)</label>
+            <div class="d-flex gap-1">
+              <input type="time" id="specialMalamIn" class="form-control form-control-sm" value="20:00">
+              <input type="time" id="specialMalamOut" class="form-control form-control-sm" value="05:00">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" style="font-size:11px;">TOLERANSI (MNT)</label>
+            <input type="number" id="specialToleransi" class="form-control form-control-sm" value="15" min="0">
+          </div>
+          <div class="col-md-9 text-end">
+            <button class="btn btn-teal btn-sm" onclick="addSpecialDateRecord()"><i class="bi bi-plus"></i> Tambah Jadwal ke Daftar</button>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeModal('modalJadwalForm')">Batal</button>
-        <button class="btn btn-primary" id="btnSimpanJadwal" onclick="simpanJadwalShift()">Simpan Jadwal</button>
+
+      <!-- List Data -->
+      <div class="table-responsive">
+        <table class="table table-sm" style="font-size:12px; vertical-align:middle;">
+          <thead class="table-dark">
+            <tr>
+              <th>Tanggal</th>
+              <th>Pagi (In-Out)</th>
+              <th>Malam (In-Out)</th>
+              <th>Tol</th>
+              <th style="width:50px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="specialRosterTableBody">
+            <!-- Data loaded via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer px-0 pb-0 pt-3 mt-3 border-top">
+        <button class="btn btn-ghost" onclick="closeModal('modalRosterSpecialDates')">Tutup</button>
+        <button class="btn btn-primary" id="btnSaveSpecialRoster" onclick="saveSpecialDatesToServer()">💾 Simpan Semua Perubahan</button>
       </div>
     </div>
   </div>
