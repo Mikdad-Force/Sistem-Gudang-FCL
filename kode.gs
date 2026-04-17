@@ -2022,37 +2022,70 @@ function importReturBulk(jsonString, createdBy) {
 
 function getAnalisisStock() {
   try {
-    const stockData = getStock().data || []; const result = [];
-    const msInDay = 86400000; const now = new Date();
-    const orderDetData = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues();
+    const stockData = getStock().data || []; 
+    const result = [];
+    const now = new Date();
+    
+    // Hitung batas Tanggal (Senin minggu ini dan tanggal 1 bulan ini)
+    const startOfWeek = new Date(now);
+    const day = now.getDay();
+    const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diffToMon);
+    startOfWeek.setHours(0,0,0,0);
+    
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0,0,0,0);
+
     const orderData = getSheet(CONFIG.SHEETS.ORDER).getDataRange().getValues();
-    const usageWeek = {}; const usageMonth = {};
+    const orderDetData = getSheet(CONFIG.SHEETS.ORDER_DETAIL).getDataRange().getValues();
+    
+    // Mapping detail order ke dalam Map untuk efisiensi (O(N+M))
+    const detailMap = {};
+    for (let j = 1; j < orderDetData.length; j++) {
+      const orderId = String(orderDetData[j][1]);
+      if (!detailMap[orderId]) detailMap[orderId] = [];
+      detailMap[orderId].push({
+        stockId: orderDetData[j][3],
+        qty: parseFloat(orderDetData[j][6]) || 0
+      });
+    }
+
+    const usageWeek = {}; 
+    const usageMonth = {};
     
     for (let i = 1; i < orderData.length; i++) {
-      if(orderData[i][5] !== 'Terkirim') continue;
+      if (orderData[i][5] !== 'Terkirim') continue;
+      
       const dDate = new Date(orderData[i][10] || orderData[i][2]);
-      const diff = now - dDate;
-      const isW = diff <= 7 * msInDay;
-      const isM = diff <= 30 * msInDay;
+      const isW = dDate >= startOfWeek;
+      const isM = dDate >= startOfMonth;
       
       if (isM) {
-        for (let j=1; j<orderDetData.length; j++) {
-          if (String(orderDetData[j][1]) === String(orderData[i][0])) {
-            const sId = orderDetData[j][3];
-            const q = parseFloat(orderDetData[j][6])||0;
-            if(isW) usageWeek[sId] = (usageWeek[sId]||0) + q;
-            usageMonth[sId] = (usageMonth[sId]||0) + q;
-          }
-        }
+        const orderId = String(orderData[i][0]);
+        const items = detailMap[orderId] || [];
+        items.forEach(item => {
+          if (isW) usageWeek[item.stockId] = (usageWeek[item.stockId] || 0) + item.qty;
+          usageMonth[item.stockId] = (usageMonth[item.stockId] || 0) + item.qty;
+        });
       }
     }
     
     stockData.forEach(s => {
       const mw = usageWeek[s.id] || 0;
       const mm = usageMonth[s.id] || 0;
-      const rata = (mm / 30).toFixed(1);
-      const status = s.stok <= 0 ? 'Kritis' : (s.stok <= s.stokMin ? 'Rendah' : 'Aman');
-      result.push({ sku: s.sku, nama: s.nama, stokSaat: s.stok, minggu: mw, bulan: mm, rataHarian: rata, satuan: s.satuan, statusStok: status });
+      const daysElapsed = Math.max(1, now.getDate()); 
+      const rata = (mm / daysElapsed).toFixed(1);
+      const status = s.stok <= 0 ? 'Kritis' : (s.stok <= (s.stokMin || 0) ? 'Rendah' : 'Aman');
+      result.push({ 
+        sku: s.sku, 
+        nama: s.nama, 
+        stokSaat: s.stok, 
+        minggu: mw, 
+        bulan: mm, 
+        rataHarian: rata, 
+        satuan: s.satuan, 
+        statusStok: status 
+      });
     });
     
     return { success: true, data: result };
@@ -2297,22 +2330,28 @@ function getPackingList() {
       result.push({ 
         id:data[i][0], 
         tanggal:data[i][1] instanceof Date ? data[i][1].toISOString().split('T')[0] : String(data[i][1]||''), 
-        noPL:data[i][2], keterangan:data[i][3], fileUrl:data[i][4], createdBy:data[i][5], createdAt:data[i][6] 
+        noPL:data[i][2], 
+        noOrder: data[i][3] || '-',
+        supplier: data[i][4] || '-',
+        keterangan:data[i][5], 
+        fileUrl:data[i][6], 
+        createdBy:data[i][7], 
+        createdAt:data[i][8] 
       });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
 }
 
-function addPackingList(tanggal, noPL, keterangan, fileUrl, createdBy) {
+function addPackingList(tanggal, noPL, noOrder, supplier, keterangan, fileUrl, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.PACKING_LIST);
     if (!sheet) {
       const ss = getSpreadsheet();
-      setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
+      setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','noOrder','supplier','keterangan','fileUrl','createdBy','createdAt']);
     }
     const finalSheet = getSheet(CONFIG.SHEETS.PACKING_LIST);
-    finalSheet.appendRow([generateId(), tanggal, noPL, keterangan, fileUrl, createdBy || 'User', new Date().toISOString()]);
+    finalSheet.appendRow([generateId(), tanggal, noPL, noOrder || '-', supplier || '-', keterangan, fileUrl, createdBy || 'User', new Date().toISOString()]);
     SpreadsheetApp.flush();
     return { success: true };
   } catch(e) { return { success: false, message: 'Gagal Simpan ke Tabel: ' + e.message }; }
@@ -3041,7 +3080,7 @@ function _hitungStatusAbsensi(divisi, tipe, jam, nama, tanggal) {
                }
                
                if (shiftIn && shiftOut) {
-                 return _compareAttendanceTime(tipe, jam, shiftIn, shiftOut, 0); 
+                 return _compareAttendanceTime(tipe, jam, shiftIn, shiftOut, settings.toleransi || 0); 
                }
             }
             break;
@@ -3189,9 +3228,19 @@ function getLaporanAbsensi(tanggal, divisi, requesterUsername) {
       }
     }
 
-    // 2. Ambil SEMUA data absensi hari ini (Tanpa filter divisi di level DB agar join akurat)
+    // 2. Ambil SEMUA data absensi hari ini + besok (Khusus untuk Shift Malam lintas hari)
     const absenRes  = getAbsensiKaryawan(tglStr, '', requesterUsername);
-    const absenData = absenRes.success ? absenRes.data : [];
+    
+    // Hitung tanggal besok
+    const currentTgl = new Date(tglStr + 'T12:00:00'); // Use noon to avoid TZ issues
+    currentTgl.setDate(currentTgl.getDate() + 1);
+    const tomorrowStr = Utilities.formatDate(currentTgl, tz, 'yyyy-MM-dd');
+    const tomorrowRes = getAbsensiKaryawan(tomorrowStr, '', requesterUsername);
+
+    const absenData = [
+      ...(absenRes.success ? absenRes.data : []),
+      ...(tomorrowRes.success ? tomorrowRes.data : [])
+    ];
     
     const logsByKarId = {};
     const unmappedLogs = [];
@@ -3211,38 +3260,87 @@ function getLaporanAbsensi(tanggal, divisi, requesterUsername) {
       }
     });
 
+    // 3. Ambil data Roster untuk bulan ini (untuk filter OFF)
+    const rosterSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_ROSTER);
+    const roData = rosterSheet ? rosterSheet.getDataRange().getValues() : [];
+    const roHeaders = roData.length > 0 ? roData[0] : [];
+    const monthYear = tglStr.substring(0, 7);
+    const dayNumStr = String(parseInt(tglStr.substring(8, 10)));
+    const dayCol = roHeaders.map(String).indexOf(dayNumStr);
+    
+    const rosterMap = {};
+    if (dayCol !== -1) {
+      for (let i = 1; i < roData.length; i++) {
+        let rBulanCell = roData[i][0];
+        let rBulanStr = "";
+        
+        if (rBulanCell instanceof Date) {
+          rBulanStr = Utilities.formatDate(rBulanCell, tz, "yyyy-MM");
+        } else {
+          // Handle string or numeric date formats robustly
+          rBulanStr = String(rBulanCell).trim().substring(0, 7);
+        }
+
+        if (rBulanStr === monthYear) {
+          const rNama = String(roData[i][1]).trim().toLowerCase();
+          rosterMap[rNama] = String(roData[i][dayCol]).trim().toUpperCase();
+        }
+      }
+    }
+
     const sudahAbsen  = [];
     const belumAbsen  = [];
     const rekapDivisi = {};
 
-    // 3. Proses Karyawan Terfilter (Master)
+    // 4. Proses Karyawan Terfilter (Master)
     filteredKaryawan.forEach(function(k) {
+      // CEK ROSTER: Jika OFF atau LIBUR, jangan masukkan ke laporan (kecuali jika ada log aktivitas)
+      const shiftHariIni = rosterMap[k.nama.trim().toLowerCase()] || "";
+      const logs = logsByKarId[k.id] || [];
+      
+      const isOff = (shiftHariIni === "OFF" || shiftHariIni === "LIBUR" || shiftHariIni === "L");
+      
+      if (isOff && logs.length === 0) {
+        return; // SKIP: Karyawan sedang OFF dan tidak ada aktivitas absen
+      }
+
       const div = k.divisi;
       if (!rekapDivisi[div]) rekapDivisi[div] = { divisi: div, total: 0, hadir: 0, terlambat: 0, alfa: 0 };
       rekapDivisi[div].total++;
 
-      const logs = logsByKarId[k.id] || [];
       if (logs.length > 0) {
         // Urutkan logs secara ASCENDING (terawal ke terakhir)
         const sortedLogs = logs.slice().sort((a,b) => String(a.jam || '').localeCompare(String(b.jam || '')));
-        
         // Identifikasi log Masuk vs Pulang secara ketat
         let masuks = sortedLogs.filter(l => {
           let t = String(l.tipe || '').toUpperCase();
           let s = String(l.status || '').toLowerCase();
-          return t === 'IN' || s.includes('hadir') || s.includes('terlambat');
+          // Masuk harus di hari yang sama dengan tanggal laporan
+          return (l.tanggal === tglStr) && (t === 'IN' || s.includes('hadir') || s.includes('terlambat'));
         });
         
         let pulangs = sortedLogs.filter(l => {
           let t = String(l.tipe || '').toUpperCase();
           let s = String(l.status || '').toLowerCase();
-          return t === 'OUT' || s.includes('pulang');
+          
+          if (shiftHariIni === 'MALAM') {
+            // Untuk shift malam, pulang bisa hari ini (malam) atau besok pagi (sebelum jam 11:00)
+            const isToday = (l.tanggal === tglStr);
+            const isTomorrowMorning = (l.tanggal === tomorrowStr && (l.jam || '00:00') < '11:00');
+            return (isToday || isTomorrowMorning) && (t === 'OUT' || s.includes('pulang'));
+          } else {
+            // Untuk shift pagi/biasa, pulang harus di hari yang sama
+            return (l.tanggal === tglStr) && (t === 'OUT' || s.includes('pulang'));
+          }
         });
 
         // Jika tidak ada tipe yang jelas, fallback ke urutan waktu (hanya jika benar-benar tidak ada label)
         if (masuks.length === 0 && pulangs.length === 0) {
-          masuks = [sortedLogs[0]];
-          if (sortedLogs.length > 1) pulangs = [sortedLogs[sortedLogs.length - 1]];
+          const todayLogs = sortedLogs.filter(l => l.tanggal === tglStr);
+          if (todayLogs.length > 0) {
+            masuks = [todayLogs[0]];
+            if (todayLogs.length > 1) pulangs = [todayLogs[todayLogs.length - 1]];
+          }
         }
         
         // Jam Masuk = Masuk yang paling pertama (absen pertama mereka)
@@ -3263,6 +3361,7 @@ function getLaporanAbsensi(tanggal, divisi, requesterUsername) {
 
         sudahAbsen.push(Object.assign({}, k, { 
           tanggal: tglStr,
+          shift: shiftHariIni || '-',
           inLog: inLog,
           outLog: outLog,
           logs: logs, 
@@ -3273,7 +3372,11 @@ function getLaporanAbsensi(tanggal, divisi, requesterUsername) {
         else rekapDivisi[div].hadir++;
       } else {
         // Jika tidak ada log sama sekali
-        belumAbsen.push(Object.assign({}, k, { statusAbsen: 'Alfa', logs: [] }));
+        belumAbsen.push(Object.assign({}, k, { 
+          statusAbsen: 'Alfa', 
+          shift: shiftHariIni || '-',
+          logs: [] 
+        }));
         rekapDivisi[div].alfa++;
       }
     });
@@ -3688,7 +3791,8 @@ function getRosterSettings() {
         pagiIn: result.roster_pagi_in || "08:00",
         pagiOut: result.roster_pagi_out || "17:00",
         malamIn: result.roster_malam_in || "20:00",
-        malamOut: result.roster_malam_out || "05:00"
+        malamOut: result.roster_malam_out || "05:00",
+        toleransi: parseInt(result.roster_toleransi) || 0
       }
     };
   } catch (e) {
@@ -3722,6 +3826,9 @@ function saveRosterSettings(settings, requesterUsername) {
     
     upsert('roster_pagi_in', settings.pagiIn);
     upsert('roster_pagi_out', settings.pagiOut);
+    upsert('roster_malam_in', settings.malamIn);
+    upsert('roster_malam_out', settings.malamOut);
+    upsert('roster_toleransi', settings.toleransi);
       return { success: true };
   } catch (e) {
     return { success: false, message: e.toString() };
