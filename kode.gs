@@ -2497,7 +2497,7 @@ function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty, zon
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function moveAssetWarehouse(assetId, targetDivisi, userNama) {
+function moveAssetWarehouse(assetId, targetDivisi, targetZoneId, userNama) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
@@ -2505,11 +2505,26 @@ function moveAssetWarehouse(assetId, targetDivisi, userNama) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(assetId)) {
         const oldDiv = data[i][4];
+        const oldZone = data[i][10] || '';
         const oldHist = data[i][8] || '';
         const now = new Date().toLocaleString('id-ID');
-        const entry = `📦 Dipindah dari ${oldDiv} ke ${targetDivisi} oleh ${userNama} pada ${now}`;
+        
+        const divChanged = oldDiv !== targetDivisi;
+        const zoneChanged = oldZone !== targetZoneId;
+        
+        if (!divChanged && !zoneChanged) return { success: true };
+        
+        let textChange = [];
+        if (divChanged) textChange.push(`divisi dari ${oldDiv} ke ${targetDivisi}`);
+        if (zoneChanged) {
+           const zoneNameStr = targetZoneId ? `zona baru` : `Tanpa Zona`;
+           textChange.push(`lokasi ke ${zoneNameStr}`);
+        }
+        
+        const entry = `📦 Dipindah ${textChange.join(' dan ')} oleh ${userNama} pada ${now}`;
         
         sheet.getRange(i + 1, 5).setValue(targetDivisi);
+        sheet.getRange(i + 1, 11).setValue(targetZoneId || '');
         sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
         return { success: true };
       }
