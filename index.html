@@ -1588,6 +1588,37 @@
       letter-spacing: 0.5px;
     }
 
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .badge-status-normal {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-status-rusak {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-status-perbaikan {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-status-hilang {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
     .notif-wrapper {
       position: relative;
       margin-right: 15px;
@@ -5261,25 +5292,20 @@
 
           <div class="page" id="page-assetWarehouse">
             <div class="card" style="border:1px solid var(--border-color); overflow:hidden;">
-              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:none;">
+              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding: 20px;">
                 <h4 data-i18n="assetWarehouse" style="margin:0; font-weight:800; color:var(--accent); display:flex; align-items:center; gap:8px;">
                   <span style="font-size:24px;">🏪</span> Asset Warehouse
                 </h4>
                 <div style="display:flex; gap:8px;">
+                  <button class="btn btn-warning" onclick="openAssetAuditModal()" style="border-radius:8px; font-weight:700;">📋 Audit Asset</button>
+                  <button class="btn btn-indigo" id="btnAuditApproval" onclick="openApproveAuditModal()" style="border-radius:8px; font-weight:700; display:none;">🔔 Persetujuan Audit</button>
+                  <button class="btn btn-teal" onclick="openAssetLogModal()" style="border-radius:8px; font-weight:700;">📋 Riwayat Log</button>
+                  <button class="btn btn-success" onclick="exportAssetWarehouseToExcel()" style="border-radius:8px; font-weight:700;">🚀 Ekspor Excel</button>
                   <button class="btn btn-primary" onclick="openAssetWarehouseModal()" data-i18n="tambahAsset" style="border-radius:8px; font-weight:700;">+ Tambah Asset</button>
                 </div>
               </div>
 
-              <!-- TABS -->
-              <div style="border-bottom:1px solid var(--border-color); padding:0 20px; display:flex; gap:20px; background:rgba(0,0,0,0.2);">
-                <button id="tabAwList" class="btn" style="background:transparent; border:none; border-bottom:3px solid var(--accent); color:var(--text-main); font-weight:700; padding:15px; border-radius:0;" onclick="switchAwTab('list')">📋 Tabel Asset</button>
-                <button id="tabAwMap" class="btn" style="background:transparent; border:none; border-bottom:3px solid transparent; color:var(--text-muted); font-weight:700; padding:15px; border-radius:0; position:relative;" onclick="switchAwTab('map')">
-                  🗺️ Peta Gudang Live
-                  <span style="position:absolute; top:8px; right:-10px; background:var(--red); font-size:9px; padding:2px 6px; border-radius:10px; color:#fff;">NEW</span>
-                </button>
-              </div>
-
-              <div id="awTabListContent" class="p-4">
+              <div id="awTabListContent" class="p-0">
                 <!-- Stats -->
                 <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:15px;">
                   <div class="stat-card" style="padding:15px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
@@ -5319,6 +5345,12 @@
                         <option value="Return">Return</option>
                       </select>
                     </div>
+                    <div class="col-md-3 text-end">
+                      <div class="form-check form-switch d-inline-block">
+                        <input class="form-check-input" type="checkbox" id="filterAssetRusak" onchange="renderAssetWarehouseTable()">
+                        <label class="form-check-label small fw-bold" for="filterAssetRusak" style="color:var(--danger);">🚨 Khusus Barang Rusak</label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -5330,7 +5362,7 @@
                         <th data-i18n="kodeAsset">Kode Asset</th>
                         <th data-i18n="namaAsset">Nama Asset</th>
                         <th data-i18n="divisi">Divisi</th>
-                        <th>Zona Rak Map</th>
+                        <th data-i18n="status">Status</th>
                         <th style="width:150px; text-align:right;" data-i18n="aksi">Aksi</th>
                       </tr>
                     </thead>
@@ -5338,66 +5370,8 @@
                   </table>
                 </div>
               </div>
-
-              <!-- Peta Gudang Tab Panel -->
-              <div id="awTabMapContent" class="p-4" style="display:none; background:var(--bg-main);">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-                  <div>
-                    <h5 style="color:var(--text-main); font-weight:700; margin:0 0 5px 0;">Visual Layout Asset</h5>
-                    <p style="color:var(--text-muted); font-size:12px; margin:0;">Tempatkan dan pantau lokasi aset Anda di denah gudang nyata.</p>
-                  </div>
-                  <div style="display:flex; gap:10px;">
-                    <div class="btn-group">
-                      <button id="btnMapModeView" class="btn btn-sm btn-primary active" onclick="awSetMapMode('view')">👁️ Mode Lihat</button>
-                      <button id="btnMapModeEdit" class="btn btn-sm btn-ghost" onclick="awSetMapMode('edit')">✏️ Mode Edit Layout</button>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Map Editor Toolbar (Hidden unless in Edit mode) -->
-                <div id="awMapToolbar" style="display:none; background:var(--bg-panel); padding:10px 15px; border-radius:8px; border:1px solid var(--border-color); margin-bottom:15px; align-items:center; gap:15px;">
-                  <span style="font-size:12px; font-weight:700; color:var(--accent);">Peralatan Edit:</span>
-                  <div style="display:flex; gap:5px; align-items:center;">
-                    <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);" onclick="awAddMapZone()">+ Tambah Zona Blok Baru</button>
-                    <button class="btn btn-sm btn-danger" onclick="awClearMap()">🗑️ Hapus Semua</button>
-                  </div>
-                  <div style="flex:1;"></div>
-                  <div style="font-size:11px; color:var(--text-muted);">
-                    <i>💡 Tips: Klik, seret (drag) ukuran zona, dan klik dua kali (double click) untuk ubah nama/warna zona.</i>
-                  </div>
-                </div>
-
-                <div class="row g-4">
-                  <!-- The Map Grid -->
-                  <div class="col-md-9">
-                    <div id="awMapGridContainer" style="background:var(--bg-panel); border:2px dashed var(--border-color); border-radius:12px; position:relative; overflow:hidden; min-height:500px; display:flex; justify-content:center; align-items:center;">
-                      <!-- Grid Matrix will be generated via JS -->
-                      <div id="awMapGrid" style="position:relative; width:800px; height:480px; background-size:40px 40px; background-image:linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);">
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Legend & Inspector Panel -->
-                  <div class="col-md-3">
-                    <div class="card" style="box-shadow:none; border:1px solid var(--border-color); border-radius:12px;">
-                      <div class="card-header" style="padding:12px 15px;">
-                        <h6 style="margin:0; font-weight:700;">🔎 Inspektur Zona</h6>
-                      </div>
-                      <div class="card-body" style="padding:15px; min-height:300px;">
-                        <div id="awMapInspectorEmpty" style="color:var(--text-muted); font-size:13px; text-align:center; padding:30px 0;">
-                          Klik zona pada peta untuk melihat detail aset di dalamnya.
-                        </div>
-                        <div id="awMapInspectorContent" style="display:none;">
-                          <h5 id="awInspZoneName" style="color:var(--text-main); font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:12px;">Rak A1</h5>
-                          <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                            <span style="font-size:12px; color:var(--gray);">Jumlah Asset:</span>
-                            <span id="awInspAssetCount" style="font-weight:700; color:var(--accent);">0 Item</span>
-                          </div>
-                          
-                          <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px;">Daftar Aset di Zona Ini:</div>
-                          <div id="awInspAssetList" style="display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; padding-right:5px;">
-                            <!-- Items -->
-                          </div>
+            </div>
+          </div>
                         </div>
                       </div>
                     </div>
@@ -6802,9 +6776,12 @@
                   </select>
                 </div>
                 <div class="col-md mb-2">
-                  <label class="form-label">Zona Rak Map</label>
-                  <select class="form-select" id="awZoneId">
-                    <option value="">-- Tanpa Zona --</option>
+                  <label class="form-label">Status Asset *</label>
+                  <select class="form-select" id="awStatus">
+                    <option value="Normal">Normal</option>
+                    <option value="Rusak">Rusak</option>
+                    <option value="Dalam Perbaikan">Dalam Perbaikan</option>
+                    <option value="Hilang">Hilang</option>
                   </select>
                 </div>
               </div>
@@ -6841,11 +6818,15 @@
                   </select>
                 </div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Ubah Zona Lokasi (Opsional)</label>
-                <select class="form-select" id="mAwZoneId">
-                  <option value="">-- Tanpa Zona --</option>
-                </select>
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Total Qty Tersedia</label>
+                  <input type="text" class="form-control" id="mAwQtyTotal" readonly style="background:rgba(255,255,255,0.05); font-weight:700;">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Jumlah yang di Move *</label>
+                  <input type="number" class="form-control" id="mAwQtyMove" min="1" step="1" style="font-weight:700; border-color:var(--accent);">
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('modalMoveAsset')" data-i18n="batal">Batal</button>
@@ -6853,6 +6834,119 @@
               </div>
             </div>
           </div>
+          <!-- MODAL AUDIT ASSET -->
+          <div class="modal-overlay" id="modalAssetAudit">
+            <div class="custom-modal" style="max-width:1000px; width:95%;">
+              <button class="modal-close" onclick="closeModal('modalAssetAudit')">✕</button>
+              <h3 style="color:var(--warning);">📋 Audit Asset Warehouse</h3>
+              
+              <div class="row mb-3 align-items-end">
+                <div class="col-md-4">
+                  <label class="form-label">Pilih Divisi Untuk Diaudit</label>
+                  <select class="form-select" id="auditDivisi" onchange="renderAuditAssetList()">
+                    <option value="">-- Pilih Divisi --</option>
+                    <option value="Marketplace">Marketplace</option>
+                    <option value="Distributor">Distributor</option>
+                    <option value="KOL">KOL</option>
+                    <option value="OFFICE">OFFICE</option>
+                    <option value="Return">Return</option>
+                  </select>
+                </div>
+                <div class="col-md-8 text-end">
+                    <p class="text-muted small m-0">Masukkan jumlah fisik yang ditemukan di lapangan.</p>
+                </div>
+              </div>
+
+              <div class="table-wrap" style="max-height:60vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:12px;">
+                <table class="table table-hover align-middle mb-0">
+                  <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:10;">
+                    <tr>
+                      <th>Asset</th>
+                      <th>Stok Sistem</th>
+                      <th style="width:150px;">Stok Fisik</th>
+                      <th>Selisih</th>
+                      <th>Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bodyAuditAsset"></tbody>
+                </table>
+              </div>
+
+              <div class="modal-footer" style="margin-top:20px;">
+                <button class="btn btn-ghost" onclick="closeModal('modalAssetAudit')">Batal</button>
+                <button class="btn btn-warning" onclick="saveAssetAudit()" id="btnSubmitAudit">💾 Simpan Hasil Audit (Pending)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL PERSETUJUAN AUDIT -->
+          <div class="modal-overlay" id="modalApproveAudit">
+            <div class="custom-modal" style="max-width:1100px; width:95%;">
+              <button class="modal-close" onclick="closeModal('modalApproveAudit')">✕</button>
+              <h3 style="color:var(--indigo);">🔔 Persetujuan Hasil Audit</h3>
+              
+              <div class="mb-3 text-end">
+                <button class="btn btn-primary" onclick="approveSelectedAudits()" id="btnApproveAll">✅ Setujui & Update Stok</button>
+              </div>
+
+              <div class="table-wrap" style="max-height:65vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:12px;">
+                <table class="table table-hover align-middle mb-0" style="font-size:12px;">
+                  <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:10;">
+                    <tr>
+                      <th style="width:40px;"><input type="checkbox" id="checkAllAudit" onchange="toggleAllAudit(this)"></th>
+                      <th>Tanggal</th>
+                      <th>Divisi</th>
+                      <th>Asset</th>
+                      <th>Sistem</th>
+                      <th>Fisik</th>
+                      <th>Selisih</th>
+                      <th>PIC</th>
+                      <th>Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bodyApproveAudit"></tbody>
+                </table>
+              </div>
+
+              <div class="modal-footer" style="margin-top:20px;">
+                <button class="btn btn-ghost" onclick="closeModal('modalApproveAudit')">Tutup</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODAL LOG ASSET -->
+          <div class="modal-overlay" id="modalAssetLog">
+            <div class="custom-modal" style="max-width:900px; width:95%;">
+              <button class="modal-close" onclick="closeModal('modalAssetLog')">✕</button>
+              <h3 style="color:var(--teal);">📋 Riwayat Pemindahan Asset</h3>
+              
+              <div class="mb-3" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:10px;">
+                <input type="text" class="form-control" id="searchAssetLog" oninput="renderAssetLogTable()" placeholder="Cari Nama Asset atau PIC...">
+              </div>
+
+              <div class="table-wrap" style="max-height:60vh; overflow-y:auto; border:1px solid var(--border-color); border-radius:10px;">
+                <table class="table table-hover align-middle mb-0" style="font-size:12px;">
+                  <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:10;">
+                    <tr style="border-bottom:2px solid var(--border-color);">
+                      <th>Tanggal</th>
+                      <th>Asset</th>
+                      <th>Qty</th>
+                      <th>Dari</th>
+                      <th>Ke</th>
+                      <th>PIC</th>
+                      <th>Ket</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bodyAssetLog"></tbody>
+                </table>
+              </div>
+
+              <div class="modal-footer" style="margin-top:15px;">
+                <button class="btn btn-ghost" onclick="closeModal('modalAssetLog')">Tutup</button>
+              </div>
+            </div>
+          </div>
+
           <!-- MODAL EDIT ASSET -->
           <div class="modal-overlay" id="modalEditAsset">
             <div class="custom-modal">
@@ -6869,21 +6963,20 @@
                   <input type="date" class="form-control" id="eAwTanggal">
                 </div>
                 <div class="col-md mb-2">
-                  <label class="form-label">Jumlah (Qty) *</label>
-                  <input type="number" class="form-control" id="eAwQty" placeholder="1" min="1">
+                  <label class="form-label">Total Qty Saat Ini</label>
+                  <input type="number" class="form-control" id="eAwQtyTotal" readonly style="background:rgba(255,255,255,0.05); font-weight:700;">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Qty Yang Diupdate *</label>
+                  <input type="number" class="form-control" id="eAwQtyUpdate" min="1" step="1" style="font-weight:700; border-color:var(--accent);">
                 </div>
                 <div class="col-md mb-2">
                   <label class="form-label" data-i18n="status">Status Asset</label>
                   <select class="form-select" id="eAwStatus">
-                    <option value="Aktif">Asset Aktif</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Rusak">Rusak</option>
                     <option value="Dalam Perbaikan">Dalam Perbaikan</option>
-                    <option value="Rusak/Hilang">Asset Rusak/Hilang</option>
-                  </select>
-                </div>
-                <div class="col-md mb-2">
-                  <label class="form-label">Zona Rak Map</label>
-                  <select class="form-select" id="eAwZoneId">
-                    <option value="">-- Tanpa Zona --</option>
+                    <option value="Hilang">Hilang</option>
                   </select>
                 </div>
               </div>
@@ -14790,35 +14883,27 @@
     // ASSET WAREHOUSE LOGIC
     // =================================== =========================
     let assetWarehouseData = [];
+    let assetWarehouseLogs = [];
 
     function loadAssetWarehouse() {
       const tbody = document.getElementById('bodyAssetWarehouse');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px;"><div class="spinner"></div><br>Memuat Asset...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px;"><div class="spinner"></div><br>Memuat Asset...</td></tr>';
       
-      // Fetch Assets
       google.script.run.withSuccessHandler(res => {
         if (!res.success) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red);">${res.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">${res.message}</td></tr>`;
           return;
         }
         assetWarehouseData = res.data;
-        
-        // After fetching assets, fetch Map Zones
-        google.script.run.withSuccessHandler(mapRes => {
-          if (mapRes.success) {
-            awMapZones = Array.isArray(mapRes.data) ? mapRes.data : [];
-          }
-          renderAssetWarehouseTable();
-          awRenderMap(); 
-        }).getWarehouseMapData();
-        
+        renderAssetWarehouseTable();
       }).getAssetWarehouseData();
     }
 
     function renderAssetWarehouseTable() {
       const q = v('searchAsset').toLowerCase();
       const divFilter = v('filterAssetDivisi');
+      const showBrokenOnly = document.getElementById('filterAssetRusak').checked;
       const tbody = document.getElementById('bodyAssetWarehouse');
       if (!tbody) return;
       tbody.innerHTML = '';
@@ -14828,7 +14913,8 @@
         const strCode = d.code != null ? String(d.code).toLowerCase() : '';
         const matchesSearch = strNama.includes(q) || strCode.includes(q);
         const matchesDivisi = !divFilter || String(d.divisi) === divFilter;
-        return matchesSearch && matchesDivisi;
+        const matchesStatus = !showBrokenOnly || d.status === 'Rusak';
+        return matchesSearch && matchesDivisi && matchesStatus;
       });
 
       if (document.getElementById('awStatTotal')) {
@@ -14844,10 +14930,9 @@
       }
 
       // Also trigger map filtering if map is visible
-      if(typeof awHighlightZonesByDivision === 'function') awHighlightZonesByDivision(divFilter);
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--gray);">Data tidak ditemukan</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--gray);">Data tidak ditemukan</td></tr>';
         return;
       }
 
@@ -14857,23 +14942,33 @@
         if (da !== db) return db - da;
         return b.createdAt ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : 0;
       }).forEach(d => {
-        // Find zone name from map data for better readability
-        const zoneObj = awMapZones.find(z => String(z.id) === String(d.zoneId) || z.name === d.zoneId);
-        const displayName = zoneObj ? zoneObj.name : (d.zoneId || '- Unassigned -');
-        const zoneStr = (d.zoneId && d.zoneId !== '-') ? `<span style="font-size:10px; font-weight:700; background:var(--accent); color:#000; padding:2px 8px; border-radius:10px; border:1px solid var(--accent);">${displayName}</span>` : '<span style="font-size:10px; color:var(--gray)">- Unassigned -</span>';
-        const statusKey = d.status ? String(d.status).replace(/\s+/g,'').toLowerCase() : 'aktif';
+        const status = d.status || 'Normal';
+        let statusClass = 'badge-status-normal';
+        let statusIcon = 'bi-check-circle-fill';
+        
+        if (status === 'Rusak') {
+          statusClass = 'badge-status-rusak';
+          statusIcon = 'bi-x-circle-fill';
+        } else if (status === 'Dalam Perbaikan') {
+          statusClass = 'badge-status-perbaikan';
+          statusIcon = 'bi-tools';
+        } else if (status === 'Hilang') {
+          statusClass = 'badge-status-hilang';
+          statusIcon = 'bi-question-circle-fill';
+        }
+
         tbody.innerHTML += `
           <tr style="border-bottom:1px solid var(--border-color);">
             <td style="padding:12px; font-size:12px;">${formatDate(d.tanggalMasuk)}</td>
             <td style="padding:12px;"><code style="background:var(--bg-panel); padding:4px 8px; border-radius:6px; font-weight:800; color:var(--accent); font-size:11px;">${d.code}</code></td>
             <td style="padding:12px; font-weight:600;"><div style="line-height:1.2;">
               <div>${d.nama}</div>
-              <div style="font-size:10px; font-weight:400; color:var(--text-muted); margin-top:3px;">Qty: ${d.qty || 1} | Status: <span class="status-badge status-${statusKey}" style="padding:2px 6px; font-size:10px;">${d.status}</span></div>
+              <div style="font-size:10px; font-weight:400; color:var(--text-muted); margin-top:3px;">Qty: ${d.qty || 1}</div>
             </div></td>
             <td style="padding:12px;"><span style="background:var(--navy3); color:var(--teal); font-weight:700; font-size:11px; padding:4px 10px; border-radius:12px;">${d.divisi}</span></td>
-            <td style="padding:12px;">${zoneStr}</td>
+            <td style="padding:12px;"><div class="badge-status ${statusClass}"><i class="bi ${statusIcon}"></i> ${status}</div></td>
             <td style="padding:12px; text-align:right;">
-              <div style="display:flex; gap:6px;">
+              <div style="display:flex; gap:6px; justify-content:flex-end;">
                 <button class="btn btn-primary btn-sm" onclick="printAssetTag('${d.id}')">🖨️ Print</button>
                 <button class="btn btn-warning btn-sm" onclick="openEditAssetModal('${d.id}')">✏️</button>
                 <button class="btn btn-teal btn-sm" onclick="openMoveAssetModal('${d.id}')">🔄</button>
@@ -14885,28 +14980,15 @@
       });
     }
 
-    function awPopulateZoneSelect(selectId, currentValue) {
-      const select = document.getElementById(selectId);
-      if (!select) return;
-      select.innerHTML = '<option value="">-- Tanpa Zona --</option>';
-      awMapZones.forEach(z => {
-        const opt = document.createElement('option');
-        opt.value = z.id;
-        opt.innerText = z.name;
-        if (z.id === currentValue || z.name === currentValue) opt.selected = true;
-        select.appendChild(opt);
-      });
-    }
-
-    function openAssetWarehouseModal(preSelectedZoneId) {
+    function openAssetWarehouseModal() {
       resetForm(['awId', 'awNama', 'awCode']);
       document.getElementById('awTanggal').value = new Date().toISOString().split('T')[0];
-      awPopulateZoneSelect('awZoneId', preSelectedZoneId);
+      setVal('awStatus', 'Normal');
       openModal('modalAssetWarehouse');
     }
 
     function submitAssetWarehouse() {
-      const nama = v('awNama'), code = v('awCode'), tgl = v('awTanggal'), div = v('awDivisi'), qty = v('awQty'), zoneId = v('awZoneId');
+      const nama = v('awNama'), code = v('awCode'), tgl = v('awTanggal'), div = v('awDivisi'), qty = v('awQty'), status = v('awStatus');
       if (!nama || !div) return toast('Nama dan Divisi wajib diisi', 'error');
       const btn = document.querySelector('#modalAssetWarehouse .btn-primary');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
@@ -14916,13 +14998,11 @@
           toast('Asset berhasil disimpan ✅');
           closeModal('modalAssetWarehouse');
           
-          // Reset filters so the user can see the newly added asset
           setVal('searchAsset', '');
           setVal('filterAssetDivisi', '');
-          
           loadAssetWarehouse();
         } else toast(res.message, 'error');
-      }).addAssetWarehouse(code, nama, tgl, div, 'Aktif', currentUser.username, qty || 1, zoneId);
+      }).addAssetWarehouse(code, nama, tgl, div, status, currentUser.username, qty || 1);
     }
 
     function openEditAssetModal(id) {
@@ -14931,17 +15011,24 @@
       setVal('eAwId', d.id);
       setVal('eAwNama', d.nama);
       setVal('eAwTanggal', (d.tanggalMasuk || '').split('T')[0]);
-      setVal('eAwStatus', d.status || 'Aktif');
-      setVal('eAwQty', d.qty || 1);
-      awPopulateZoneSelect('eAwZoneId', d.zoneId);
+      setVal('eAwStatus', d.status || 'Normal');
+      setVal('eAwQtyTotal', d.qty || 1);
+      setVal('eAwQtyUpdate', d.qty || 1);
       openModal('modalEditAsset');
     }
 
     function submitEditAsset() {
-      const id = v('eAwId'), nama = v('eAwNama'), tgl = v('eAwTanggal'), status = v('eAwStatus'), qty = v('eAwQty'), zoneId = v('eAwZoneId');
+      const id = v('eAwId'), nama = v('eAwNama'), tgl = v('eAwTanggal'), status = v('eAwStatus');
+      const qtyTotal = parseInt(v('eAwQtyTotal')) || 0;
+      const qtyUpdate = parseInt(v('eAwQtyUpdate')) || 0;
+
       if (!nama || !tgl) return toast('Nama dan Tanggal wajib diisi', 'error');
+      if (qtyUpdate <= 0) return toast('Jumlah update harus lebih dari 0', 'error');
+      if (qtyUpdate > qtyTotal) return toast(`Jumlah update (${qtyUpdate}) melebihi stok yang ada (${qtyTotal})`, 'error');
+
       const btn = document.querySelector('#modalEditAsset .btn-primary');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
+      
       google.script.run.withSuccessHandler(res => {
         if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan Perubahan'; }
         if (res.success) {
@@ -14949,7 +15036,7 @@
           closeModal('modalEditAsset');
           loadAssetWarehouse();
         } else toast(res.message, 'error');
-      }).updateAssetWarehouse(id, nama, tgl, status, currentUser.username, qty || 1, zoneId);
+      }).updateAssetWarehouse(id, nama, tgl, status, currentUser.username, qtyUpdate);
     }
 
     function openMoveAssetModal(id) {
@@ -14959,12 +15046,18 @@
       setVal('mAwNama', d.nama);
       setVal('mAwDivisiLama', d.divisi);
       setVal('mAwDivisiBaru', d.divisi);
-      awPopulateZoneSelect('mAwZoneId', d.zoneId);
+      setVal('mAwQtyTotal', d.qty || 1);
+      setVal('mAwQtyMove', d.qty || 1);
       openModal('modalMoveAsset');
     }
 
     function submitMoveAsset() {
-      const id = v('mAwId'), targetDiv = v('mAwDivisiBaru'), targetZone = v('mAwZoneId');
+      const id = v('mAwId'), targetDiv = v('mAwDivisiBaru');
+      const qtyTotal = parseInt(v('mAwQtyTotal')) || 0;
+      const qtyMove = parseInt(v('mAwQtyMove')) || 0;
+
+      if (qtyMove <= 0) return toast('Jumlah yang di move harus lebih dari 0', 'error');
+      if (qtyMove > qtyTotal) return toast(`Jumlah yang di move (${qtyMove}) melebihi stok yang ada (${qtyTotal})`, 'error');
       
       const btn = document.querySelector('#modalMoveAsset .btn-primary');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ Memproses...'; }
@@ -14976,7 +15069,257 @@
           closeModal('modalMoveAsset');
           loadAssetWarehouse();
         } else toast(res.message, 'error');
-      }).moveAssetWarehouse(id, targetDiv, targetZone, currentUser.nama);
+      }).moveAssetWarehouse(id, targetDiv, currentUser.nama, qtyMove);
+    }
+
+    function openAssetLogModal() {
+      const tbody = document.getElementById('bodyAssetLog');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner"></div><br>Memuat riwayat...</td></tr>';
+      
+      setVal('searchAssetLog', '');
+      openModal('modalAssetLog');
+
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          assetWarehouseLogs = res.data;
+          renderAssetLogTable();
+        } else toast(res.message, 'error');
+      }).getAssetWarehouseLogs();
+    }
+
+    function renderAssetLogTable() {
+      const q = v('searchAssetLog').toLowerCase();
+      const tbody = document.getElementById('bodyAssetLog');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const filtered = assetWarehouseLogs.filter(d => {
+        return (d.assetNama || '').toLowerCase().includes(q) || (d.pic || '').toLowerCase().includes(q);
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada riwayat ditemukan</td></tr>';
+        return;
+      }
+
+      filtered.forEach(d => {
+        tbody.innerHTML += `
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:10px; color:var(--text-muted); white-space:nowrap;">${d.tanggal}</td>
+            <td style="padding:10px; font-weight:700;">${d.assetNama}</td>
+            <td style="padding:10px; font-weight:700; color:var(--teal);">${d.qty}</td>
+            <td style="padding:10px;"><span class="badge bg-secondary" style="font-size:10px;">${d.dariDivisi}</span></td>
+            <td style="padding:10px;"><span class="badge bg-primary" style="font-size:10px;">${d.keDivisi}</span></td>
+            <td style="padding:10px; font-weight:600;">${d.pic}</td>
+            <td style="padding:10px; font-size:10px; color:var(--gray);">${d.keterangan || '-'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // --- AUDIT ASSET LOGIC ---
+    let pendingAudits = [];
+    
+    function openAssetAuditModal() {
+      setVal('auditDivisi', '');
+      document.getElementById('bodyAuditAsset').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Pilih divisi untuk memulai audit</td></tr>';
+      openModal('modalAssetAudit');
+    }
+
+    function renderAuditAssetList() {
+      const div = v('auditDivisi');
+      const tbody = document.getElementById('bodyAuditAsset');
+      if (!div) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Pilih divisi untuk memulai audit</td></tr>';
+        return;
+      }
+
+      const filtered = assetWarehouseData.filter(x => x.divisi === div);
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada aset di divisi ${div}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      filtered.forEach(x => {
+        tbody.innerHTML += `
+          <tr data-asset-id="${x.id}">
+            <td><strong>${x.nama}</strong><br><small class="text-muted">${x.code}</small></td>
+            <td class="stok-sistem">${x.qty}</td>
+            <td><input type="number" class="form-control stok-fisik" value="${x.qty}" oninput="calcAuditRow(this)"></td>
+            <td class="stok-selisih" style="font-weight:700;">0</td>
+            <td><input type="text" class="form-control catatan-audit" placeholder="..."></td>
+          </tr>
+        `;
+      });
+    }
+
+    function calcAuditRow(el) {
+      const row = el.closest('tr');
+      const sis = parseInt(row.querySelector('.stok-sistem').textContent) || 0;
+      const fis = parseInt(el.value) || 0;
+      const sel = fis - sis;
+      const selEl = row.querySelector('.stok-selisih');
+      selEl.textContent = (sel > 0 ? '+' : '') + sel;
+      selEl.style.color = sel === 0 ? 'inherit' : (sel > 0 ? 'var(--success)' : 'var(--danger)');
+    }
+
+    function saveAssetAudit() {
+      const div = v('auditDivisi');
+      if (!div) return toast('Pilih divisi!', 'error');
+
+      const rows = document.querySelectorAll('#bodyAuditAsset tr[data-asset-id]');
+      const results = [];
+      rows.forEach(r => {
+        const id = r.getAttribute('data-asset-id');
+        const nama = r.querySelector('strong').textContent;
+        const sis = parseInt(r.querySelector('.stok-sistem').textContent) || 0;
+        const fis = parseInt(r.querySelector('.stok-fisik').value) || 0;
+        const sel = fis - sis;
+        const cat = r.querySelector('.catatan-audit').value;
+        results.push({ assetId: id, nama, divisi: div, stokSistem: sis, stokFisik: fis, selisih: sel, catatan: cat });
+      });
+
+      if (results.length === 0) return;
+
+      const btn = document.getElementById('btnSubmitAudit');
+      btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Simpan Hasil Audit (Pending)';
+        if (res.success) {
+          toast('Hasil audit berhasil diajukan! Menunggu persetujuan. ✅');
+          closeModal('modalAssetAudit');
+        } else toast(res.message, 'error');
+      }).saveAssetAudit(results, currentUser.nama);
+    }
+
+    // --- APPROVAL LOGIC ---
+    function openApproveAuditModal() {
+      const tbody = document.getElementById('bodyApproveAudit');
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4"><div class="spinner"></div><br>Memuat permohonan...</td></tr>';
+      
+      openModal('modalApproveAudit');
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          pendingAudits = res.data;
+          renderApproveAuditTable();
+        } else toast(res.message, 'error');
+      }).getPendingAssetAudits();
+    }
+
+    function renderApproveAuditTable() {
+      const tbody = document.getElementById('bodyApproveAudit');
+      tbody.innerHTML = '';
+      if (pendingAudits.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Tidak ada audit yang menunggu persetujuan</td></tr>';
+        return;
+      }
+
+      pendingAudits.forEach(d => {
+        const sel = d.selisih;
+        const selColor = sel === 0 ? 'inherit' : (sel > 0 ? 'var(--success)' : 'var(--danger)');
+        tbody.innerHTML += `
+          <tr>
+            <td><input type="checkbox" class="chk-audit" value="${d.id}"></td>
+            <td>${d.tanggal}</td>
+            <td><span class="badge bg-secondary">${d.divisi}</span></td>
+            <td><strong>${d.nama}</strong></td>
+            <td>${d.stokSistem}</td>
+            <td><strong>${d.stokFisik}</strong></td>
+            <td style="font-weight:700; color:${selColor};">${sel > 0 ? '+' : ''}${sel}</td>
+            <td>${d.pic}</td>
+            <td class="text-muted small">${d.catatan || '-'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function toggleAllAudit(chk) {
+      document.querySelectorAll('.chk-audit').forEach(c => c.checked = chk.checked);
+    }
+
+    function approveSelectedAudits() {
+      const ids = Array.from(document.querySelectorAll('.chk-audit:checked')).map(c => c.value);
+      if (ids.length === 0) return toast('Pilih audit yang akan disetujui', 'warning');
+
+      if (!confirm(`Setujui ${ids.length} data audit ini? Stok sistem akan diperbarui.`)) return;
+
+      const btn = document.getElementById('btnApproveAll');
+      btn.disabled = true; btn.textContent = '⏳ Memproses...';
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '✅ Setujui & Update Stok';
+        if (res.success) {
+          toast(`✅ ${ids.length} Audit berhasil disetujui! Stok diperbarui.`, 'success');
+          openApproveAuditModal(); // Reload
+          loadAssetWarehouse(); // Refresh main table
+        } else toast(res.message, 'error');
+      }).approveAssetAudit(ids, currentUser.nama);
+    }
+
+    function exportAssetWarehouseToExcel() {
+      const q = v('searchAsset').toLowerCase();
+      const divFilter = v('filterAssetDivisi');
+      const showBrokenOnly = document.getElementById('filterAssetRusak').checked;
+
+      const filtered = assetWarehouseData.filter(d => {
+        const strNama = d.nama != null ? String(d.nama).toLowerCase() : '';
+        const strCode = d.code != null ? String(d.code).toLowerCase() : '';
+        const matchesSearch = strNama.includes(q) || strCode.includes(q);
+        const matchesDivisi = !divFilter || String(d.divisi) === divFilter;
+        const matchesStatus = !showBrokenOnly || d.status === 'Rusak';
+        return matchesSearch && matchesDivisi && matchesStatus;
+      });
+
+      if (filtered.length === 0) return toast('Tidak ada data yang bisa diekspor', 'warning');
+
+      toast('🚀 Menyiapkan file Excel...', 'info');
+
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr style="background-color:#0ea5e9; color:white; font-weight:bold;">
+              <th>No</th>
+              <th>Kode</th>
+              <th>Nama Asset</th>
+              <th>Tgl Masuk</th>
+              <th>Divisi</th>
+              <th>Status</th>
+              <th>Qty</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      filtered.forEach((d, idx) => {
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${d.code || '-'}</td>
+            <td>${d.nama || '-'}</td>
+            <td>${d.tanggalMasuk || '-'}</td>
+            <td>${d.divisi || '-'}</td>
+            <td>${d.status || 'Normal'}</td>
+            <td>${d.qty || 0}</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table></body></html>`;
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().getTime();
+      a.href = url;
+      a.download = `Data_Asset_Warehouse_${ts}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast('✅ Berhasil diekspor!', 'success');
     }
 
     function doDeleteAssetWarehouse(id) {
@@ -15408,353 +15751,7 @@
       if (typeof loadDashboard === 'function') loadDashboard();
     }, 15000);
     
-    // =================================== =========================
-    // ASSET WAREHOUSE MAP & LAYOUT LOGIC
-    // =================================== =========================
-    let awMapZones = [];
-    let awMapMode = 'view'; // 'view' or 'edit'
-
-    function switchAwTab(tab) {
-      const listTab = document.getElementById('tabAwList');
-      const mapTab = document.getElementById('tabAwMap');
-      const listContent = document.getElementById('awTabListContent');
-      const mapContent = document.getElementById('awTabMapContent');
-      
-      if (tab === 'list') {
-        listTab.style.borderBottom = '3px solid var(--accent)';
-        listTab.style.color = 'var(--text-main)';
-        mapTab.style.borderBottom = '3px solid transparent';
-        mapTab.style.color = 'var(--text-muted)';
-        listContent.style.display = 'block';
-        mapContent.style.display = 'none';
-      } else {
-        mapTab.style.borderBottom = '3px solid var(--accent)';
-        mapTab.style.color = 'var(--text-main)';
-        listTab.style.borderBottom = '3px solid transparent';
-        listTab.style.color = 'var(--text-muted)';
-        listContent.style.display = 'none';
-        mapContent.style.display = 'block';
-        awRenderMap();
-      }
-    }
-
-    function awSetMapMode(mode) {
-      awMapMode = mode;
-      const btnView = document.getElementById('btnMapModeView');
-      const btnEdit = document.getElementById('btnMapModeEdit');
-      const toolbar = document.getElementById('awMapToolbar');
-      
-      if (mode === 'edit') {
-        btnEdit.classList.add('active', 'btn-primary');
-        btnEdit.classList.remove('btn-ghost');
-        btnView.classList.remove('active', 'btn-primary');
-        btnView.classList.add('btn-ghost');
-        toolbar.style.display = 'flex';
-        toast('🛠️ Mode Edit Aktif: Tambah atau Atur tata letak zona.', 'info');
-      } else {
-        btnView.classList.add('active', 'btn-primary');
-        btnView.classList.remove('btn-ghost');
-        btnEdit.classList.remove('active', 'btn-primary');
-        btnEdit.classList.add('btn-ghost');
-        toolbar.style.display = 'none';
-        toast('👁️ Mode Lihat Aktif.', 'info');
-      }
-      awRenderMap();
-    }
-
-    function awRenderMap() {
-      const grid = document.getElementById('awMapGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
-      
-      awMapZones.forEach((zone, index) => {
-        const div = document.createElement('div');
-        div.className = 'aw-map-zone';
-        div.id = `zone-${zone.id}`;
-        div.style.left = zone.x + 'px';
-        div.style.top = zone.y + 'px';
-        div.style.width = zone.w + 'px';
-        div.style.height = zone.h + 'px';
-        div.style.backgroundColor = zone.color || 'rgba(14, 165, 233, 0.2)';
-        div.innerText = zone.name;
-        
-        // Count assets in this zone
-        const assetsInZone = assetWarehouseData.filter(a => a.zoneId === zone.id || a.zoneId === zone.name);
-        if (assetsInZone.length > 0) {
-          const badge = document.createElement('span');
-          badge.style = "position:absolute; top:-8px; right:-8px; background:var(--accent); color:#000; font-size:10px; min-width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; border:2px solid var(--bg-panel);";
-          badge.innerText = assetsInZone.length;
-          div.appendChild(badge);
-        }
-
-        if (awMapMode === 'edit') {
-          // Rezise handle
-          const handle = document.createElement('div');
-          handle.className = 'aw-map-edit-handle';
-          div.appendChild(handle);
-          
-          // Drag Logic (Visual only for simplicity in this version)
-          div.onmousedown = (e) => {
-            if (e.target.className === 'aw-map-edit-handle') {
-              awStartResize(e, index);
-            } else {
-              awStartDrag(e, index);
-            }
-          };
-
-          // Double click to edit name/color
-          div.ondblclick = (e) => {
-            e.stopPropagation();
-            Swal.fire({
-              title: '✏️ Edit Zona',
-              html: `
-                <div style="text-align:left;">
-                  <label class="form-label" style="font-size:12px; margin-bottom:5px;">Nama Zona:</label>
-                  <input id="swal-zone-name" class="swal2-input" style="width:100%; margin:0 0 15px 0;" value="${zone.name}">
-                  <label class="form-label" style="font-size:12px; margin-bottom:5px;">Warna Zona:</label>
-                  <input id="swal-zone-color" type="color" class="form-control" style="height:45px; width:100%; cursor:pointer;" value="${zone.color.includes('rgba') ? '#0ea5e9' : zone.color}">
-                  <small style="color:gray; font-size:10px; margin-top:5px; display:block;">*Warna transparan otomatis diterapkan (20% opacity).</small>
-                </div>
-              `,
-              showCancelButton: true,
-              confirmButtonText: '💾 Simpan',
-              cancelButtonText: 'Batal',
-              confirmButtonColor: 'var(--teal)',
-              background: 'var(--bg-panel)',
-              color: 'var(--text-main)',
-              preConfirm: () => {
-                const name = document.getElementById('swal-zone-name').value;
-                const color = document.getElementById('swal-zone-color').value;
-                if (!name) { Swal.showValidationMessage('Nama zona tidak boleh kosong'); return false; }
-                return { name, color };
-              }
-            }).then((result) => {
-              if (result.isConfirmed) {
-                // Convert hex to rgba 0.2
-                let finalColor = result.value.color;
-                if (finalColor.startsWith('#')) {
-                  const r = parseInt(finalColor.slice(1, 3), 16),
-                        g = parseInt(finalColor.slice(3, 5), 16),
-                        b = parseInt(finalColor.slice(5, 7), 16);
-                  finalColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
-                }
-                awMapZones[index].name = result.value.name;
-                awMapZones[index].color = finalColor;
-                awSaveMap();
-                toast('Zona diperbarui', 'success');
-              }
-            });
-          };
-        } else {
-          div.onclick = () => awInspectZone(zone);
-        }
-
-        grid.appendChild(div);
-      });
-    }
-
-    function awAddMapZone() {
-      Swal.fire({
-        title: '➕ Tambah Blok Zona Baru',
-        html: `
-          <div style="text-align:left;">
-            <label class="form-label" style="font-size:12px; margin-bottom:5px;">Nama Zona:</label>
-            <input id="swal-new-zone-name" class="swal2-input" style="width:100%; margin:0 0 15px 0;" placeholder="Misal: Rak A-01">
-            <label class="form-label" style="font-size:12px; margin-bottom:5px;">Warna Dasar:</label>
-            <input id="swal-new-zone-color" type="color" class="form-control" style="height:45px; width:100%; cursor:pointer;" value="#0ea5e9">
-            <small style="color:gray; font-size:10px; margin-top:5px; display:block;">*Warna transparan otomatis diterapkan.</small>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: '🚀 Tambah Zona',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: 'var(--teal)',
-        background: 'var(--bg-panel)',
-        color: 'var(--text-main)',
-        preConfirm: () => {
-          const name = document.getElementById('swal-new-zone-name').value;
-          const color = document.getElementById('swal-new-zone-color').value;
-          if (!name) { Swal.showValidationMessage('Nama zona wajib diisi'); return false; }
-          return { name, color };
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          // Convert hex to rgba 0.2
-          let finalColor = result.value.color;
-          if (finalColor.startsWith('#')) {
-            const r = parseInt(finalColor.slice(1, 3), 16),
-                  g = parseInt(finalColor.slice(3, 5), 16),
-                  b = parseInt(finalColor.slice(5, 7), 16);
-            finalColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
-          }
-
-          const id = 'Z-' + Math.floor(Math.random() * 10000);
-          const newZone = {
-            id: id,
-            name: result.value.name,
-            x: 60,
-            y: 60,
-            w: 120,
-            h: 80,
-            color: finalColor
-          };
-          awMapZones.push(newZone);
-          awSaveMap();
-          // Notify backend the map has changed
-          toast(`✅ Zona "${result.value.name}" berhasil ditambahkan.`, 'info');
-        }
-      });
-    }
-
-    function awSaveMap(renderAfter = true) {
-      // localStorage.setItem('fcl_warehouse_map', JSON.stringify(awMapZones));
-      toast('⏳ Sinkronisasi denah ke server...', 'info');
-      google.script.run.withSuccessHandler(res => {
-        if(res.success) {
-          toast('✅ Denah Peta Disimpan!', 'success');
-          if (renderAfter) awRenderMap();
-        } else toast('❌ Gagal Simpan: ' + res.message, 'error');
-      }).saveWarehouseMapData(JSON.stringify(awMapZones));
-    }
-
-    function awClearMap() {
-      if (confirm('⚠️ Hapus seluruh tata letak peta ini?')) {
-        awMapZones = [];
-        awSaveMap();
-      }
-    }
-
-    function awInspectZone(zone) {
-      // Highlight the zone
-      document.querySelectorAll('.aw-map-zone').forEach(el => el.classList.remove('active'));
-      document.getElementById(`zone-${zone.id}`).classList.add('active');
-      
-      const inspectorEmpty = document.getElementById('awMapInspectorEmpty');
-      const inspectorContent = document.getElementById('awMapInspectorContent');
-      const inspName = document.getElementById('awInspZoneName');
-      const inspCount = document.getElementById('awInspAssetCount');
-      const inspList = document.getElementById('awInspAssetList');
-      
-      inspectorEmpty.style.display = 'none';
-      inspectorContent.style.display = 'block';
-      
-      const assets = assetWarehouseData.filter(a => a.zoneId === zone.id || a.zoneId === zone.name);
-      
-      inspName.innerText = zone.name;
-      inspCount.innerText = assets.length + ' Item';
-      inspList.innerHTML = '';
-      
-      if (assets.length === 0) {
-        inspList.innerHTML = `
-          <div style="font-size:11px; color:var(--gray); text-align:center; padding:20px;">
-            Belum ada asset di zona ini.
-          </div>
-          <button class="btn btn-primary btn-sm w-100" onclick="openAssetWarehouseModal('${zone.id}')" style="margin-top:10px;">
-            ➕ Tambah Asset di Sini
-          </button>
-        `;
-      } else {
-        assets.forEach(a => {
-          inspList.innerHTML += `
-            <div class="aw-inspector-item">
-              <div>
-                <div style="font-weight:800; color:var(--text-main);">${a.nama}</div>
-                <div style="color:var(--text-muted); font-size:10px;">${a.code}</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-weight:700; color:var(--teal);">${a.qty || 1} Pcs</div>
-                <div style="font-size:9px; color:var(--gray);">${a.status}</div>
-              </div>
-            </div>
-          `;
-        });
-        inspList.innerHTML += `
-          <button class="btn btn-outline-primary btn-sm w-100" onclick="openAssetWarehouseModal('${zone.id}')" style="margin-top:15px; border-style:dashed;">
-            ➕ Tambah Asset Lagi
-          </button>
-        `;
-      }
-    }
-
-    // Highlighting by division filter
-    function awHighlightZonesByDivision(divName) {
-      document.querySelectorAll('.aw-map-zone').forEach(el => {
-        el.classList.remove('highlight-div');
-        el.style.opacity = '1';
-      });
-      
-      if (!divName) return;
-      
-      awMapZones.forEach(zone => {
-        const hasDivAsset = assetWarehouseData.some(a => (a.zoneId === zone.id || a.zoneId === zone.name) && a.divisi === divName);
-        const el = document.getElementById(`zone-${zone.id}`);
-        if (el) {
-          if (hasDivAsset) {
-            el.classList.add('highlight-div');
-          } else {
-            el.style.opacity = '0.3';
-          }
-        }
-      });
-    }
-
-    // Drag & Resize Functions
-    let awDragIndex = -1;
-    let awDragType = '';
-    let startX, startY;
-
-    function awStartDrag(e, index) {
-      awDragIndex = index;
-      awDragType = 'move';
-      startX = e.clientX - awMapZones[index].x;
-      startY = e.clientY - awMapZones[index].y;
-      document.addEventListener('mousemove', awDoDrag);
-      document.addEventListener('mouseup', awStopDrag);
-    }
-
-    function awStartResize(e, index) {
-      e.stopPropagation();
-      awDragIndex = index;
-      awDragType = 'resize';
-      startX = e.clientX;
-      startY = e.clientY;
-      startW = awMapZones[index].w;
-      startH = awMapZones[index].h;
-      document.addEventListener('mousemove', awDoDrag);
-      document.addEventListener('mouseup', awStopDrag);
-    }
-
-    function awDoDrag(e) {
-      if (awDragIndex === -1) return;
-      const zone = awMapZones[awDragIndex];
-      if (awDragType === 'move') {
-        zone.x = e.clientX - startX;
-        zone.y = e.clientY - startY;
-        // Snap to grid 20px
-        zone.x = Math.round(zone.x / 20) * 20;
-        zone.y = Math.round(zone.y / 20) * 20;
-      } else if (awDragType === 'resize') {
-        zone.w = startW + (e.clientX - startX);    
-        zone.h = startH + (e.clientY - startY);
-        // Snap to grid 20px
-        zone.w = Math.max(20, Math.round(zone.w / 20) * 20);
-        zone.h = Math.max(20, Math.round(zone.h / 20) * 20);
-      }
-      const el = document.getElementById(`zone-${zone.id}`);
-      if (el) {
-        el.style.left = zone.x + 'px';
-        el.style.top = zone.y + 'px';
-        el.style.width = zone.w + 'px';
-        el.style.height = zone.h + 'px';
-      }
-    }
-
-    function awStopDrag() {
-      if (awDragIndex !== -1) awSaveMap(false);
-      awDragIndex = -1;
-      document.removeEventListener('mousemove', awDoDrag);
-      document.removeEventListener('mouseup', awStopDrag);
-    }
+    // Asset Warehouse Map & Layout logic removed as per request.
 
     // ================================================================
     // MODUL ABSENSI KARYAWAN + FINGERPRINT X900
