@@ -3941,9 +3941,12 @@
                     <option value="" data-i18n="semuaDivisi">Semua Divisi</option>
                     <option value="Marketplace">🛒 Marketplace</option>
                     <option value="Distributor">📦 Distributor</option>
+                    <option value="Marketplace Surabaya">🛒 Marketplace Surabaya</option>
+                    <option value="Distributor Surabaya">📦 Distributor Surabaya</option>
                     <option value="Inbound">📥 Inbound</option>
                     <option value="Return">↩️ Return</option>
                     <option value="KOL">🎥 KOL</option>
+                    <option value="Consumable">🫧 Consumable</option>
                   </select>
                   <button class="btn btn-ghost" onclick="openExportLaporanModal()"
                     style="border:1px solid var(--accent); color:var(--accent);">📤 Ekspor Excel</button>
@@ -4008,7 +4011,11 @@
                 </div>
                 <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
                   <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #38bdf8;">
-                    🛒📦 Mp & Dist Surabaya</h5><canvas id="chartMpDistSurabaya" style="max-height: 250px;"></canvas>
+                    🛒 Marketplace Surabaya</h5><canvas id="chartMpSurabaya" style="max-height: 200px;"></canvas>
+                </div>
+                <div style="background: var(--navy2); padding: 16px; border-radius: 12px; border: 1px solid #ffffff12;">
+                  <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom: 12px; color: #fbbf24;">
+                    📦 Distributor Surabaya</h5><canvas id="chartDistSurabaya" style="max-height: 200px;"></canvas>
                 </div>
               </div>
               <div class="table-wrap">
@@ -5706,7 +5713,8 @@
                     class="form-select" id="lapDivisi" onchange="updateLapFields()">
                     <option value="Marketplace">🛒 Marketplace</option>
                     <option value="Distributor">📦 Distributor</option>
-                    <option value="Marketplace & Distributor Surabaya">🛒📦 Marketplace & Distributor Surabaya</option>
+                    <option value="Marketplace Surabaya">🛒 Marketplace Surabaya</option>
+                    <option value="Distributor Surabaya">📦 Distributor Surabaya</option>
                     <option value="Return">↩️ Return</option>
                     <option value="KOL">🎥 KOL</option>
                     <option value="Inbound">📥 Inbound</option>
@@ -11223,29 +11231,24 @@
       if(wInb) wInb.style.display = 'none';
       if(wCon) wCon.style.display = 'none';
 
-      if (div === 'Marketplace' || div === 'Return' || div === 'KOL') {
+      if (div === 'Marketplace' || div === 'Marketplace Surabaya' || div === 'Return' || div === 'KOL') {
         if(wOrd) wOrd.style.display = 'block';
-        if (div === 'Marketplace') labelOrd.textContent = 'Total Order Marketplace';
+        if (div === 'Marketplace' || div === 'Marketplace Surabaya') labelOrd.textContent = 'Total Order Marketplace';
         else if (div === 'Return') labelOrd.textContent = 'Total Paket Return';
         else labelOrd.textContent = 'Total Order KOL';
-      } else if (div === 'Distributor') {
+      } else if (div === 'Distributor' || div === 'Distributor Surabaya') {
         if(wDist) wDist.style.display = 'block';
-      } else if (div === 'Marketplace & Distributor Surabaya') {
-        if(wOrd) wOrd.style.display = 'block';
-        if(wDist) wDist.style.display = 'block';
-        if(labelOrd) labelOrd.textContent = 'Total Order Marketplace';
-        // Show second KPI field for Surabaya
-        document.getElementById('wrapLapKPIOrder').querySelector('label').textContent = 'KPI Order (Order / Jam Kerja)';
-        document.getElementById('wrapLapKPIQty').style.display = 'block';
       } else if (div === 'Inbound') {
         if(wInb) wInb.style.display = 'block';
       } else if (div === 'Consumable') {
         if(wCon) wCon.style.display = 'block';
       }
 
-      // Reset KPI label if not Surabaya
-      if (div !== 'Marketplace & Distributor Surabaya') {
+      // KPI Label reset
+      if(document.getElementById('wrapLapKPIOrder')) {
         document.getElementById('wrapLapKPIOrder').querySelector('label').textContent = 'KPI (Total Output / Total Jam Kerja)';
+      }
+      if(document.getElementById('wrapLapKPIQty')) {
         document.getElementById('wrapLapKPIQty').style.display = 'none';
       }
       calcJamKerja();
@@ -11274,13 +11277,9 @@
       if (div === 'Inbound' || div === 'Return' || div === 'KOL') {
         setVal('lapKPI', '-');
         if (kpiInput) kpiInput.style.opacity = '0.3';
-      } else if (div === 'Marketplace & Distributor Surabaya') {
-        const orderVal = parseInt(v('lapOrder')) || 0;
-        const qtyVal = parseInt(v('lapQty')) || 0;
-        setVal('lapKPI', tot > 0 ? (orderVal / tot).toFixed(3) : 0);
-        setVal('lapKPIQty', tot > 0 ? (qtyVal / tot).toFixed(3) : 0);
+      } else if (div === 'Distributor' || div === 'Distributor Surabaya') {
+        setVal('lapKPI', tot > 0 ? (output / tot).toFixed(3) : 0);
         if (kpiInput) kpiInput.style.opacity = '1';
-        if (kpiQtyInput) kpiQtyInput.style.opacity = '1';
       } else {
         setVal('lapKPI', tot > 0 ? (output / tot).toFixed(3) : 0);
         if (kpiInput) kpiInput.style.opacity = '1';
@@ -11504,15 +11503,7 @@
         g.totalInbound += (d.totalInbound || 0);
         g.totalQty += (d.totalQty || (d.totalQtyInb || 0) || 0);
 
-        if (d.divisi === 'Marketplace & Distributor Surabaya') {
-          if (!g.surabayaOrder) g.surabayaOrder = 0;
-          if (!g.surabayaQty) g.surabayaQty = 0;
-          g.surabayaOrder += (d.totalOrder || 0);
-          g.surabayaQty += (d.totalQty || 0);
-        }
-
-        // Track specific Distributor Qty for group KPI
-        if (d.divisi === 'Distributor') {
+        if (d.divisi === 'Distributor' || d.divisi === 'Distributor Surabaya') {
           if (!g.distQty) g.distQty = 0;
           g.distQty += (d.totalQty || 0);
         }
@@ -11535,15 +11526,9 @@
         // KPI calculation
         let kpi = '-';
         if (g.totalJamKerja > 0) {
-          if (divList.includes('Marketplace & Distributor Surabaya')) {
-             const kpiOrd = Math.round(g.surabayaOrder / g.totalJamKerja) || 0;
-             const kpiQty = Math.round(g.surabayaQty / g.totalJamKerja) || 0;
-             kpi = `${kpiOrd} (O) / ${kpiQty} (Q)`;
-          } else {
-             const hideKPI = divList.every(d => ['Inbound', 'Return', 'KOL'].includes(d));
-             const rawKpi = !hideKPI ? (totalOutput / g.totalJamKerja) : 0;
-             kpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
-          }
+           const hideKPI = divList.every(d => ['Inbound', 'Return', 'KOL'].includes(d));
+           const rawKpi = !hideKPI ? (totalOutput / g.totalJamKerja) : 0;
+           kpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
         }
 
         tb.innerHTML += `<tr>
@@ -11588,8 +11573,8 @@
         <div>Pekerja: ${r.totalOrang} | Admin: ${r.totalAdmin || 0}</div>
         <div>PHL: ${r.totalPHL || 0} | Lembur: ${r.jamLembur} Jam</div>
         <div style="grid-column: span 2; border-top:1px solid #ffffff0a; padding-top:5px; margin-top:5px;">
-          Output: <b>${r.divisi === 'Marketplace & Distributor Surabaya' ? `Ord: ${r.totalOrder} | Qty: ${r.totalQty}` : (r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0))}</b> 
-          ${r.divisi === 'Marketplace & Distributor Surabaya' ? `| KPI: <b>${r.totalJamKerja > 0 ? `${(r.totalOrder / r.totalJamKerja).toFixed(1)} (O) / ${(r.totalQty / r.totalJamKerja).toFixed(1)} (Q)` : 0}</b>` : (!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja > 0 ? ((r.divisi === 'Distributor' ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)) / r.totalJamKerja).toFixed(3) : 0}</b>` : '')}
+          Output: <b>${(r.divisi === 'Distributor' || r.divisi === 'Distributor Surabaya') ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)}</b> 
+          ${!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja > 0 ? (((r.divisi === 'Distributor' || r.divisi === 'Distributor Surabaya') ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)) / r.totalJamKerja).toFixed(3) : 0}</b>` : ''}
         </div>
       </div>
       ${r.staffLemburNames ? `
@@ -11755,20 +11740,14 @@
     function filterGrafik() {
       const ym = v('filterBulanGrafik'); const y = ym.split('-')[0], m = ym.split('-')[1];
       const filtered = laporanKerjaData.filter(d => d.tanggal.startsWith(ym));
-      const maps = { Marketplace: {}, Distributor: {}, "Marketplace & Distributor Surabaya": {}, Return: {}, KOL: {}, Inbound: {}, Consumable: {} };
+      const maps = { Marketplace: {}, Distributor: {}, "Marketplace Surabaya": {}, "Distributor Surabaya": {}, Return: {}, KOL: {}, Inbound: {}, Consumable: {} };
       const dInM = new Date(y, m, 0).getDate();
       for (let i = 1; i <= dInM; i++) { const ds = i.toString().padStart(2, '0'); Object.keys(maps).forEach(k => maps[k][ds] = { ord: 0, jm: 0 }); }
       filtered.forEach(d => {
         const day = d.tanggal.split('-')[2].substring(0, 2);
         if (maps[d.divisi] && maps[d.divisi][day]) {
-          if (d.divisi === 'Marketplace & Distributor Surabaya') {
-            maps[d.divisi][day].ord += (d.totalOrder || 0);
-            if (maps[d.divisi][day].qty === undefined) maps[d.divisi][day].qty = 0;
-            maps[d.divisi][day].qty += (d.totalQty || 0);
-          } else {
-            const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
-            maps[d.divisi][day].ord += currentOutput;
-          }
+          const currentOutput = (d.divisi === 'Distributor' || d.divisi === 'Distributor Surabaya') ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
+          maps[d.divisi][day].ord += currentOutput;
           maps[d.divisi][day].jm += d.totalJamKerja;
         }
       });
@@ -11785,13 +11764,12 @@
       createChart('chartMarketplace', 'mp', labels, cData('Marketplace').ord, cData('Marketplace').kpi, '#f59e0b');
       createChart('chartDistributor', 'dist', labels, cData('Distributor').ord, cData('Distributor').kpi, '#0ea5e9');
       
-      // Dual-metrical chart for Surabaya
-      if (cData('Marketplace & Distributor Surabaya').ord.length) {
-         // Aggregating Order and Qty for Surabaya. 
-         // Since cData logic only takes maps[div][day].ord (which we will split below)
-         // I'll need a way to pass both to createChart. 
-         // Let's modify filterGrafik to handle Surabaya specially.
-         createSurabayaChart('chartMpDistSurabaya', labels, maps["Marketplace & Distributor Surabaya"]);
+      // Separate Charts for Surabaya
+      if (cData('Marketplace Surabaya').ord.length) {
+         createChart('chartMpSurabaya', 'mpSby', labels, cData('Marketplace Surabaya').ord, cData('Marketplace Surabaya').kpi, '#38bdf8');
+      }
+      if (cData('Distributor Surabaya').ord.length) {
+         createChart('chartDistSurabaya', 'distSby', labels, cData('Distributor Surabaya').ord, cData('Distributor Surabaya').kpi, '#fbbf24');
       }
 
       createChart('chartReturn', 'ret', labels, cData('Return').ord, cData('Return').kpi, '#ef4444');
@@ -11799,7 +11777,7 @@
       if (cData('Inbound').ord.length) createChart('chartInbound', 'inb', labels, cData('Inbound').ord, cData('Inbound').kpi, '#8b5cf6');
       if (cData('Consumable').ord.length) createChart('chartConsumable', 'con', labels, cData('Consumable').ord, cData('Consumable').kpi, '#f472b6');
 
-      const summary = { Marketplace: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Distributor: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, "Marketplace & Distributor Surabaya": { rep: 0, p: 0, l: 0, j: 0, o: 0, q: 0 }, Return: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, KOL: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Inbound: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Consumable: { rep: 0, p: 0, l: 0, j: 0, o: 0 } };
+      const summary = { Marketplace: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Distributor: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, "Marketplace Surabaya": { rep: 0, p: 0, l: 0, j: 0, o: 0 }, "Distributor Surabaya": { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Return: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, KOL: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Inbound: { rep: 0, p: 0, l: 0, j: 0, o: 0 }, Consumable: { rep: 0, p: 0, l: 0, j: 0, o: 0 } };
       filtered.forEach(d => {
         if (summary[d.divisi]) {
           summary[d.divisi].rep++;
@@ -11807,30 +11785,18 @@
           summary[d.divisi].l += d.jamLembur;
           summary[d.divisi].j += d.totalJamKerja;
 
-          if (d.divisi === 'Marketplace & Distributor Surabaya') {
-            summary[d.divisi].o += (d.totalOrder || 0);
-            summary[d.divisi].q += (d.totalQty || 0);
-          } else {
-            const currentOutput = d.divisi === 'Distributor' ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
-            summary[d.divisi].o += currentOutput;
-          }
+          const currentOutput = (d.divisi === 'Distributor' || d.divisi === 'Distributor Surabaya') ? (d.totalQty || 0) : (d.divisi === 'Inbound' ? (d.totalInbound || 0) : (d.divisi === 'Consumable' ? ((d.pendapatanPotongBubble||0) + (d.pendapatanBuatBubble||0)) : (d.totalOrder || 0)));
+          summary[d.divisi].o += currentOutput;
         }
       });
       const tb = document.getElementById('tableRingkasanGrafik'); tb.innerHTML = '';
-      Object.keys(summary).forEach(k => {
-        const s = summary[k];
-        let displayOutput = s.o.toLocaleString('id-ID');
-        let displayKpi = '-';
+        Object.keys(summary).sort().forEach(k => {
+          const s = summary[k];
+          let displayOutput = s.o.toLocaleString('id-ID');
+          let displayKpi = '-';
 
-        if (k === 'Marketplace & Distributor Surabaya') {
-           displayOutput = `Ord: ${s.o.toLocaleString('id-ID')}<br>Qty: ${s.q.toLocaleString('id-ID')}`;
-           if (s.j > 0) {
-              displayKpi = `${Math.round(s.o / s.j)} (O) / ${Math.round(s.q / s.j)} (Q)`;
-           }
-        } else {
-           const rawKpi = (s.j > 0 && !['Inbound', 'Return', 'KOL', 'Consumable'].includes(k)) ? (s.o / s.j) : 0;
-           displayKpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
-        }
+          const rawKpi = (s.j > 0 && !['Inbound', 'Return', 'KOL', 'Consumable'].includes(k)) ? (s.o / s.j) : 0;
+          displayKpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
         
         let kpiStyle = 'color:var(--green)';
         let targetMsg = '';
@@ -11849,8 +11815,11 @@
       });
     }
     function createChart(id, instKey, labels, dOrd, dKpi, color) {
-      const typeLabel = (instKey === 'dist' || instKey === 'con') ? (instKey === 'dist' ? 'Total Qty' : 'Total Bubble') : 'Total Order';
-      const kpiLabel = (instKey === 'dist' || instKey === 'con') ? (instKey === 'dist' ? 'KPI (Qty/Jam)' : 'KPI (Bbl/Jam)') : 'KPI (Ord/Jam)';
+      const isDist = instKey === 'dist' || instKey === 'distSby';
+      const isCon = instKey === 'con';
+      
+      const typeLabel = (isDist || isCon) ? (isDist ? 'Total Qty' : 'Total Bubble') : 'Total Order';
+      const kpiLabel = (isDist || isCon) ? (isDist ? 'KPI (Qty/Jam)' : 'KPI (Bbl/Jam)') : 'KPI (Ord/Jam)';
       const ctx = document.getElementById(id); if (chartInstances[instKey]) chartInstances[instKey].destroy();
       
       // Determine target coloring for points
