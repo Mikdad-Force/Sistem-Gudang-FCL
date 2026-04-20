@@ -108,7 +108,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['id', 'tanggal', 'pemberiTugas', 'picName', 'targetPotong', 'targetBuat', 'actualPotong', 'actualBuat', 'status', 'catatan', 'createdAt', 'updatedAt']);
+  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['ID', 'Tanggal', 'Pemberi Tugas', 'PIC Name', 'Target Potong', 'Target Buat', 'Actual Potong', 'Actual Buat', 'Status', 'Finish Date', 'Catatan', 'Total Pendapatan', 'Finished By', 'Created At', 'Updated At']);
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
@@ -2708,10 +2708,12 @@ function getTugasConsumable() {
         actualPotong: parseInt(data[i][6]) || 0,
         actualBuat: parseInt(data[i][7]) || 0,
         status: data[i][8],
-        catatan: data[i][9],
-        createdAt: data[i][10],
-        updatedAt: data[i][11],
-        finishedBy: data[i][12] || '-'
+        finishDate: data[i][9],
+        catatan: data[i][10],
+        totalPendapatan: parseFloat(data[i][11]) || 0,
+        finishedBy: data[i][12] || '-',
+        createdAt: data[i][13],
+        updatedAt: data[i][14]
       });
     }
     return { success: true, data: result };
@@ -2728,10 +2730,9 @@ function addTugasConsumable(data) {
       data.picName, 
       parseInt(data.targetPotong)||0, 
       parseInt(data.targetBuat)||0, 
-      0, 0, 'Pending', '', 
+      0, 0, 'Pending', '', '', 0, '',
       new Date().toISOString(), 
-      new Date().toISOString(),
-      '' // finishedBy
+      new Date().toISOString()
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -2741,30 +2742,42 @@ function updateTugasConsumable(data) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
     const values = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
     for (let i = 1; i < values.length; i++) {
         if (String(values[i][0]) === String(data.id)) {
             const row = i + 1;
-            // Jika status Selesai, update hasil aktual
             if (data.status === 'Selesai') {
-                sheet.getRange(row, 7).setValue(parseInt(data.actualPotong) || 0);
-                sheet.getRange(row, 8).setValue(parseInt(data.actualBuat) || 0);
-                sheet.getRange(row, 9).setValue('Selesai');
-                sheet.getRange(row, 10).setValue(data.catatan || '');
-                sheet.getRange(row, 12).setValue(new Date().toISOString()); // updatedAt
-                sheet.getRange(row, 13).setValue(data.finishedBy || ''); // finishedBy
+                // Mapping: 7=ActPotong, 8=ActBuat, 9=Status, 10=FinishDate, 11=Catatan, 12=Total, 13=FinishedBy, 15=UpdatedAt
+                const actP = parseInt(data.actualPotong) || 0;
+                const actB = parseInt(data.actualBuat) || 0;
+                
+                sheet.getRange(row, 7, 1, 7).setValues([[
+                  actP, 
+                  actB, 
+                  'Selesai', 
+                  new Date(), 
+                  data.catatan || '', 
+                  0, // Total Pendapatan (TBD if prices available)
+                  data.finishedBy || ''
+                ]]);
+                sheet.getRange(row, 15).setValue(now);
             } else {
-                // Update basic info (Edit mode)
+                // Edit Mode: update fundamental fields
                 sheet.getRange(row, 2).setValue(data.tanggal);
                 sheet.getRange(row, 4).setValue(data.picName);
                 sheet.getRange(row, 5).setValue(parseInt(data.targetPotong) || 0);
                 sheet.getRange(row, 6).setValue(parseInt(data.targetBuat) || 0);
-                sheet.getRange(row, 12).setValue(new Date().toISOString());
+                sheet.getRange(row, 15).setValue(now);
             }
             return { success: true };
         }
     }
     return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { 
+    console.error('Error in updateTugasConsumable:', e);
+    return { success: false, message: e.message }; 
+  }
 }
 
 function deleteTugasConsumable(id) {
@@ -2776,13 +2789,22 @@ function addBulkTugasConsumable(rows) {
     const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
     const now = new Date().toISOString();
     const rowsToAdd = rows.map(r => [
-      generateId(), r.tanggal, r.pemberiTugas, r.picName, parseInt(r.targetPotong)||0, parseInt(r.targetBuat)||0, 0, 0, 'Pending', '', now, now
+      generateId(), 
+      r.tanggal, 
+      r.pemberiTugas || '', 
+      r.picName || '', 
+      parseInt(r.targetPotong)||0, 
+      parseInt(r.targetBuat)||0, 
+      0, 0, 'Pending', '', '', 0, '', now, now
     ]);
     if (rowsToAdd.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 12).setValues(rowsToAdd);
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 15).setValues(rowsToAdd);
     }
     return { success: true, count: rowsToAdd.length };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { 
+    console.error('Error in addBulkTugasConsumable:', e);
+    return { success: false, message: e.message }; 
+  }
 }
 
 // ============================================================
@@ -4001,3 +4023,154 @@ function getMyAttendanceToday(nama) {
     return { success: false, message: "Error Server: " + e.toString() };
   }
 }
+
+// ============================================================
+// TUGAS CONSUMABLE MODULE (BUBBLE WRAP)
+// ============================================================
+
+/**
+ * Mengambil semua data tugas consumable
+ */
+function getTugasConsumable() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    const result = rows.map(row => {
+      let obj = {};
+      headers.forEach((h, i) => {
+        let key = h.replace(/\s+/g, '');
+        // Map headers to camelCase keys used in frontend
+        if (key === 'ID') key = 'id';
+        else if (key === 'Tanggal') key = 'tanggal';
+        else if (key === 'PemberiTugas') key = 'pemberiTugas';
+        else if (key === 'PICName') key = 'picName';
+        else if (key === 'TargetPotong') key = 'targetPotong';
+        else if (key === 'TargetBuat') key = 'targetBuat';
+        else if (key === 'ActualPotong') key = 'actualPotong';
+        else if (key === 'ActualBuat') key = 'actualBuat';
+        else if (key === 'Status') key = 'status';
+        else if (key === 'FinishDate') key = 'finishDate';
+        else if (key === 'Catatan') key = 'catatan';
+        else if (key === 'TotalPendapatan') key = 'totalPendapatan';
+        else if (key === 'FinishedBy') key = 'finishedBy';
+        else if (key === 'CreatedAt') key = 'createdAt';
+        else if (key === 'UpdatedAt') key = 'updatedAt';
+        
+        let val = row[i];
+        if (val instanceof Date) val = val.toISOString();
+        obj[key] = val;
+      });
+      return obj;
+    });
+    
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Menambah tugas consumable baru
+ */
+function addTugasConsumable(item) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const id = generateId();
+    const now = new Date();
+    
+    // ['ID', 'Tanggal', 'Pemberi Tugas', 'PIC Name', 'Target Potong', 'Target Buat', 'Actual Potong', 'Actual Buat', 'Status', 'Finish Date', 'Catatan', 'Total Pendapatan', 'Finished By', 'Created At', 'Updated At']
+    sheet.appendRow([
+      id,
+      item.tanggal,
+      item.pemberiTugas,
+      item.picName,
+      item.targetPotong || 0,
+      item.targetBuat || 0,
+      0, // Actual Potong initial
+      0, // Actual Buat initial
+      'Pending',
+      '', // Finish Date
+      item.catatan || '',
+      0, // Total Pendapatan initial
+      '', // Finished By
+      now,
+      now
+    ]);
+    
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Update tugas consumable (Edit atau Selesaikan)
+ */
+function updateTugasConsumable(item) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const now = new Date();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(item.id)) {
+        const rowNum = i + 1;
+        
+        // Map updates
+        if (item.tanggal) sheet.getRange(rowNum, 2).setValue(item.tanggal);
+        if (item.picName) sheet.getRange(rowNum, 4).setValue(item.picName);
+        if (item.targetPotong !== undefined) sheet.getRange(rowNum, 5).setValue(item.targetPotong);
+        if (item.targetBuat !== undefined) sheet.getRange(rowNum, 6).setValue(item.targetBuat);
+        
+        // Completion logic
+        if (item.status === 'Selesai') {
+          sheet.getRange(rowNum, 7).setValue(item.actualPotong || 0);
+          sheet.getRange(rowNum, 8).setValue(item.actualBuat || 0);
+          sheet.getRange(rowNum, 9).setValue('Selesai');
+          sheet.getRange(rowNum, 10).setValue(now);
+          sheet.getRange(rowNum, 13).setValue(item.finishedBy || '');
+          
+          // Hitung Pendapatan (Contoh: Potong 500, Buat 1000 - Sesuaikan jika perlu)
+          const pPotong = (item.actualPotong || 0) * 500;
+          const pBuat = (item.actualBuat || 0) * 1000;
+          sheet.getRange(rowNum, 12).setValue(pPotong + pBuat);
+        } else if (item.status) {
+          sheet.getRange(rowNum, 9).setValue(item.status);
+        }
+        
+        if (item.catatan !== undefined) sheet.getRange(rowNum, 11).setValue(item.catatan);
+        
+        sheet.getRange(rowNum, 15).setValue(now); // Updated At
+        
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Hapus tugas consumable
+ */
+function deleteTugasConsumable(id) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.deleteRow(i + 1);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
