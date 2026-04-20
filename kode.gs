@@ -3105,24 +3105,52 @@ function _hitungStatusAbsensi(divisi, tipe, jam, nama, tanggal) {
 }
 
 /**
+ * Pembantu untuk konversi berbagai format waktu ke total menit (0-1439)
+ * Mendukung string "HH:mm" atau objek Date dari Google Sheets
+ */
+function _parseTimeToMinutes(timeInput) {
+  if (!timeInput) return 0;
+  
+  if (timeInput instanceof Date) {
+    // SpreadsheetApp sering mengembalikan waktu sebagai objek Date
+    return (timeInput.getHours() * 60) + timeInput.getMinutes();
+  }
+  
+  const parts = String(timeInput).trim().split(':');
+  if (parts.length >= 2) {
+    // ParseInt robust terhadap leading zero ("08")
+    const hh = parseInt(parts[0], 10) || 0;
+    const mm = parseInt(parts[1], 10) || 0;
+    return (hh * 60) + mm;
+  }
+  
+  return 0;
+}
+
+/**
  * Helper untuk membandingkan jam absen dengan jadwal
  */
 function _compareAttendanceTime(tipe, jamAbsen, jamMasuk, jamPulang, toleransi) {
-  const jamParts   = String(jamAbsen).split(':');
-  const jamMnt     = (parseInt(jamParts[0] || 0) * 60) + parseInt(jamParts[1] || 0);
-  const masukParts = String(jamMasuk).split(':');
-  const masukMnt   = (parseInt(masukParts[0] || 0) * 60) + parseInt(masukParts[1] || 0);
-  const pulangParts = String(jamPulang).split(':');
-  const pulangMnt  = (parseInt(pulangParts[0] || 0) * 60) + parseInt(pulangParts[1] || 0);
+  const jamMnt     = _parseTimeToMinutes(jamAbsen);
+  const masukMnt   = _parseTimeToMinutes(jamMasuk);
+  const pulangMnt  = _parseTimeToMinutes(jamPulang);
+  const tol        = parseInt(toleransi) || 0;
 
   if (tipe === 'IN') {
-    return { status: jamMnt <= masukMnt + toleransi ? 'Hadir' : 'Terlambat' };
+    // Hadir jika jam absen <= jam masuk + toleransi
+    return { status: jamMnt <= (masukMnt + tol) ? 'Hadir' : 'Terlambat' };
   } else {
     // Normalisasi untuk shift malam (jika pulang jam 05:00 pagi besoknya)
-    let effectivePulangMnt = pulangMnt;
     // Jika jam masuk > jam pulang (misal 20:00 -> 05:00), maka pulang dianggap hari berikutnya
-    // Namun perbandingan menit biasanya cukup jika kita asumsikan absen dilakukan di rentang yang wajar
-    return { status: jamMnt >= effectivePulangMnt - toleransi ? 'Pulang' : 'Pulang Awal' };
+    let effectivePulangMnt = pulangMnt;
+    
+    // Logika Pulang: Hadir jika jam absen >= jam pulang - toleransi (toleransi pulang biasanya 0/negatif tapi kita ikuti flow)
+    // Jika user absen jam 18:25 untuk jadwal 17:00, jamMnt (1105) >= 1020, maka "Pulang"
+    if (jamMnt >= (effectivePulangMnt - tol)) {
+      return { status: 'Pulang' };
+    } else {
+      return { status: 'Pulang Awal' };
+    }
   }
 }
 
@@ -3467,14 +3495,20 @@ function repairAbsensiData(requesterUsername) {
       const match = kMap[karId] || kMap[fpIdLog];
       
       if (match) {
-        // Cek apakah perlu diupdate (Nama masih placeholder FP- atau Nama berbeda)
-        const isPlaceholder = currentNama.startsWith('FP-') || currentNama === '';
-        const isNameDiff = currentNama !== match[0];
-        const isDivDiff = String(aData[j][5]) !== match[1];
+        // Recalculate status berdasarkan pengaturan terbaru
+        const tglStr = aData[j][1] instanceof Date ? Utilities.formatDate(aData[j][1], Session.getScriptTimeZone(), "yyyy-MM-dd") : String(aData[j][1]);
+        const jamStr = aData[j][2] instanceof Date ? Utilities.formatDate(aData[j][2], Session.getScriptTimeZone(), "HH:mm:ss") : String(aData[j][2]);
+        const tipe   = String(aData[j][7]).toUpperCase();
+        const currentStatus = String(aData[j][10]);
 
-        if (isPlaceholder || isNameDiff || isDivDiff) {
+        const newStatusInfo = _hitungStatusAbsensi(match[1], tipe, jamStr, match[0], tglStr);
+        const newStatus = newStatusInfo.status;
+
+        if (isPlaceholder || isNameDiff || isDivDiff || currentStatus !== newStatus) {
           // Update Nama (E), Divisi (F), Jabatan (G) -> Kolom 5, 6, 7
           absSheet.getRange(rowNum, 5, 1, 3).setValues([[match[0], match[1], match[2]]]);
+          // Update Status (K) -> Kolom 11
+          absSheet.getRange(rowNum, 11).setValue(newStatus);
           updatedCount++;
         }
       }
