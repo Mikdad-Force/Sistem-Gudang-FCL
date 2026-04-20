@@ -1525,7 +1525,7 @@ function getSuratJalanMasuk() {
     const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
-      result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), supplier: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
+      result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), supplier: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1607,7 +1607,7 @@ function getSuratJalanKeluar() {
     const sheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR); const data = sheet.getDataRange().getValues(); const result = [];
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
-      result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), tujuan: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
+      result.push({ id: data[i][0], noSJ: data[i][1], tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''), tujuan: data[i][3], keterangan: data[i][4], createdBy: data[i][5], createdAt: data[i][6] instanceof Date ? data[i][6].toISOString() : String(data[i][6]||'') });
     }
     return { success: true, data: result };
   } catch(e) { return { success: false, message: e.message }; }
@@ -1666,7 +1666,7 @@ function getOrders() {
       result.push({
         id: String(data[i][0] || ''), 
         noOrder: String(data[i][1] || ''),
-        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
         pelanggan: String(data[i][3] || ''), 
         alamat: String(data[i][4] || ''), 
         status: String(data[i][5] || ''), 
@@ -1785,7 +1785,7 @@ function getOrderDetailFull(orderId, noOrderFallback) {
         orderHeader = {
           id: String(orderData[i][0] || ''),
           noOrder: String(orderData[i][1] || ''),
-          tanggal: orderData[i][2] instanceof Date ? Utilities.formatDate(orderData[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(orderData[i][2]||''),
+          tanggal: orderData[i][2] instanceof Date ? Utilities.formatDate(orderData[i][2], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(orderData[i][2]||''),
           pelanggan: String(orderData[i][3] || ''),
           alamat: String(orderData[i][4] || ''),
           status: String(orderData[i][5] || ''),
@@ -1872,7 +1872,7 @@ function getRetur() {
       if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0], noRetur: data[i][1],
-        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
         sumber: data[i][3], alasan: data[i][4], keterangan: data[i][5], createdBy: data[i][6],
         createdAt: data[i][7] instanceof Date ? data[i][7].toISOString() : String(data[i][7]||'')
       });
@@ -2108,8 +2108,8 @@ function getTugasProject() {
         assignee: data[i][2] || '',
         assigneeName: data[i][3] || '',
         prioritas: data[i][4] || 'Sedang',
-        tanggalMulai: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
-        deadline: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6]||''),
+        tanggalMulai: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
+        deadline: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][6]||''),
         targetHari: parseInt(data[i][7]) || 0,
         status: data[i][8] || 'Todo',
         kategori: data[i][9] || '',
@@ -2232,7 +2232,7 @@ function getAsset() {
       if (data[i].join('').trim() === '') continue;
       result.push({
         id: data[i][0],
-        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], SpreadsheetApp.getActive().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
         nama: data[i][2],
         jenisAsset: data[i][3],
         deskripsi: data[i][4],
