@@ -4181,6 +4181,75 @@
               </div>
             </div>
           </div>
+          <div class="page" id="page-tugasConsumable">
+            <div class="card mb-4">
+              <div class="card-header">
+                <h4 style="display:flex; align-items:center; gap:8px;">🫧 Tugas Consumable (Bubble Wrap)</h4>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-ghost btn-sm" onclick="refreshTConsumable()">🔄 Refresh</button>
+                  <button class="btn btn-primary btn-sm" onclick="openModalAddTConsumable()">+ Tambah Tugas</button>
+                </div>
+              </div>
+
+              <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                <div class="stat-card blue">
+                  <div class="stat-label">Total Tugas</div>
+                  <div class="stat-value blue" id="statTConsumTotal">0</div>
+                </div>
+                <div class="stat-card amber">
+                  <div class="stat-label">Pending</div>
+                  <div class="stat-value amber" id="statTConsumPending">0</div>
+                </div>
+                <div class="stat-card green">
+                  <div class="stat-label">Selesai</div>
+                  <div class="stat-value green" id="statTConsumDone">0</div>
+                </div>
+                <div class="stat-card red">
+                  <div class="stat-label">Gagal / Dibatalkan</div>
+                  <div class="stat-value red" id="statTConsumGagal">0</div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+                <div style="flex:1; min-width:300px;">
+                  <div class="file-tabs mb-3" style="display:flex; gap:8px;">
+                    <button class="file-tab active" onclick="switchTConsumTab('Pending', this)">⏳ Pending</button>
+                    <button class="file-tab" onclick="switchTConsumTab('Selesai', this)">✅ Selesai</button>
+                    <button class="file-tab" onclick="switchTConsumTab('Gagal', this)">❌ Gagal</button>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="table table-hover table-striped align-middle">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Tgl</th>
+                          <th>Pemberi</th>
+                          <th>PIC</th>
+                          <th>Target (P/B)</th>
+                          <th>Aktual (P/B)</th>
+                          <th>Status</th>
+                          <th>Catatan</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tableTConsumable"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div style="width:320px; background:var(--navy2); padding:20px; border-radius:16px; border:1px solid #ffffff12; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                  <h5 style="text-align:center; font-family:'Outfit',sans-serif; margin-bottom:15px; color:#0ea5e9; font-weight:700;">📈 Tren 6 Bulan Terakhir</h5>
+                  <div style="height:200px; position:relative;">
+                    <canvas id="chartTConsum"></canvas>
+                  </div>
+                  <div style="margin-top:15px; font-size:11px; color:var(--gray); text-align:center;">
+                    Perbandingan Target vs Realisasi (Potong + Buat)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
 
           <div class="page" id="page-karyawan">
             <!-- DASHBOARD KARYAWAN -->
@@ -9370,6 +9439,7 @@
       retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok',
       assetWarehouse: '🏪 Asset Warehouse',
       bookingMobil: '🚗 Booking Mobil',
+      tugasConsumable: '🧼 Tugas Consumable',
       approval: '✅ Pusat Approval'
     };
     const pageLoaders = {
@@ -9378,6 +9448,7 @@
       handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
       organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
+      tugasConsumable: loadTugasConsumable,
       approval: loadCentralizedApprovals
     };
 
@@ -9417,7 +9488,7 @@
           laporanKerja: '📝', grafikLaporan: '📈', handover: '📦', klaim: '⚠️', tugasProject: '📋',
           ijin: '✉️', lembur: '⏱️', pengajuanAsset: '📦', organisasi: '🏗️', sop: '📋',
           users: '⚙️', stock: '📦', stockOpname: '⚖️', packingList: '📋', inbound: '📥',
-          outbound: '✂️', retur: '↩️', order: '🛒', analisis: '📈', bookingMobil: '🚗'
+          outbound: '✂️', retur: '↩️', order: '🛒', analisis: '📈', bookingMobil: '🚗', tugasConsumable: '🧼'
         };
         const icon = pageIcons[name] || '📄';
         titleEl.textContent = icon + ' ' + getLangText(name);
@@ -12113,7 +12184,7 @@
               <div style="display:flex; gap:4px;">
                 ${!isDone ? `<button class="btn btn-teal btn-sm" onclick="openModalFinishTConsumable('${d.id}')" title="Selesaikan">🏁</button>` : ''}
                 <button class="btn btn-ghost btn-sm" onclick="openModalAddTConsumable('${d.id}')" title="Edit">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteTConsumable('${d.id}')" title="Hapus">🗑️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteTugasConsumable('${d.id}')" title="Hapus">🗑️</button>
               </div>
             </td>
           </tr>
@@ -12228,7 +12299,7 @@
       document.getElementById('tConsumModalTitle').textContent = '🫧 Buat Tugas Consumable';
 
       if (id) {
-        const d = tugasConsumableData.find(x => x.id == id);
+        const d = tugasConsumableData.find(x => String(x.id) === String(id));
         if (d) {
           setVal('tConsumId', d.id);
           setVal('tConsumTanggal', d.tanggal.split('T')[0]);
@@ -12278,8 +12349,8 @@
     }
 
     function openModalFinishTConsumable(id) {
-      const d = tugasConsumableData.find(x => x.id == id);
-      if (!d) return;
+      const d = tugasConsumableData.find(x => String(x.id) === String(id));
+      if (!d) return toast('Data tugas tidak ditemukan!', 'error');
 
       setVal('fTConsumId', d.id);
       document.getElementById('fTConsumTgl').textContent = formatDate(d.tanggal);
@@ -12297,7 +12368,7 @@
 
     function validateTConsumTarget() {
       const id = v('fTConsumId');
-      const d = tugasConsumableData.find(x => x.id == id);
+      const d = tugasConsumableData.find(x => String(x.id) === String(id));
       if (!d) return;
 
       const actP = parseInt(v('fTConsumActualPotong')) || 0;
@@ -12314,41 +12385,68 @@
     }
 
     function submitFinishTugasConsumable() {
+      console.log('submitFinishTugasConsumable called');
       const id = v('fTConsumId');
-      const d = tugasConsumableData.find(x => x.id == id);
+      const d = tugasConsumableData.find(x => String(x.id) === String(id));
+      if (!d) {
+        console.error('Task data not found for ID:', id);
+        return toast('Data tugas tidak ditemukan!', 'error');
+      }
+
       const actP = v('fTConsumActualPotong');
       const actB = v('fTConsumActualBuat');
       const note = v('fTConsumCatatan');
 
-      if (!actP || !actB) return toast('Input hasil aktual!', 'error');
+      const valP = parseInt(actP) || 0;
+      const valB = parseInt(actB) || 0;
+
+      if (actP === '' && actB === '') return toast('Harap isi hasil aktual!', 'warning');
       
-      const isLow = (parseInt(actP) < d.targetPotong) || (parseInt(actB) < d.targetBuat);
+      const isLow = (valP < d.targetPotong) || (valB < d.targetBuat);
       if (isLow && !note.trim()) return toast('Wajib isi alasan jika target tidak tercapai!', 'warning');
 
-      const btn = document.querySelector('#modalFinishTugasConsumable .btn-primary');
+      const btn = document.querySelector('#modalFinishTugasConsumable .btn-teal');
+      if (!btn) {
+        console.error('Submit button not found in modal');
+        return;
+      }
       const oldTxt = btn.textContent;
+      showLoading('Menyimpan penyelesaian tugas...');
       btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+
+      const userNameStr = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.nama || currentUser.username || 'System') : 'System';
 
       const updateData = {
         id: id,
-        actualPotong: parseInt(actP),
-        actualBuat: parseInt(actB),
+        actualPotong: valP,
+        actualBuat: valB,
         catatan: note,
         status: 'Selesai',
-        finishedBy: currentUser.nama
+        finishedBy: userNameStr
       };
 
+      console.log('Submitting Update:', updateData);
+
       google.script.run.withSuccessHandler(res => {
+        hideLoading();
         btn.disabled = false; btn.textContent = oldTxt;
         if (res.success) {
-          toast('Tugas diselesaikan');
+          toast('Tugas diselesaikan', 'success');
           closeModal('modalFinishTugasConsumable');
           loadTugasConsumable();
-        } else toast(res.message, 'error');
+        } else {
+          console.error('Backend Update Failed:', res.message);
+          toast(res.message, 'error');
+        }
+      }).withFailureHandler(err => {
+        hideLoading();
+        btn.disabled = false; btn.textContent = oldTxt;
+        console.error('GAS Script Error:', err);
+        toast('Gagal menghubungi server: ' + err.message, 'error');
       }).updateTugasConsumable(updateData);
     }
 
-    function deleteTConsumable(id) {
+    function deleteTugasConsumable(id) {
       if (!confirm('Hapus tugas ini?')) return;
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
@@ -16365,11 +16463,234 @@
             }
             loadShiftRoster();
           }
+          if (name === 'tugasConsumable') {
+            loadTugasConsumable();
+          }
         };
       }
     })();
 
+
+    // ============================================================
+    // TUGAS CONSUMABLE LOGIC
+    // ============================================================
+    let tugasConsumableData = [];
+    let currentTConsumTab = 'Pending';
+
+    function loadTugasConsumable() {
+      const tb = document.getElementById('tableTConsumable');
+      if (tb && tb.innerHTML === '') {
+        tb.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px;"><div class="spinner-border text-primary"></div><br>Memuat Tugas Consumable...</td></tr>';
+      }
+      
+      google.script.run.withSuccessHandler(res => {
+        if (!res.success) return toast(res.message, 'error');
+        tugasConsumableData = res.data || [];
+        renderTConsumableTable();
+        initTConsumChart();
+      }).getTugasConsumable();
+    }
+
+    function refreshTConsumable() {
+      toast('⏳ Memperbarui data...', 'info');
+      loadTugasConsumable();
+    }
+
+    function switchTConsumTab(tab, el) {
+      currentTConsumTab = tab;
+      document.querySelectorAll('#page-tugasConsumable .file-tab').forEach(t => t.classList.remove('active'));
+      if (el) el.classList.add('active');
+      renderTConsumableTable();
+    }
+
+    function renderTConsumableTable() {
+      const tb = document.getElementById('tableTConsumable');
+      if (!tb) return;
+      
+      let filtered = tugasConsumableData.filter(d => d.status === currentTConsumTab);
+      
+      // Hitung Statistik
+      const total = tugasConsumableData.length;
+      const pending = tugasConsumableData.filter(d => d.status === 'Pending').length;
+      const selesai = tugasConsumableData.filter(d => d.status === 'Selesai').length;
+      const gagal = tugasConsumableData.filter(d => d.status === 'Gagal').length;
+      
+      setVal('statTConsumTotal', total);
+      setVal('statTConsumPending', pending);
+      setVal('statTConsumDone', selesai);
+      setVal('statTConsumGagal', gagal);
+
+      if (filtered.length === 0) {
+        tb.innerHTML = `<tr><td colspan="9" class="empty-state">Tidak ada tugas dalam kategori ${currentTConsumTab}</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach((d, idx) => {
+        const actionBtn = d.status === 'Pending' 
+          ? `<button class="btn btn-teal btn-sm" onclick="openCompleteTConsumModal('${d.id}')">✅ Selesai</button>`
+          : `<span class="badge bg-light text-dark">${d.status}</span>`;
+          
+        html += `<tr>
+          <td>${idx + 1}</td>
+          <td>${formatDate(d.tanggal)}</td>
+          <td>${d.pemberiTugas || '-'}</td>
+          <td><strong>${d.picName}</strong></td>
+          <td>${d.targetPotong} / ${d.targetBuat}</td>
+          <td>${d.actualPotong} / ${d.actualBuat}</td>
+          <td><span class="badge-${d.status === 'Selesai' ? 'approved' : (d.status === 'Pending' ? 'pending' : 'revoked')}">${d.status}</span></td>
+          <td><small>${d.catatan || '-'}</small></td>
+          <td>
+            <div style="display:flex; gap:4px;">
+              ${actionBtn}
+              <button class="btn btn-warning btn-sm" onclick="openEditTConsumModal('${d.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="doDeleteTConsumable('${d.id}')">✕</button>
+            </div>
+          </td>
+        </tr>`;
+      });
+      tb.innerHTML = html;
+    }
+
+    function openModalAddTConsumable() {
+      resetForm(['tcId', 'tcPic', 'tcTargetPotong', 'tcTargetBuat', 'tcCatatan']);
+      document.getElementById('tcTanggal').value = new Date().toISOString().split('T')[0];
+      document.getElementById('tcModalTitle').textContent = '+ Tambah Tugas Consumable';
+      openModal('modalTConsumable');
+    }
+
+    function openEditTConsumModal(id) {
+      const d = tugasConsumableData.find(x => x.id === id);
+      if (!d) return;
+      setVal('tcId', d.id);
+      setVal('tcTanggal', d.tanggal);
+      setVal('tcPic', d.picName);
+      setVal('tcTargetPotong', d.targetPotong);
+      setVal('tcTargetBuat', d.targetBuat);
+      setVal('tcCatatan', d.catatan);
+      document.getElementById('tcModalTitle').textContent = '✏️ Edit Tugas Consumable';
+      openModal('modalTConsumable');
+    }
+
+    function submitTConsumable() {
+      const id = v('tcId'), tgl = v('tcTanggal'), pic = v('tcPic'), tP = v('tcTargetPotong'), tB = v('tcTargetBuat'), ket = v('tcCatatan');
+      if (!tgl || !pic) return toast('Lengkapi data!', 'error');
+
+      const btn = document.getElementById('btnSaveTConsum');
+      btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+
+      const data = { id, tanggal: tgl, pemberiTugas: currentUser.nama, picName: pic, targetPotong: tP, targetBuat: tB, catatan: ket };
+      
+      const func = id ? 'updateTugasConsumable' : 'addTugasConsumable';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Simpan Tugas';
+        if (res.success) {
+          toast('Berhasil disimpan! ✅');
+          closeModal('modalTConsumable');
+          loadTugasConsumable();
+        } else toast(res.message, 'error');
+      })[func](data);
+    }
+
+    function openCompleteTConsumModal(id) {
+      const d = tugasConsumableData.find(x => x.id === id);
+      if (!d) return;
+      setVal('compTcId', d.id);
+      document.getElementById('compTcInfo').innerHTML = `Tugas: <strong>${d.picName}</strong> (${formatDate(d.tanggal)})<br>Target: ${d.targetPotong} Potong, ${d.targetBuat} Buat`;
+      setVal('compTcActPotong', d.targetPotong);
+      setVal('compTcActBuat', d.targetBuat);
+      setVal('compTcCatatan', '');
+      openModal('modalCompleteTConsumable');
+    }
+
+    function submitCompleteTConsumable() {
+      const id = v('compTcId'), actP = v('compTcActPotong'), actB = v('compTcActBuat'), ket = v('compTcCatatan');
+      
+      const btn = document.getElementById('btnDoCompleteTConsum');
+      btn.disabled = true; btn.textContent = '⏳ Memproses...';
+
+      const data = { id, actualPotong: actP, actualBuat: actB, catatan: ket, status: 'Selesai', finishedBy: currentUser.nama };
+      
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '✅ Selesaikan Tugas';
+        if (res.success) {
+          toast('Tugas berhasil diselesaikan! 🫧');
+          closeModal('modalCompleteTConsumable');
+          loadTugasConsumable();
+        } else toast(res.message, 'error');
+      }).updateTugasConsumable(data);
+    }
+
+    function doDeleteTConsumable(id) {
+      if (!confirm('Hapus tugas ini?')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) { toast('Tugas dihapus'); loadTugasConsumable(); }
+        else toast(res.message, 'error');
+      }).deleteTugasConsumable(id);
+    }
+
+    function initTConsumChart() {
+      const ctx = document.getElementById('chartTConsum');
+      if (!ctx || typeof Chart === 'undefined') return;
+
+      // Group by Month (Last 6 Months)
+      const months = [];
+      const targets = [];
+      const actuals = [];
+      
+      // Simple aggregation logic
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mKey = Utilities.formatDate(d, "GMT+7", "yyyy-MM");
+        const mLabel = d.toLocaleString('id-ID', { month: 'short' });
+        months.push(mLabel);
+        
+        const mData = tugasConsumableData.filter(x => (x.tanggal||'').startsWith(mKey));
+        const tTotal = mData.reduce((s, x) => s + (x.targetPotong || 0) + (x.targetBuat || 0), 0);
+        const aTotal = mData.reduce((s, x) => s + (x.actualPotong || 0) + (x.actualBuat || 0), 0);
+        targets.push(tTotal);
+        actuals.push(aTotal);
+      }
+
+      if (window.tConsumChartInstance) window.tConsumChartInstance.destroy();
+
+      window.tConsumChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [
+            { label: 'Target', data: targets, borderColor: '#0ea5e9', backgroundColor: 'rgba(14, 165, 233, 0.1)', fill: true, tension: 0.4 },
+            { label: 'Realisasi', data: actuals, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Outfit' } } } },
+          scales: {
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    // Temporary mock Utilities if not present
+    if (typeof Utilities === 'undefined') {
+      window.Utilities = {
+        formatDate: function(date, tz, format) {
+          const d = new Date(date);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          if (format === 'yyyy-MM') return `${y}-${m}`;
+          return `${y}-${m}-${day}`;
+        }
+      };
+    }
+
   </script>
+
 
 
 
@@ -16529,5 +16850,74 @@
     </div>
   </div>
 
+
+  <!-- MODAL: Tugas Consumable -->
+  <div class="modal-overlay" id="modalTConsumable">
+    <div class="custom-modal" style="width:500px;">
+      <button class="modal-close" onclick="closeModal('modalTConsumable')">x</button>
+      <h3 id="tcModalTitle">+ Tambah Tugas Consumable</h3>
+      <input type="hidden" id="tcId">
+      
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Tanggal Tugas *</label>
+          <input type="date" id="tcTanggal" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">PIC Name *</label>
+          <input type="text" id="tcPic" class="form-control" placeholder="Nama petugas">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Target Potong Bubble *</label>
+          <input type="number" id="tcTargetPotong" class="form-control" value="0">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Target Buat Bubble *</label>
+          <input type="number" id="tcTargetBuat" class="form-control" value="0">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Catatan / Instruksi</label>
+          <textarea id="tcCatatan" class="form-control" rows="3" placeholder="Pesan untuk PIC..."></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalTConsumable')">Batal</button>
+        <button class="btn btn-primary" id="btnSaveTConsum" onclick="submitTConsumable()">💾 Simpan Tugas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Selesaikan Tugas Consumable -->
+  <div class="modal-overlay" id="modalCompleteTConsumable">
+    <div class="custom-modal" style="width:480px;">
+      <button class="modal-close" onclick="closeModal('modalCompleteTConsumable')">x</button>
+      <h3>✅ Konfirmasi Selesai</h3>
+      <p id="compTcInfo" class="alert alert-info py-2" style="font-size:12px;"></p>
+      <input type="hidden" id="compTcId">
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Realisasi Potong *</label>
+          <input type="number" id="compTcActPotong" class="form-control" value="0">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Realisasi Buat *</label>
+          <input type="number" id="compTcActBuat" class="form-control" value="0">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Catatan Akhir (Kendala/Hasil)</label>
+          <textarea id="compTcCatatan" class="form-control" rows="2" placeholder="Tulis catatan jika ada..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalCompleteTConsumable')">Batal</button>
+        <button class="btn btn-teal" id="btnDoCompleteTConsum" onclick="submitCompleteTConsumable()">✅ Selesaikan Tugas</button>
+      </div>
+    </div>
+  </div>
+
 </body>
+
 </html>
