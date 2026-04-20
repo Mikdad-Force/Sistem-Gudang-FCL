@@ -9115,7 +9115,25 @@
     const formatRpInput = el => { let raw = el.value.replace(/[^\d]/g, ''); if (!raw) { el.value = ''; return; } el.value = parseInt(raw, 10).toLocaleString('id-ID'); };
     const getRpValue = id => { const raw = v(id); return parseFloat(raw.replace(/[^\d]/g, '')) || 0; };
     const formatRp = n => 'Rp ' + (parseFloat(n) || 0).toLocaleString('id-ID');
-    const formatDate = d => { if (!d) return '-'; try { const dt = new Date(d); return isNaN(dt) ? d : dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) { return d; } };
+    const formatDate = d => {
+      if (!d) return '-';
+      try {
+        let dt;
+        if (typeof d === 'string' && d.includes('-') && d.length === 10) {
+          const parts = d.split('-');
+          if (parts.length === 3) {
+            dt = new Date(parts[0], parts[1] - 1, parts[2]);
+          } else {
+            dt = new Date(d);
+          }
+        } else {
+          dt = new Date(d);
+        }
+        return isNaN(dt.getTime()) ? d : dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      } catch (e) {
+        return d;
+      }
+    };
     let toastTimer;
     const toast = (msg, type = 'success', callback = null) => {
       const el = document.getElementById('toast');
