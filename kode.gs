@@ -3715,27 +3715,64 @@ function importShiftRoster(monthYear, rosterData, requesterUsername) {
     const values = range.getValues();
     const headers = values[0];
     
-    // Hapus data lama untuk bulan yang sama
-    const newValues = [headers];
+    // --- Strategi Sinkronisasi (Merge) ---
+    // 1. Pisahkan data bulan lain dan data bulan ini
+    const otherMonthsRows = [headers];
+    const currentMonthMap = {}; // Key: Nama (lower), Value: Full Row Array
+    const tz = ss.getSpreadsheetTimeZone();
+
     for (let i = 1; i < values.length; i++) {
-      if (values[i][0] !== monthYear) {
-        newValues.push(values[i]);
+      let rowBulan = values[i][0];
+      let rowBulanStr = "";
+      if (rowBulan instanceof Date) {
+        rowBulanStr = Utilities.formatDate(rowBulan, tz, "yyyy-MM");
+      } else {
+        rowBulanStr = String(rowBulan).trim();
+      }
+
+      if (rowBulanStr === monthYear) {
+        const nameKey = String(values[i][1]).trim().toLowerCase();
+        currentMonthMap[nameKey] = values[i];
+      } else {
+        otherMonthsRows.push(values[i]);
       }
     }
 
-    // Tambah data baru
+    // 2. Gabungkan data baru ke data eksisting (atau tambah baru jika belum ada)
     rosterData.forEach(item => {
-      // Gunakan prefix ' agar tidak otomatis diubah jadi tanggal oleh Sheets
-      const row = [monthYear, item.name || item.nama]; 
-      for (let d = 1; d <= 31; d++) {
-        row.push(item[d.toString()] || "");
+      const namaAsli = item.name || item.nama;
+      const nameKey = String(namaAsli).trim().toLowerCase();
+      
+      let row;
+      if (currentMonthMap[nameKey]) {
+        // Update baris eksisting
+        row = currentMonthMap[nameKey];
+      } else {
+        // Buat baris baru, isi default kosong untuk 31 hari
+        row = [monthYear, namaAsli];
+        for (let d = 1; d <= 31; d++) row.push("");
+        currentMonthMap[nameKey] = row;
       }
-      newValues.push(row);
+
+      // --- Strategi Merge (Patch): Hanya update kolom tanggal yang ada di dalam item ---
+      for (let d = 1; d <= 31; d++) {
+        const dStr = d.toString();
+        if (Object.prototype.hasOwnProperty.call(item, dStr)) {
+          const val = item[dStr];
+          // Hanya perbarui jika nilainya tidak kosong (agar tidak menimpa data lama dengan kosong)
+          // Jika di Excel kosong, maka data di database tidak akan berubah (Preserved)
+          if (val !== undefined && val !== null && String(val).trim() !== "") {
+            // Indeks kolom: Bulan(0), Nama(1), Tgl 1(2), ..., Tgl 31(32)
+            row[d + 1] = String(val).trim().toUpperCase();
+          }
+        }
+      }
     });
 
-    // Tulis ulang
+    // 3. Gabungkan kembali semua baris dan tulis ke sheet
+    const finalValues = [...otherMonthsRows, ...Object.values(currentMonthMap)];
     sheet.clear();
-    sheet.getRange(1, 1, newValues.length, headers.length).setValues(newValues);
+    sheet.getRange(1, 1, finalValues.length, headers.length).setValues(finalValues);
 
     return { success: true, message: "Berhasil mengimpor " + rosterData.length + " data roster." };
   } catch (e) {
