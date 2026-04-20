@@ -16069,7 +16069,10 @@
               }
               
               if (dayNum && !isNaN(dayNum)) {
-                 obj[dayNum] = row[j] ? String(row[j]).trim().toUpperCase() : 'OFF';
+                 const cellVal = row[j] ? String(row[j]).trim().toUpperCase() : '';
+                 if (cellVal !== '') {
+                    obj[dayNum] = cellVal;
+                 }
               }
             }
             rosterData.push(obj);
@@ -16079,8 +16082,30 @@
             showToast('Tidak ada data karyawan ditemukan di Excel!', 'error');
             return;
           }
+
+          // --- Sinkronisasi & Deduplikasi Nama (Client-side) ---
+          const uniqueMap = new Map();
+          let duplicatesFound = 0;
+          rosterData.forEach(item => {
+            const nameKey = item.nama.toLowerCase();
+            if (uniqueMap.has(nameKey)) {
+              // Jika ada nama yang sama dalam satu file, gabungkan datanya (Merge)
+              const existing = uniqueMap.get(nameKey);
+              Object.assign(existing, item);
+              duplicatesFound++;
+              console.warn('Duplicate entry found and merged in file:', item.nama);
+            } else {
+              uniqueMap.set(nameKey, item);
+            }
+          });
+          const finalRosterData = Array.from(uniqueMap.values());
+
+          if (duplicatesFound > 0) {
+            showToast(`⚠️ ${duplicatesFound} baris duplikat untuk nama yang sama digabungkan secara otomatis.`, 'warning');
+          }
+          // -----------------------------------------------------
           
-          showToast('⏳ Mengimpor ' + rosterData.length + ' data roster...', 'info');
+          showToast('⏳ Mengimpor ' + finalRosterData.length + ' data roster...', 'info');
           google.script.run.withSuccessHandler(function(res) {
             if (res.success) {
               showToast('✅ Berhasil impor roster!', 'success');
@@ -16089,7 +16114,7 @@
               showToast('Gagal Impor: ' + res.message, 'error');
             }
             input.value = '';
-          }).importShiftRoster(monthYear, rosterData, currentUser.username);
+          }).importShiftRoster(monthYear, finalRosterData, currentUser.username);
         } catch (err) {
           showToast('Error Membaca Excel: ' + err.message, 'error');
           input.value = '';
