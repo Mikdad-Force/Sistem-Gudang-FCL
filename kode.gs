@@ -42,9 +42,7 @@ const CONFIG = {
     WAREHOUSE_MAP: 'WarehouseMap',
     ABSENSI_KARYAWAN: 'AbsensiKaryawan',
     JADWAL_SHIFT: 'JadwalShift',
-    JADWAL_ROSTER: 'JadwalRoster',
-    ASSET_WAREHOUSE_LOG: 'AssetWarehouseLog',
-    ASSET_WAREHOUSE_AUDIT: 'AssetWarehouseAudit'
+    JADWAL_ROSTER: 'JadwalRoster'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -110,7 +108,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['ID', 'Tanggal', 'Pemberi Tugas', 'PIC Name', 'Target Potong', 'Target Buat', 'Actual Potong', 'Actual Buat', 'Status', 'Finish Date', 'Catatan', 'Total Pendapatan', 'Finished By', 'Created At', 'Updated At']);
+  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['id', 'tanggal', 'pemberiTugas', 'picName', 'targetPotong', 'targetBuat', 'actualPotong', 'actualBuat', 'status', 'catatan', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
@@ -118,8 +116,6 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_LEMBUR, ['id', 'tanggal', 'jam', 'nama', 'divisi', 'karyawanId', 'status', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE_LOG, ['id', 'tanggal', 'assetNama', 'qty', 'dariDivisi', 'keDivisi', 'pic', 'keterangan']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE_AUDIT, ['id', 'tanggal', 'assetId', 'nama', 'divisi', 'stokSistem', 'stokFisik', 'selisih', 'catatan', 'pic', 'status', 'approvedBy', 'approvedAt']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -2477,124 +2473,6 @@ function getKaryawanFullData() {
 // ============================================================
 // ASSET WAREHOUSE
 // ============================================================
-function saveAssetAudit(results, userNama) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_AUDIT);
-    const now = new Date();
-    results.forEach(r => {
-      sheet.appendRow([
-        generateId(), 
-        now, 
-        r.assetId, 
-        r.nama, 
-        r.divisi, 
-        r.stokSistem, 
-        r.stokFisik, 
-        r.selisih, 
-        r.catatan, 
-        userNama, 
-        'Pending', 
-        '', 
-        ''
-      ]);
-    });
-    return { success: true };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function getPendingAssetAudits() {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_AUDIT);
-    const data = sheet.getDataRange().getValues();
-    const result = [];
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][10] === 'Pending') {
-        result.push({
-          id: data[i][0],
-          tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : String(data[i][1]||''),
-          assetId: data[i][2],
-          nama: data[i][3],
-          divisi: data[i][4],
-          stokSistem: data[i][5],
-          stokFisik: data[i][6],
-          selisih: data[i][7],
-          catatan: data[i][8],
-          pic: data[i][9]
-        });
-      }
-    }
-    return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function approveAssetAudit(auditIds, approverNama) {
-  try {
-    const auditSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_AUDIT);
-    const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
-    const auditData = auditSheet.getDataRange().getValues();
-    const assetData = assetSheet.getDataRange().getValues();
-    const now = new Date();
-
-    auditIds.forEach(id => {
-      // 1. Update Audit Row
-      for (let i = 1; i < auditData.length; i++) {
-        if (String(auditData[i][0]) === String(id)) {
-          const assetId = auditData[i][2];
-          const newQty = auditData[i][6];
-          
-          auditSheet.getRange(i + 1, 11).setValue('Approved');
-          auditSheet.getRange(i + 1, 12).setValue(approverNama);
-          auditSheet.getRange(i + 1, 13).setValue(now);
-
-          // 2. Update Asset Warehouse Stock
-          for (let j = 1; j < assetData.length; j++) {
-            if (String(assetData[j][0]) === String(assetId)) {
-                const oldHist = assetData[j][8] || '';
-                const entry = `📋 Audit Approved oleh ${approverNama} pada ${now.toLocaleString('id-ID')}. Stok disesuaikan dari ${assetData[j][9]} ke ${newQty}`;
-                
-                assetSheet.getRange(j + 1, 10).setValue(newQty); // qty column
-                assetSheet.getRange(j + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
-                break;
-            }
-          }
-          break;
-        }
-      }
-    });
-
-    return { success: true };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function getAssetWarehouseLogs() {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_LOG);
-    const lastRow = sheet.getLastRow();
-    if (lastRow <= 1) return { success: true, data: [] };
-    
-    const data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
-    const result = [];
-    
-    for (let i = 0; i < data.length; i++) {
-        if (!data[i][0]) continue;
-        result.push({
-            id: data[i][0],
-            tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : String(data[i][1]||''),
-            assetNama: data[i][2],
-            qty: data[i][3],
-            dariDivisi: data[i][4],
-            keDivisi: data[i][5],
-            pic: data[i][6],
-            keterangan: data[i][7]
-        });
-    }
-    // Sort newest first
-    result.sort((a,b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-    
-    return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
 function getAssetWarehouseData() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
@@ -2620,7 +2498,7 @@ function getAssetWarehouseData() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty) {
+function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty, zoneId) {
   try {
     const id = generateId();
     const randomNum = Math.floor(10000 + Math.random() * 90000);
@@ -2629,193 +2507,107 @@ function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, creat
     const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
     
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
-    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Normal', createdBy, createdAt, history, qty || 1]);
+    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, qty || 1, zoneId || '']);
     return { success: true, code: code };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qtyUpdate) {
+function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty, zoneId) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        const row = data[i];
-        const oldStatus = row[5];
-        const totalQty = parseInt(row[9]) || 1;
-        const now = new Date().toLocaleString('id-ID');
+        sheet.getRange(i + 1, 3).setValue(nama);
+        sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
+        sheet.getRange(i + 1, 6).setValue(status);
+        sheet.getRange(i + 1, 10).setValue(qty || 1);
+        if (zoneId !== undefined) sheet.getRange(i + 1, 11).setValue(zoneId || '');
         
-        if (!qtyUpdate) qtyUpdate = totalQty;
-
-        if (status !== oldStatus && qtyUpdate < totalQty) {
-          // PARTIAL STATUS UPDATE (SPLIT)
-          const remainingQty = totalQty - qtyUpdate;
-          
-          // 1. Update Source Record (Keep old status)
-          sheet.getRange(i + 1, 3).setValue(nama);
-          sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
-          sheet.getRange(i + 1, 10).setValue(remainingQty);
-          
-          const sourceOldHist = row[8] || '';
-          const sourceEntry = `✏️ ${qtyUpdate} unit dipisahkan menjadi status ${status} oleh ${userNama} pada ${now}. Sisa: ${remainingQty}`;
-          sheet.getRange(i + 1, 9).setValue(sourceOldHist ? sourceOldHist + '\n' + sourceEntry : sourceEntry);
-          
-          // 2. Create New Record (New status)
-          const newId = generateId();
-          const createdAt = new Date().toISOString();
-          const targetEntry = `🚨 Unit ini dipisahkan dari ID ${id} dengan status ${status} oleh ${userNama} pada ${now}. (Asal Divisi: ${row[4]})`;
-          
-          sheet.appendRow([
-            newId, 
-            row[1], // code
-            nama, 
-            tanggalMasuk, 
-            row[4], // same division
-            status, 
-            userNama, 
-            createdAt, 
-            targetEntry, 
-            qtyUpdate
-          ]);
-          
-          return { success: true, message: 'Partial status update success (Split)' };
-        } else {
-          // FULL STATUS UPDATE
-          sheet.getRange(i + 1, 3).setValue(nama);
-          sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
-          sheet.getRange(i + 1, 6).setValue(status);
-          sheet.getRange(i + 1, 10).setValue(qtyUpdate);
-          
-          let oldHist = row[8] || '';
-          const entry = `✏️ Diperbarui oleh ${userNama} pada ${now} (Status: ${status}, Qty: ${qtyUpdate})`;
-          sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
-          return { success: true };
-        }
+        let oldHist = data[i][8] || '';
+        const now = new Date().toLocaleString('id-ID');
+        const entry = `✏️ Diperbarui oleh ${userNama} pada ${now}`;
+        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+        
+        return { success: true };
       }
     }
     return { success: false, message: 'Asset tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function moveAssetWarehouse(assetId, targetDivisi, userNama, qtyMove) {
+function moveAssetWarehouse(assetId, targetDivisi, targetZoneId, userNama) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
     
-    // 1. Find Source Asset
-    let sourceIndex = -1;
-    let sourceRow = null;
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(assetId)) {
-        sourceIndex = i;
-        sourceRow = data[i];
-        break;
-      }
-    }
-    if (!sourceRow) return { success: false, message: 'Asset tidak ditemukan' };
-
-    const oldDiv = sourceRow[4];
-    const assetNama = sourceRow[2];
-    const assetStatus = sourceRow[5];
-    const totalQty = parseInt(sourceRow[9]) || 1;
-    const now = new Date().toLocaleString('id-ID');
-    
-    if (oldDiv === targetDivisi) return { success: true };
-    if (!qtyMove) qtyMove = totalQty;
-
-    // 2. Search for existing match in target division
-    let matchIndex = -1;
-    for (let i = 1; i < data.length; i++) {
-       // Match by Name, Status, and target Division
-       if (data[i][2] === assetNama && data[i][5] === assetStatus && data[i][4] === targetDivisi) {
-         matchIndex = i;
-         break;
-       }
-    }
-
-    if (matchIndex !== -1) {
-      // === SCENARIO A: MATCH FOUND (MERGE) ===
-      const currentTargetQty = parseInt(data[matchIndex][9]) || 0;
-      const newTargetQty = currentTargetQty + qtyMove;
-      const targetOldHist = data[matchIndex][8] || '';
-      
-      // Update quantity and history of the existing record in target
-      sheet.getRange(matchIndex + 1, 10).setValue(newTargetQty);
-      const mergeEntry = `📦 Penambahan ${qtyMove} unit dipindah dari ${oldDiv} oleh ${userNama} pada ${now}. (Total: ${newTargetQty})`;
-      sheet.getRange(matchIndex + 1, 9).setValue(targetOldHist ? targetOldHist + '\n' + mergeEntry : mergeEntry);
-
-      if (qtyMove < totalQty) {
-        // Partial move: reduce source qty
-        const remainingQty = totalQty - qtyMove;
-        sheet.getRange(sourceIndex + 1, 10).setValue(remainingQty);
-        const sourceOldHist = sourceRow[8] || '';
-        const sourceEntry = `📦 Dipindah ${qtyMove} unit ke ${targetDivisi} (Digabung ke data existing) oleh ${userNama} pada ${now}. Sisa: ${remainingQty}`;
-        sheet.getRange(sourceIndex + 1, 9).setValue(sourceOldHist ? sourceOldHist + '\n' + sourceEntry : sourceEntry);
-      } else {
-        // Full move: delete source record as it's fully merged
-        deleteRow(CONFIG.SHEETS.ASSET_WAREHOUSE, assetId);
-      }
-
-      // LOG MOVEMENT
-      getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_LOG).appendRow([
-        generateId(), new Date(), assetNama, qtyMove, oldDiv, targetDivisi, userNama, 'Merged into existing'
-      ]);
-
-      return { success: true, message: 'Asset berhasil digabungkan' };
-
-    } else {
-      // === SCENARIO B: NO MATCH FOUND (PREVIOUS LOGIC) ===
-      if (qtyMove < totalQty) {
-        // Partial Move - Create New Record
-        const remainingQty = totalQty - qtyMove;
-        sheet.getRange(sourceIndex + 1, 10).setValue(remainingQty);
-        const sourceOldHist = sourceRow[8] || '';
-        const sourceEntry = `📦 Dipindah sebanyak ${qtyMove} unit ke ${targetDivisi} oleh ${userNama} pada ${now}. Sisa: ${remainingQty}`;
-        sheet.getRange(sourceIndex + 1, 9).setValue(sourceOldHist ? sourceOldHist + '\n' + sourceEntry : sourceEntry);
+        const oldDiv = data[i][4];
+        const oldZone = data[i][10] || '';
+        const oldHist = data[i][8] || '';
+        const now = new Date().toLocaleString('id-ID');
         
-        const newId = generateId();
-        const createdAt = new Date().toISOString();
-        const targetEntry = `📦 Diterima sebanyak ${qtyMove} unit dari ${oldDiv} (Transfer ID: ${assetId}) oleh ${userNama} pada ${now}`;
+        const divChanged = oldDiv !== targetDivisi;
+        const zoneChanged = oldZone !== targetZoneId;
         
-        sheet.appendRow([
-          newId, 
-          sourceRow[1], // code
-          sourceRow[2], // nama
-          sourceRow[3], // tanggalMasuk
-          targetDivisi, 
-          sourceRow[5], // status
-          userNama, 
-          createdAt, 
-          targetEntry, 
-          qtyMove
-        ]);
-
-        // LOG MOVEMENT
-        getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_LOG).appendRow([
-          generateId(), new Date(), assetNama, qtyMove, oldDiv, targetDivisi, userNama, 'Split into new record'
-        ]);
-
-        return { success: true, message: 'Partial move success' };
-      } else {
-        // Full Move - Update Division
-        const sourceOldHist = sourceRow[8] || '';
-        const entry = `📦 Dipindah divisi dari ${oldDiv} ke ${targetDivisi} oleh ${userNama} pada ${now}`;
-        sheet.getRange(sourceIndex + 1, 5).setValue(targetDivisi);
-        sheet.getRange(sourceIndex + 1, 9).setValue(sourceOldHist ? sourceOldHist + '\n' + entry : entry);
-
-        // LOG MOVEMENT
-        getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE_LOG).appendRow([
-          generateId(), new Date(), assetNama, qtyMove, oldDiv, targetDivisi, userNama, 'Full Transfer'
-        ]);
-
+        if (!divChanged && !zoneChanged) return { success: true };
+        
+        let textChange = [];
+        if (divChanged) textChange.push(`divisi dari ${oldDiv} ke ${targetDivisi}`);
+        if (zoneChanged) {
+           const zoneNameStr = targetZoneId ? `zona baru` : `Tanpa Zona`;
+           textChange.push(`lokasi ke ${zoneNameStr}`);
+        }
+        
+        const entry = `📦 Dipindah ${textChange.join(' dan ')} oleh ${userNama} pada ${now}`;
+        
+        sheet.getRange(i + 1, 5).setValue(targetDivisi);
+        sheet.getRange(i + 1, 11).setValue(targetZoneId || '');
+        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
         return { success: true };
       }
     }
+    return { success: false, message: 'Asset tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
 function deleteAssetWarehouse(id) {
   return deleteRow(CONFIG.SHEETS.ASSET_WAREHOUSE, id);
+}
+
+// Map Data Sync
+function getWarehouseMapData() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.WAREHOUSE_MAP);
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, data: [] };
+    // We only take the first row of data (index 1) as our primary config
+    let config = [];
+    try {
+      config = JSON.parse(data[1][1] || '[]');
+    } catch(e) { config = []; }
+    return { success: true, data: config };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+function saveWarehouseMapData(jsonData) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.WAREHOUSE_MAP);
+    const data = sheet.getDataRange().getValues();
+    const updatedBy = 'system';
+    const now = new Date().toISOString();
+    
+    if (data.length > 1) {
+      // Update existing
+      sheet.getRange(2, 2).setValue(jsonData);
+      sheet.getRange(2, 3).setValue(now);
+    } else {
+      // Create new
+      sheet.appendRow(['MAIN_CONFIG', jsonData, now]);
+    }
+    return { success: true };
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 // ============================================================
@@ -2916,12 +2708,10 @@ function getTugasConsumable() {
         actualPotong: parseInt(data[i][6]) || 0,
         actualBuat: parseInt(data[i][7]) || 0,
         status: data[i][8],
-        finishDate: data[i][9],
-        catatan: data[i][10],
-        totalPendapatan: parseFloat(data[i][11]) || 0,
-        finishedBy: data[i][12] || '-',
-        createdAt: data[i][13],
-        updatedAt: data[i][14]
+        catatan: data[i][9],
+        createdAt: data[i][10],
+        updatedAt: data[i][11],
+        finishedBy: data[i][12] || '-'
       });
     }
     return { success: true, data: result };
@@ -2938,9 +2728,10 @@ function addTugasConsumable(data) {
       data.picName, 
       parseInt(data.targetPotong)||0, 
       parseInt(data.targetBuat)||0, 
-      0, 0, 'Pending', '', '', 0, '',
+      0, 0, 'Pending', '', 
       new Date().toISOString(), 
-      new Date().toISOString()
+      new Date().toISOString(),
+      '' // finishedBy
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -2950,42 +2741,30 @@ function updateTugasConsumable(data) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
     const values = sheet.getDataRange().getValues();
-    const now = new Date().toISOString();
-    
     for (let i = 1; i < values.length; i++) {
         if (String(values[i][0]) === String(data.id)) {
             const row = i + 1;
+            // Jika status Selesai, update hasil aktual
             if (data.status === 'Selesai') {
-                // Mapping: 7=ActPotong, 8=ActBuat, 9=Status, 10=FinishDate, 11=Catatan, 12=Total, 13=FinishedBy, 15=UpdatedAt
-                const actP = parseInt(data.actualPotong) || 0;
-                const actB = parseInt(data.actualBuat) || 0;
-                
-                sheet.getRange(row, 7, 1, 7).setValues([[
-                  actP, 
-                  actB, 
-                  'Selesai', 
-                  new Date(), 
-                  data.catatan || '', 
-                  0, // Total Pendapatan (TBD if prices available)
-                  data.finishedBy || ''
-                ]]);
-                sheet.getRange(row, 15).setValue(now);
+                sheet.getRange(row, 7).setValue(parseInt(data.actualPotong) || 0);
+                sheet.getRange(row, 8).setValue(parseInt(data.actualBuat) || 0);
+                sheet.getRange(row, 9).setValue('Selesai');
+                sheet.getRange(row, 10).setValue(data.catatan || '');
+                sheet.getRange(row, 12).setValue(new Date().toISOString()); // updatedAt
+                sheet.getRange(row, 13).setValue(data.finishedBy || ''); // finishedBy
             } else {
-                // Edit Mode: update fundamental fields
+                // Update basic info (Edit mode)
                 sheet.getRange(row, 2).setValue(data.tanggal);
                 sheet.getRange(row, 4).setValue(data.picName);
                 sheet.getRange(row, 5).setValue(parseInt(data.targetPotong) || 0);
                 sheet.getRange(row, 6).setValue(parseInt(data.targetBuat) || 0);
-                sheet.getRange(row, 15).setValue(now);
+                sheet.getRange(row, 12).setValue(new Date().toISOString());
             }
             return { success: true };
         }
     }
     return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) { 
-    console.error('Error in updateTugasConsumable:', e);
-    return { success: false, message: e.message }; 
-  }
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 function deleteTugasConsumable(id) {
@@ -2997,22 +2776,13 @@ function addBulkTugasConsumable(rows) {
     const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
     const now = new Date().toISOString();
     const rowsToAdd = rows.map(r => [
-      generateId(), 
-      r.tanggal, 
-      r.pemberiTugas || '', 
-      r.picName || '', 
-      parseInt(r.targetPotong)||0, 
-      parseInt(r.targetBuat)||0, 
-      0, 0, 'Pending', '', '', 0, '', now, now
+      generateId(), r.tanggal, r.pemberiTugas, r.picName, parseInt(r.targetPotong)||0, parseInt(r.targetBuat)||0, 0, 0, 'Pending', '', now, now
     ]);
     if (rowsToAdd.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 15).setValues(rowsToAdd);
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 12).setValues(rowsToAdd);
     }
     return { success: true, count: rowsToAdd.length };
-  } catch (e) { 
-    console.error('Error in addBulkTugasConsumable:', e);
-    return { success: false, message: e.message }; 
-  }
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 // ============================================================
@@ -4231,154 +4001,3 @@ function getMyAttendanceToday(nama) {
     return { success: false, message: "Error Server: " + e.toString() };
   }
 }
-
-// ============================================================
-// TUGAS CONSUMABLE MODULE (BUBBLE WRAP)
-// ============================================================
-
-/**
- * Mengambil semua data tugas consumable
- */
-function getTugasConsumable() {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const rows = data.slice(1);
-    
-    const result = rows.map(row => {
-      let obj = {};
-      headers.forEach((h, i) => {
-        let key = h.replace(/\s+/g, '');
-        // Map headers to camelCase keys used in frontend
-        if (key === 'ID') key = 'id';
-        else if (key === 'Tanggal') key = 'tanggal';
-        else if (key === 'PemberiTugas') key = 'pemberiTugas';
-        else if (key === 'PICName') key = 'picName';
-        else if (key === 'TargetPotong') key = 'targetPotong';
-        else if (key === 'TargetBuat') key = 'targetBuat';
-        else if (key === 'ActualPotong') key = 'actualPotong';
-        else if (key === 'ActualBuat') key = 'actualBuat';
-        else if (key === 'Status') key = 'status';
-        else if (key === 'FinishDate') key = 'finishDate';
-        else if (key === 'Catatan') key = 'catatan';
-        else if (key === 'TotalPendapatan') key = 'totalPendapatan';
-        else if (key === 'FinishedBy') key = 'finishedBy';
-        else if (key === 'CreatedAt') key = 'createdAt';
-        else if (key === 'UpdatedAt') key = 'updatedAt';
-        
-        let val = row[i];
-        if (val instanceof Date) val = val.toISOString();
-        obj[key] = val;
-      });
-      return obj;
-    });
-    
-    return { success: true, data: result };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-/**
- * Menambah tugas consumable baru
- */
-function addTugasConsumable(item) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const id = generateId();
-    const now = new Date();
-    
-    // ['ID', 'Tanggal', 'Pemberi Tugas', 'PIC Name', 'Target Potong', 'Target Buat', 'Actual Potong', 'Actual Buat', 'Status', 'Finish Date', 'Catatan', 'Total Pendapatan', 'Finished By', 'Created At', 'Updated At']
-    sheet.appendRow([
-      id,
-      item.tanggal,
-      item.pemberiTugas,
-      item.picName,
-      item.targetPotong || 0,
-      item.targetBuat || 0,
-      0, // Actual Potong initial
-      0, // Actual Buat initial
-      'Pending',
-      '', // Finish Date
-      item.catatan || '',
-      0, // Total Pendapatan initial
-      '', // Finished By
-      now,
-      now
-    ]);
-    
-    return { success: true, id: id };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-/**
- * Update tugas consumable (Edit atau Selesaikan)
- */
-function updateTugasConsumable(item) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const now = new Date();
-    
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(item.id)) {
-        const rowNum = i + 1;
-        
-        // Map updates
-        if (item.tanggal) sheet.getRange(rowNum, 2).setValue(item.tanggal);
-        if (item.picName) sheet.getRange(rowNum, 4).setValue(item.picName);
-        if (item.targetPotong !== undefined) sheet.getRange(rowNum, 5).setValue(item.targetPotong);
-        if (item.targetBuat !== undefined) sheet.getRange(rowNum, 6).setValue(item.targetBuat);
-        
-        // Completion logic
-        if (item.status === 'Selesai') {
-          sheet.getRange(rowNum, 7).setValue(item.actualPotong || 0);
-          sheet.getRange(rowNum, 8).setValue(item.actualBuat || 0);
-          sheet.getRange(rowNum, 9).setValue('Selesai');
-          sheet.getRange(rowNum, 10).setValue(now);
-          sheet.getRange(rowNum, 13).setValue(item.finishedBy || '');
-          
-          // Hitung Pendapatan (Contoh: Potong 500, Buat 1000 - Sesuaikan jika perlu)
-          const pPotong = (item.actualPotong || 0) * 500;
-          const pBuat = (item.actualBuat || 0) * 1000;
-          sheet.getRange(rowNum, 12).setValue(pPotong + pBuat);
-        } else if (item.status) {
-          sheet.getRange(rowNum, 9).setValue(item.status);
-        }
-        
-        if (item.catatan !== undefined) sheet.getRange(rowNum, 11).setValue(item.catatan);
-        
-        sheet.getRange(rowNum, 15).setValue(now); // Updated At
-        
-        return { success: true };
-      }
-    }
-    return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-/**
- * Hapus tugas consumable
- */
-function deleteTugasConsumable(id) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(id)) {
-        sheet.deleteRow(i + 1);
-        return { success: true };
-      }
-    }
-    return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
