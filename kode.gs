@@ -28,6 +28,7 @@ const CONFIG = {
     RETUR_DETAIL: 'ReturDetail',
     HANDOVER: 'Handover',
     KLAIM: 'Klaim',
+    KLAIM_DETAIL: 'KlaimDetail',
     TUGAS_PROJECT: 'TugasProject',
     ASSET: 'PengajuanAsset',
     ASSET_WAREHOUSE: 'AssetWarehouse',
@@ -42,7 +43,9 @@ const CONFIG = {
     WAREHOUSE_MAP: 'WarehouseMap',
     ABSENSI_KARYAWAN: 'AbsensiKaryawan',
     JADWAL_SHIFT: 'JadwalShift',
-    JADWAL_ROSTER: 'JadwalRoster'
+    JADWAL_ROSTER: 'JadwalRoster',
+    ASSET_AUDIT_LOG: 'AssetAuditLog',
+    AUDIT_REPORTS: 'AuditReports'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -102,6 +105,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.KLAIM_DETAIL, ['id', 'klaimId', 'sku', 'harga']);
   setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
   setupSheet(ss, CONFIG.SHEETS.ASSET, ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history']);
   setupSheet(ss, CONFIG.SHEETS.STOCK_OPNAME, ['id','tanggal','stockId','sku','nama','lokasi','batch','expDate','stokSistem','stokFisik','selisih','status','catatan','createdBy','createdAt','approvedBy','approvedAt']);
@@ -116,6 +120,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_LEMBUR, ['id', 'tanggal', 'jam', 'nama', 'divisi', 'karyawanId', 'status', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
+  setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
+  setupSheet(ss, CONFIG.SHEETS.AUDIT_REPORTS, ['id','tanggal','auditor','totalAsset','terscan','minus','status','createdBy','createdAt','history']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -1201,6 +1207,53 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
+function importLaporanBulk(dataArr, username) {
+  try {
+    if (!dataArr || !dataArr.length) return { success: false, message: 'Tidak ada data untuk diimpor.' };
+    const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
+    const existingData = sheet.getDataRange().getValues();
+    const existingKeys = new Set();
+    
+    for (let i = 1; i < existingData.length; i++) {
+       const row = existingData[i];
+       const dateStr = row[1] instanceof Date ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(row[1]).split('T')[0];
+       const key = `${dateStr}_${row[2]}_${row[17] || 'Pagi'}`;
+       existingKeys.add(key);
+    }
+    
+    let count = 0;
+    const now = new Date().toISOString();
+    
+    dataArr.forEach(d => {
+      const targetDateStr = String(d.tanggal).split('T')[0];
+      const key = `${targetDateStr}_${d.divisi}_${d.shift || 'Pagi'}`;
+      
+      if (!existingKeys.has(key)) {
+        sheet.appendRow([
+          generateId(), d.tanggal, d.divisi, d.pic, 
+          parseInt(d.totalOrang) || 0, 
+          parseFloat(d.perbantuan) || 0, 
+          parseFloat(d.pengurangan) || 0, 
+          parseFloat(d.jamLembur) || 0, 
+          parseFloat(d.totalJamKerja) || 0, 
+          d.kendala || '-', 
+          parseInt(d.totalStaff) || 0, 
+          parseInt(d.totalAdmin) || 0, 
+          parseInt(d.totalOrder) || 0, 
+          username, now, 0, '', d.shift || 'Pagi', 
+          parseInt(d.totalPHL) || 0, 
+          parseFloat(d.jamKerjaPHL) || 0, 
+          0, parseInt(d.totalQty) || 0, 0, 0, 0, 
+          d.alasanPengurangan || ''
+        ]);
+        existingKeys.add(key);
+        count++;
+      }
+    });
+    return { success: true, count: count };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 function deleteLaporanKerja(id) { return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id); }
 function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan) {
   try {
@@ -1274,8 +1327,71 @@ function getKlaim() {
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
-function addKlaim(tanggal, pic, resi, harga, keterangan, createdBy) {
-  try { getSheet(CONFIG.SHEETS.KLAIM).appendRow([generateId(), tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
+function addKlaim(tanggal, pic, resi, harga, keterangan, items, createdBy) {
+  try {
+    const klaimId = generateId();
+    const sheetKlaim = getSheet(CONFIG.SHEETS.KLAIM);
+    sheetKlaim.appendRow([klaimId, tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()]);
+    
+    // Simpan rincian SKU jika ada
+    if (items && Array.isArray(items) && items.length > 0) {
+      const sheetDetail = getSheet(CONFIG.SHEETS.KLAIM_DETAIL);
+      items.forEach(item => {
+        sheetDetail.appendRow([generateId(), klaimId, item.sku, parseFloat(item.harga) || 0]);
+      });
+    }
+    
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function getKlaimDetail(klaimId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KLAIM_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]) === String(klaimId)) {
+        result.push({
+          sku: data[i][2],
+          harga: parseFloat(data[i][3]) || 0
+        });
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateKlaim(id, tanggal, pic, resi, harga, keterangan, items, updatedBy) {
+  try {
+    const sheetKlaim = getSheet(CONFIG.SHEETS.KLAIM);
+    const dataKlaim = sheetKlaim.getDataRange().getValues();
+    let found = false;
+    for (let i = 1; i < dataKlaim.length; i++) {
+      if (String(dataKlaim[i][0]) === String(id)) {
+        sheetKlaim.getRange(i + 1, 2, 1, 5).setValues([[tanggal, pic, resi, parseFloat(harga) || 0, keterangan]]);
+        found = true;
+        break;
+      }
+    }
+    if (!found) return { success: false, message: 'Data Klaim tidak ditemukan' };
+
+    const sheetDetail = getSheet(CONFIG.SHEETS.KLAIM_DETAIL);
+    const dataDetail = sheetDetail.getDataRange().getValues();
+    for (let j = dataDetail.length - 1; j >= 1; j--) {
+      if (String(dataDetail[j][1]) === String(id)) {
+        sheetDetail.deleteRow(j + 1);
+      }
+    }
+
+    if (items && Array.isArray(items) && items.length > 0) {
+      items.forEach(item => {
+        sheetDetail.appendRow([generateId(), id, item.sku, parseFloat(item.harga) || 0]);
+      });
+    }
+
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 function updateKlaimStatus(id, status, resiFallback) {
   try {
@@ -2498,17 +2614,142 @@ function getAssetWarehouseData() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
+function getAssetAuditStatus() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_AUDIT_LOG);
+    if (!sheet) return { success: true, data: {} };
+    const data = sheet.getDataRange().getValues();
+    const result = {};
+    for (let i = 1; i < data.length; i++) {
+      const assetId = String(data[i][1]);
+      const date = data[i][2];
+      if (!result[assetId] || new Date(date) > new Date(result[assetId])) {
+        result[assetId] = date instanceof Date ? Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(date);
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty, zoneId) {
   try {
-    const id = generateId();
-    const randomNum = Math.floor(10000 + Math.random() * 90000);
-    const code = codePrefix ? `${codePrefix}-${randomNum}` : `AW-${randomNum}`;
-    const createdAt = new Date().toISOString();
-    const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
-    
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
-    sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, qty || 1, zoneId || '']);
-    return { success: true, code: code };
+    const data = sheet.getDataRange().getValues();
+    const createdAt = new Date().toISOString();
+    const count = parseInt(qty) || 1;
+    
+    // Tentukan awalan kode (terkecuali jika user input kode manual, kita jadikan itu prefix)
+    const basePrefix = (codePrefix && codePrefix.trim() !== '') ? codePrefix.trim() : nama;
+    const prefix = basePrefix + "-";
+    
+    // Cari nomor terakhir untuk prefix tersebut agar urutan berlanjut
+    let maxNum = 0;
+    for (let j = 1; j < data.length; j++) {
+        const existingCode = String(data[j][1]);
+        if (existingCode.startsWith(prefix)) {
+            const numPart = parseInt(existingCode.split('-').pop());
+            if (!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
+        }
+    }
+    
+    // Looping untuk membuat baris individu per unit dengan nomor urut
+    for (let i = 0; i < count; i++) {
+        const id = generateId();
+        const currentNum = maxNum + i + 1;
+        const code = `${basePrefix}-${currentNum}`;
+        const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
+        
+        sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, 1, zoneId || '']);
+    }
+    
+    return { success: true, message: `${count} unit asset ${nama} berhasil ditambahkan.` };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addAssetAudit(assetId, kondisi, catatan, petugas) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_AUDIT_LOG); 
+    if (!sheet) {
+      const ss = getSpreadsheet();
+      setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
+    }
+    const finalSheet = getSheet(CONFIG.SHEETS.ASSET_AUDIT_LOG);
+    const id = generateId();
+    const now = new Date().toISOString();
+    const tanggal = now.split('T')[0];
+    
+    // Status Approval default: Pending
+    finalSheet.appendRow([id, assetId, tanggal, kondisi, catatan || '', petugas, now, 'Pending', '', '']);
+    
+    // Status di master asset HANYA berubah jika disetujui, jadi jangan update di sini.
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function getAuditSyncData() {
+  try {
+    return {
+      success: true,
+      assets: getAssetWarehouseData().data || [],
+      logs: getAssetAuditLogs().data || []
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getAssetAuditLogs() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_AUDIT_LOG);
+    if (!sheet) return { success: true, data: [] };
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        assetId: String(data[i][1]),
+        tanggal: data[i][2],
+        kondisi: data[i][3],
+        catatan: data[i][4],
+        petugas: data[i][5],
+        createdAt: data[i][6],
+        statusApproval: data[i][7] || 'Approved',
+        approvedBy: data[i][8] || '',
+        approvedAt: data[i][9] || ''
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function approveAssetAudit(auditId, status, approver) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_AUDIT_LOG);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(auditId)) {
+        sheet.getRange(i + 1, 8, 1, 3).setValues([[status, approver, now]]);
+        
+        // Jika disetujui (Approved), baru update status di master asset
+        if (status === 'Approved') {
+          const assetId = data[i][1];
+          const kondisi = data[i][3];
+          const awSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+          const awData = awSheet.getDataRange().getValues();
+          for (let j = 1; j < awData.length; j++) {
+            if (String(awData[j][0]) === String(assetId)) {
+              awSheet.getRange(j + 1, 6).setValue(kondisi);
+              break;
+            }
+          }
+        }
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -2574,6 +2815,167 @@ function moveAssetWarehouse(assetId, targetDivisi, targetZoneId, userNama) {
 
 function deleteAssetWarehouse(id) {
   return deleteRow(CONFIG.SHEETS.ASSET_WAREHOUSE, id);
+}
+
+// ============================================================
+// AUDIT REPORTS
+// ============================================================
+function getAuditReports() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
+    if (!sheet) return { success: true, data: [] };
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        auditor: data[i][2],
+        totalAsset: data[i][3],
+        terscan: data[i][4],
+        minus: data[i][5],
+        status: data[i][6],
+        createdBy: data[i][7],
+        createdAt: data[i][8],
+        history: data[i][9] || '',
+        missingAssets: data[i][10] || '[]'
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function generateAuditReport(auditorName) {
+  try {
+    const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const auditLogSheet = getSheet(CONFIG.SHEETS.AUDIT_LOGS);
+    
+    if (!assetSheet || !auditLogSheet) throw new Error("Sheet data tidak ditemukan");
+    
+    const assets = assetSheet.getDataRange().getValues().slice(1).filter(r => r.join('').trim() !== '');
+    const logs = auditLogSheet.getDataRange().getValues().slice(1).filter(r => r.join('').trim() !== '');
+    
+    // Only count assets that are "Aktif" if needed, but usually audit includes all
+    const totalAsset = assets.length;
+    const auditedIds = new Set(logs.map(l => l[1])); // assetId is col 2 (index 1)
+    const terscan = auditedIds.size;
+    const minus = totalAsset - terscan;
+    
+    // Identify Missing Assets
+    const missingAssetsList = assets.filter(a => !auditedIds.has(a[0])).map(a => `${a[2]} (${a[1]})`); // Nama (Code)
+    
+    const reportSheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
+    const id = 'REP-' + Date.now();
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    const tanggal = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    
+    const history = JSON.stringify([{
+      action: "Laporan digenerate",
+      by: auditorName,
+      time: nowStr
+    }]);
+    
+    reportSheet.appendRow([id, tanggal, auditorName, totalAsset, terscan, minus, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList)]);
+    
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function approveAuditReport(reportId, approverName) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(reportId)) {
+        let history = [];
+        try { history = JSON.parse(data[i][9] || '[]'); } catch(e) {}
+        history.push({
+          action: "Laporan disetujui",
+          by: approverName,
+          time: nowStr
+        });
+        
+        sheet.getRange(i + 1, 7).setValue('Approved');
+        sheet.getRange(i + 1, 10).setValue(JSON.stringify(history));
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Laporan tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function bulkSyncAssetCodes() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const range = sheet.getDataRange();
+    const data = range.getValues();
+    if (data.length <= 1) return { success: true, message: 'Tidak ada data untuk disinkronisasi.' };
+    
+    const header = data[0];
+    const rows = data.slice(1);
+    
+    const newRows = [];
+    const nameCounters = {};
+    let splitCount = 0;
+    let syncCount = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.join('').trim() === '') continue;
+        
+        const currentCode = String(row[1] || '').trim();
+        const nama = String(row[2]);
+        
+        // Tentukan prefix: PRIORITASKAN kode yang sudah ada, jika tidak ada (kosong) baru ambil dari nama
+        let basePrefix = '';
+        if (currentCode !== '') {
+            basePrefix = currentCode.includes('-') ? currentCode.split('-')[0] : currentCode;
+        } else {
+            basePrefix = nama;
+        }
+        
+        const qty = parseInt(row[9]) || 1;
+        
+        // Inisialisasi counter untuk prefix ini jika belum ada
+        if (!nameCounters[basePrefix]) nameCounters[basePrefix] = 0;
+        
+        // Proses per unit (Pecah baris jika Qty > 1)
+        for (let q = 0; q < qty; q++) {
+            nameCounters[basePrefix]++;
+            const newCode = `${basePrefix}-${nameCounters[basePrefix]}`;
+            
+            // Buat row baru
+            const newRow = [...row];
+            // Selalu beri ID baru jika baris dipecah, untuk baris pertama tetap gunakan ID lama
+            if (q > 0) {
+                newRow[0] = generateId(); 
+                splitCount++;
+            }
+            
+            newRow[1] = newCode; // Kode Baru
+            newRow[9] = 1;       // Qty diset ke 1 per baris
+            
+            newRows.push(newRow);
+            syncCount++;
+        }
+    }
+    
+    // Tulis ulang seluruh data ke sheet
+    sheet.clearContents();
+    const output = [header, ...newRows];
+    sheet.getRange(1, 1, output.length, header.length).setValues(output);
+    
+    return { 
+        success: true, 
+        count: syncCount,
+        message: `✅ Sinkronisasi Selesai! ${syncCount} unit sekarang memiliki kode unik. ${splitCount} baris baru dibuat dari pemisahan Qty.` 
+    };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 // Map Data Sync
