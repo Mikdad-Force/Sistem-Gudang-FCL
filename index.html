@@ -1291,20 +1291,6 @@
       transform: translateY(-1px);
     }
 
-    .btn-audit {
-      background: var(--teal);
-      background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
-      color: #fff;
-      border: none;
-      font-weight: 800;
-      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.2);
-    }
-
-    .btn-audit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
-    }
-
     .status-badge-mini {
       width: 8px;
       height: 8px;
@@ -3839,9 +3825,6 @@
               data-i18n="assetWarehouse">
               <span class="icon">🏪</span> Asset Warehouse
             </div>
-            <div class="nav-item" id="navAuditReport" onclick="showPage('auditReport')" style="display:none;">
-              <span class="icon">📋</span> Laporan Audit Asset
-            </div>
 
             <div class="nav-section" id="navAdmin" style="display:none" data-i18n="admin">Admin</div>
             <div class="nav-item" id="navUsers" onclick="showPage('users')" style="display:none"
@@ -4516,7 +4499,9 @@
                       <th data-i18n="divisi">Divisi/Pic</th>
                       <th data-i18n="jamKerja">Jam Kerja</th>
                       <th data-i18n="lembur">Lembur</th>
+                      <th>Alasan Lembur</th>
                       <th data-i18n="phl">PHL</th>
+                      <th>Total Orang Masuk</th>
                       <th data-i18n="totalOrder">Total Order/PO/Inb</th>
                       <th data-i18n="qty">Qty</th>
                       <th data-i18n="kpi">KPI</th>
@@ -5805,23 +5790,17 @@
                 </h4>
                 <div style="display:flex; gap:8px;">
                   <button class="btn btn-sync" onclick="syncOldAssetCodes()" title="Berikan Kode Unik pada Data Lama">🔄 Sinkron Kode</button>
-                  <button class="btn btn-audit" onclick="openAssetAuditModal()">📷 Audit Asset</button>
                   <button class="btn btn-teal" onclick="openBulkPrintAssetModal()" title="Cetak Massal Label Asset">🖨️ Print Semuanya</button>
                   <button class="btn btn-primary" onclick="openAssetWarehouseModal()" data-i18n="tambahAsset" style="border-radius:8px; font-weight:700;">+ Tambah Asset</button>
                 </div>
               </div>
-              <!-- Audit Summary -->
-              <div class="card-body" style="background:rgba(245,158,11,0.05); border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; padding:15px 25px;">
-                <div id="auditProgressContainer">
-                  <h6 style="margin:0; font-size:13px; font-weight:700; color:var(--accent);">📊 Progres Audit Gudang</h6>
-                  <div style="font-size:12px; color:var(--text-muted); margin-top:4px;" id="auditProgressText">Memuat status audit...</div>
-                </div>
-                <button class="btn btn-teal" id="btnGenerateAuditReport" onclick="doGenerateAuditReport()" style="display:none; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">
-                  📄 Buat Laporan Hasil Audit
-                </button>
+              <!-- Tabs -->
+              <div class="tabs" style="border-bottom:1px solid var(--border-color); display:flex;">
+                <div class="tab active" onclick="switchAwTab('list')" id="tabAwList" style="padding:15px 20px; cursor:pointer; font-weight:600;">📦 Daftar Asset</div>
+                <div class="tab" onclick="switchAwTab('opname')" id="tabAwOpname" style="padding:15px 20px; cursor:pointer; font-weight:600;">📷 Stock Opname Asset</div>
               </div>
 
-              <!-- TABS REMOVED -->
+              <!-- Content: Daftar Asset (Existing) -->
               <div id="awTabListContent" class="p-4">
                 <!-- Stats -->
                 <div class="stats-grid mb-4"
@@ -5872,14 +5851,6 @@
                         <option value="Return">Return</option>
                       </select>
                     </div>
-                    <div class="col-md-3">
-                      <label class="form-label">Status Audit</label>
-                      <select class="form-select" id="filterAssetAudit" onchange="renderAssetWarehouseTable()" style="border-radius:8px;">
-                        <option value="">-- Semua Status --</option>
-                        <option value="sudah">✅ Sudah Audit</option>
-                        <option value="belum">⏳ Belum Audit</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -5898,6 +5869,130 @@
                   </table>
                 </div>
               </div>
+
+              <!-- Content: Stock Opname Asset (New) -->
+              <div id="awTabOpnameContent" class="p-4" style="display:none;">
+                
+                <!-- Session Header -->
+                <div class="card mb-3" style="background:var(--bg-panel-light); border:1px solid var(--border-color);">
+                  <div class="card-body p-3">
+                    <div class="row align-items-center g-3">
+                      <div class="col-md-3">
+                        <label class="form-label mb-1" style="font-size:12px;">Tanggal SO</label>
+                        <input type="date" class="form-control" id="soAssetDate" style="border-radius:6px;">
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label mb-1" style="font-size:12px;">Filter Divisi</label>
+                        <select class="form-select" id="soAssetDivisi" style="border-radius:6px;">
+                          <option value="Semua">-- Semua Divisi --</option>
+                          <option value="Marketplace">Marketplace</option>
+                          <option value="Distributor">Distributor</option>
+                          <option value="Market Place SBY">Market Place SBY</option>
+                          <option value="Distributor SBY">Distributor SBY</option>
+                          <option value="KOL">KOL</option>
+                          <option value="OFFICE">OFFICE</option>
+                          <option value="Return">Return</option>
+                        </select>
+                      </div>
+                      <div class="col-md-6 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary" id="btnStartSoAsset" onclick="startSoAssetSession()">▶ Mulai Sesi SO</button>
+                        <button class="btn btn-danger" id="btnResetSoAsset" onclick="resetSoAssetSession()" style="display:none;">Reset Sesi</button>
+                        <button class="btn btn-teal ms-auto" id="btnSubmitSoAsset" onclick="submitSoAssetReport()" style="display:none;" disabled>📋 Buat Laporan & Ajukan</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Active Session Panel (Hidden initially) -->
+                <div id="soAssetActivePanel" style="display:none;">
+                  
+                  <!-- Progress Bar -->
+                  <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-1" style="font-size:13px; font-weight:600;">
+                      <span>Progress Scan:</span>
+                      <span id="soAssetProgressText">0 / 0 Asset Ter-scan</span>
+                    </div>
+                    <div class="progress" style="height:10px; border-radius:5px; background:rgba(255,255,255,0.1);">
+                      <div id="soAssetProgressBar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                    </div>
+                  </div>
+
+                  <div class="row g-4">
+                    <!-- Scanner Area -->
+                    <div class="col-md-4">
+                      <div class="card h-100" style="border-color:var(--accent);">
+                        <div class="card-header" style="background:rgba(255,255,255,0.05);">
+                          <h5 class="mb-0" style="font-size:14px;">📷 QR Scanner</h5>
+                        </div>
+                        <div class="card-body p-2" style="text-align:center;">
+                          <div id="soAssetQrReader" style="width:100%; min-height:200px; background:#000; border-radius:8px; overflow:hidden;"></div>
+                          
+                          <div class="mt-3 text-start p-2" style="background:rgba(245, 158, 11, 0.1); border:1px dashed var(--amber); border-radius:8px;">
+                            <label style="font-size:12px; color:var(--amber);" class="mb-1"><strong>⚠️ Kamera Terblokir?</strong> Gunakan Scan Foto / Upload (Bisa langsung foto via HP):</label>
+                            <input type="file" id="soAssetFileInput" accept="image/*" capture="environment" class="form-control form-control-sm" onchange="scanImageFileSoAsset(this)" style="cursor:pointer;">
+                          </div>
+
+                          <div class="mt-3 text-start">
+                            <label style="font-size:12px;" class="mb-1">Input Manual (Kode Asset)</label>
+                            <div class="input-group">
+                              <input type="text" class="form-control" id="soAssetManualCode" placeholder="Contoh: AST-001" onkeypress="if(event.key === 'Enter') processSoAssetScan(this.value)">
+                              <button class="btn btn-primary" onclick="processSoAssetScan(document.getElementById('soAssetManualCode').value)">Scan ✓</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Lists Area -->
+                    <div class="col-md-8">
+                      <!-- Scanned List -->
+                      <div class="card mb-3" style="border-color:var(--green);">
+                        <div class="card-header" style="background:rgba(46,204,113,0.1);">
+                          <h5 class="mb-0" style="color:var(--green); font-size:14px; font-weight:700;">✅ Daftar Sudah Scan (<span id="countSoScanned">0</span>)</h5>
+                        </div>
+                        <div class="table-wrap" style="max-height:250px; overflow-y:auto;">
+                          <table class="table table-sm table-hover align-middle mb-0" style="font-size:12px;">
+                            <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:1;">
+                              <tr>
+                                <th>#</th>
+                                <th>Kode Asset</th>
+                                <th>Nama</th>
+                                <th>Divisi</th>
+                                <th style="width:80px;">Qty Fisik</th>
+                                <th>Kondisi</th>
+                                <th>Jam</th>
+                              </tr>
+                            </thead>
+                            <tbody id="soAssetScannedList"></tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <!-- Unscanned List -->
+                      <div class="card" style="border-color:var(--amber);">
+                        <div class="card-header" style="background:rgba(245,158,11,0.1);">
+                          <h5 class="mb-0" style="color:var(--amber); font-size:14px; font-weight:700;">⏳ Daftar Belum Scan (<span id="countSoUnscanned">0</span>)</h5>
+                        </div>
+                        <div class="table-wrap" style="max-height:250px; overflow-y:auto;">
+                          <table class="table table-sm table-hover align-middle mb-0" style="font-size:12px; opacity:0.8;">
+                            <thead style="position:sticky; top:0; background:var(--bg-panel); z-index:1;">
+                              <tr>
+                                <th>Kode Asset</th>
+                                <th>Nama</th>
+                                <th>Divisi</th>
+                                <th>Qty Sistem</th>
+                                <th>Status</th>
+                              </tr>
+                            </thead>
+                            <tbody id="soAssetUnscannedList"></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div> <!-- End Active Session Panel -->
+              </div> <!-- End Stock Opname Content -->
 
             </div>
           </div>
@@ -5967,38 +6062,6 @@
                     </tr>
                   </thead>
                   <tbody id="tablePackingList"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="page" id="page-auditReport">
-            <div class="header-container animate-fade mb-4">
-              <div>
-                <h1 style="color:var(--text-main); font-weight:800; font-family:'Outfit';">Laporan Hasil Audit</h1>
-                <p style="color:var(--text-muted); font-size:14px;">Daftar laporan audit asset warehouse yang telah digenerate</p>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button class="btn btn-ghost" onclick="loadAuditReports()">🔄 Refresh</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="table-wrap">
-                <table class="table table-hover align-middle">
-                  <thead>
-                    <tr>
-                      <th>ID Laporan</th>
-                      <th>Tanggal Audit</th>
-                      <th>Auditor</th>
-                      <th>Total Asset</th>
-                      <th>Terscan</th>
-                      <th>Minus</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tableAuditReports"></tbody>
                 </table>
               </div>
             </div>
@@ -6332,6 +6395,14 @@
                 <div class="col-md mb-2"><label class="form-label" data-i18n="lamaLemburJam">Lama Lembur
                     (Jam)</label><input type="number" class="form-control" id="lapLembur" placeholder="0" min="0"
                     step="0.5" oninput="calcJamKerja()">
+                </div>
+              </div>
+              <div class="row mb-3" id="wrapLapAlasanLembur" style="display:none;">
+                <div class="col-md mb-2">
+                  <label class="form-label" style="color:var(--orange); font-weight:700;">⚠️ Alasan Lembur
+                    (Wajib jika lembur)</label>
+                  <input type="text" class="form-control" id="lapAlasanLembur"
+                    placeholder="Contoh: Urgent order, packing tambahan, dsb.">
                 </div>
               </div>
               <div id="lapLemburNamesWrap"
@@ -7215,6 +7286,7 @@
                   <label class="form-label"><input type="checkbox" value="analisis"> Analisis Stok</label>
                   <label class="form-label"><input type="checkbox" value="assetWarehouse"> Asset Warehouse</label>
                   <label class="form-label"><input type="checkbox" value="stockOpname"> Stock Opname</label>
+                  <label class="form-label"><input type="checkbox" value="stockOpnameAsset"> 📷 Stock Opname Asset</label>
                   <label class="form-label"><input type="checkbox" value="packingList"> Packing List</label>
                   <label class="form-label"><input type="checkbox" value="absensiKaryawan"> 🖐️ Absensi Karyawan</label>
                   <label class="form-label"><input type="checkbox" value="jadwalShift"> 📅 Jadwal Shift</label>
@@ -7236,6 +7308,7 @@
                     Akses Persetujuan Supervisor</label>
                   <label class="form-label" style="color:var(--amber)"><input type="checkbox" value="aksesHr"> ⚖️ Akses
                     Persetujuan HR</label>
+                  <label class="form-label" style="color:var(--green)"><input type="checkbox" value="aksesApprovalAssetOpname"> 🏪 Approval Asset Opname</label>
                   <label class="form-label" style="color:var(--orange)"><input type="checkbox"
                       value="aksesLemburLangsung"> ⏱️ Akses Lembur Langsung</label>
                   <label class="form-label" style="color:var(--orange)" data-i18n="lemburTanpaLaporan"><input
@@ -7248,7 +7321,6 @@
                   <label class="form-label" style="color:var(--orange)"><input type="checkbox"
                       value="pengaturanTglMerah"> ⏱️ Pengaturan Lembur</label>
                   <label class="form-label" style="color:var(--accent)"><input type="checkbox" value="dashboardValidasiLembur"> 📊 Dashboard Validasi Lembur</label>
-                  <label class="form-label" style="color:var(--accent)"><input type="checkbox" value="approvalAuditAsset"> ⚖️ Persetujuan Audit Asset</label>
                 </div>
               </div>
               <div class="modal-footer"><button class="btn btn-ghost"
@@ -8128,6 +8200,101 @@
   <!-- FULL JAVASCRIPT LOGIC -->
   <!-- ============================================================ -->
   <script>
+    // ==========================================
+    // VERCEL / EXTERNAL HOSTING POLYFILL PROXY
+    // ==========================================
+    // Jika aplikasi ini dijalankan di luar Google Apps Script (misal di Vercel),
+    // objek `google` tidak akan ada. Skrip ini akan membuat jembatan ajaib (Proxy)
+    // agar semua fungsi google.script.run otomatis dirubah menjadi request HTTP POST.
+    if (typeof google === 'undefined' || typeof google.script === 'undefined') {
+      console.warn("🚀 Menjalankan mode External Hosting (Vercel). Mengaktifkan Proxy API.");
+      
+      // ⚠️ GANTI URL DI BAWAH INI DENGAN URL WEB APP DEPLOYMENT ANDA ⚠️
+      const GAS_WEBAPP_URL = "ISI_URL_WEB_APP_ANDA_DISINI"; 
+      
+      window.google = window.google || {};
+      window.google.script = window.google.script || {};
+      
+      // Mocking Host API (biasanya digunakan untuk scrollTo top)
+      window.google.script.host = {
+        close: function() { console.log("Host close requested"); },
+        scrollTo: function(x, y) { window.scrollTo(x, y); }
+      };
+      
+      // Proxy interceptor untuk google.script.run
+      window.google.script.run = new Proxy({}, {
+        get: function(target, prop) {
+          // Fungsi utama untuk memanggil Web App via fetch()
+          const callApi = function(funcName, args, successCb, failureCb) {
+            if (GAS_WEBAPP_URL === "ISI_URL_WEB_APP_ANDA_DISINI") {
+              console.error("URL WEB APP BELUM DIISI! Silakan masukkan URL Web App Google Apps Script ke dalam variabel GAS_WEBAPP_URL.");
+              alert("Sistem belum terhubung ke database. Cek console.");
+              if (failureCb) failureCb("URL_NOT_SET");
+              return;
+            }
+            
+            fetch(GAS_WEBAPP_URL, {
+              method: 'POST',
+              body: JSON.stringify({ func: funcName, args: args }),
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' } // text/plain digunakan untuk bypass preflight CORS
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (successCb) successCb(data);
+            })
+            .catch(err => {
+              console.error("❌ Vercel GAS API Error:", err);
+              if (failureCb) failureCb(err);
+            });
+          };
+
+          // Handle chain syntax: google.script.run.withSuccessHandler(...)
+          if (prop === 'withSuccessHandler') {
+            return function(successCb) {
+              return new Proxy({}, {
+                get: function(t, funcName) {
+                  if (funcName === 'withFailureHandler') {
+                    return function(failureCb) {
+                      return new Proxy({}, {
+                        get: function(t2, finalFunc) {
+                           return function(...args) { callApi(finalFunc, args, successCb, failureCb); };
+                        }
+                      });
+                    };
+                  }
+                  return function(...args) { callApi(funcName, args, successCb, null); };
+                }
+              });
+            };
+          }
+          
+          // Handle chain syntax: google.script.run.withFailureHandler(...)
+          if (prop === 'withFailureHandler') {
+            return function(failureCb) {
+              return new Proxy({}, {
+                get: function(t, funcName) {
+                  if (funcName === 'withSuccessHandler') {
+                     return function(successCb) {
+                        return new Proxy({}, {
+                           get: function(t2, finalFunc) { return function(...args) { callApi(finalFunc, args, successCb, failureCb); }; }
+                        });
+                     };
+                  }
+                  return function(...args) { callApi(funcName, args, null, failureCb); };
+                }
+              });
+            };
+          }
+          
+          // Panggilan langsung (direct call) tanpa handler
+          return function(...args) {
+             callApi(prop, args, null, null);
+          };
+        }
+      });
+    }
+    // ==========================================
+
     // Resilience: Global Error Logger
     window.onerror = function (msg, url, line, col, error) {
       console.error('GLOBAL_ERROR:', msg, 'at', line + ':' + col);
@@ -9991,9 +10158,6 @@
       const dashboardVal = document.getElementById('lemburValidationDashboard');
       if (dashboardVal) dashboardVal.style.display = (role === 'admin' || allowedMenus.includes('dashboardValidasiLembur')) ? 'block' : 'none';
 
-      const navAuditReport = document.getElementById('navAuditReport');
-      if (navAuditReport) navAuditReport.style.display = (role === 'admin' || allowedMenus.includes('approvalAuditAsset')) ? 'flex' : 'none';
-
       if (typeof checkPendingApprovals === 'function') {
         checkPendingApprovals();
         setInterval(checkPendingApprovals, 2 * 60 * 1000); // 2 minutes
@@ -10096,7 +10260,6 @@
       inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
       retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok',
       assetWarehouse: '🏪 Asset Warehouse',
-      auditReport: '📄 Laporan Hasil Audit',
       bookingMobil: '🚗 Booking Mobil',
       approval: '✅ Pusat Approval'
     };
@@ -10105,7 +10268,7 @@
       karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
       handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
-      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, auditReport: loadAuditReports, bookingMobil: loadBookingMobil,
+      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
       approval: loadCentralizedApprovals
     };
 
@@ -10176,6 +10339,9 @@
     function canApprove(status, role, category) {
       if (role === 'admin' || role === 'Super Admin') return true;
       let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
+      
+      if (category === 'Asset Opname') return userPerms.includes('aksesApprovalAssetOpname');
+
       if (userPerms.includes('aksesApproval')) return true;
 
       const isPimpinan = (role === 'admin' || role === 'Super Admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Vice VPV' || role === 'HR' || role === 'Supervisor HR' || role === 'Team Leader' || role === 'TL' || role.includes('Team Leader') || role.includes('Supervisor') || role.includes('SPV') || role.includes('HR'));
@@ -10209,7 +10375,7 @@
               total++;
               items.push(d);
               if (dashList) {
-                const page = (type === 'Ijin' || type === 'Ijin/Cuti') ? 'ijin' : (type === 'Lembur' ? 'lembur' : (type === 'Asset' ? 'pengajuanAsset' : 'stockOpname'));
+                const page = (type === 'Ijin' || type === 'Ijin/Cuti') ? 'ijin' : (type === 'Lembur' ? 'lembur' : (type === 'Asset' ? 'pengajuanAsset' : (type === 'Asset Opname' ? 'assetWarehouse' : 'stockOpname')));
                 const staff = d.nama || d.karyawan || d.sku || '-';
                 dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${type}</span></td><td><strong>${staff}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${page}')">Lihat</button></td></tr>`;
               }
@@ -10222,6 +10388,7 @@
         filterPending(res.lembur, 'Lembur');
         filterPending(res.asset, 'Asset');
         filterPending(res.stockOpname, 'Stock Opname');
+        filterPending(res.assetOpname, 'Asset Opname');
 
         pendingApprovalCount = total;
         const centralBadge = document.getElementById('badgeTotalApproval');
@@ -10258,6 +10425,7 @@
             if (t === 'ijin') loadIjin();
             else if (t === 'lembur') loadLembur();
             else if (t === 'asset') loadAsset();
+            else if (t === 'assetopname') loadAssetWarehouse();
             else if (t.includes('opname')) loadStockOpname();
           }
 
@@ -10410,6 +10578,9 @@
     function isAuthorizedToAct(status, role, category) {
       if (role === 'admin' || role === 'Super Admin') return true;
       let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
+      
+      if (category === 'Asset Opname') return userPerms.includes('aksesApprovalAssetOpname');
+
       if (userPerms.includes('aksesApproval')) return true;
 
       const isTL = (role === 'Team Leader' || role === 'TL' || role.includes('Team Leader'));
@@ -10451,15 +10622,16 @@
       const lembur = filterItems(res.lembur, 'Lembur', 'lembur');
       const asset = filterItems(res.asset, 'Asset', 'asset');
       const opname = filterItems(res.stockOpname, 'Stock Opname', 'opname');
+      const assetOpname = filterItems(res.assetOpname, 'Asset Opname', 'assetOpname');
 
-      items.push(...ijin, ...lembur, ...asset, ...opname);
+      items.push(...ijin, ...lembur, ...asset, ...opname, ...assetOpname);
       items.sort((a, b) => new Date(b.tanggal || b.createdAt) - new Date(a.tanggal || a.createdAt));
 
       document.getElementById('statApprTotal').textContent = items.length;
       document.getElementById('statApprIjin').textContent = ijin.length;
       document.getElementById('statApprLembur').textContent = lembur.length;
       document.getElementById('statApprAsset').textContent = asset.length;
-      document.getElementById('statApprOpname').textContent = opname.length;
+      document.getElementById('statApprOpname').textContent = opname.length + assetOpname.length;
 
       if (items.length === 0) {
         tb.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="emoji">🎉</div>Tidak ada approval pending</td></tr>';
@@ -11938,6 +12110,13 @@
         lWrap.style.display = 'none';
       }
 
+      const lReasonWrap = document.getElementById('wrapLapAlasanLembur');
+      if (oL > 0 || jL > 0) {
+        lReasonWrap.style.display = 'block';
+      } else {
+        lReasonWrap.style.display = 'none';
+      }
+
       const kWrap = document.getElementById('wrapLapAlasanKurang');
       if (oK > 0) {
         kWrap.style.display = 'block';
@@ -11947,7 +12126,7 @@
     }
     function openLaporanKerjaModal() {
       // Reset fields
-      resetForm(['lapOrang', 'lapAdmin', 'lapPhl', 'lapJamPhl', 'lapOrangBantu', 'lapJamBantu', 'lapOrangKurang', 'lapJamKurang', 'lapAlasanKurang', 'lapOrangLembur', 'lapLembur', 'lapOrder', 'lapPo', 'lapQty', 'lapInbound', 'lapQtyInb', 'lapKendala', 'lapPotongBubble', 'lapBuatBubble']);
+      resetForm(['lapOrang', 'lapAdmin', 'lapPhl', 'lapJamPhl', 'lapOrangBantu', 'lapJamBantu', 'lapOrangKurang', 'lapJamKurang', 'lapAlasanKurang', 'lapOrangLembur', 'lapLembur', 'lapAlasanLembur', 'lapOrder', 'lapPo', 'lapQty', 'lapInbound', 'lapQtyInb', 'lapKendala', 'lapPotongBubble', 'lapBuatBubble']);
       setVal('lapTotalJam', 0);
       setVal('lapKPI', 0);
       setVal('lapPic', currentUser ? currentUser.nama : '');
@@ -11996,6 +12175,7 @@
 
       setVal('lapOrangLembur', d.totalStaff || 0);
       setVal('lapLembur', d.jamLembur);
+      setVal('lapAlasanLembur', d.alasanLembur || '');
 
       setVal('lapQtyInb', d.totalQty || 0);
       setVal('lapKendala', d.kendala ? d.kendala.split('\n')[0] : '');
@@ -12105,7 +12285,7 @@
     function renderLaporanTable() {
       const tb = document.getElementById('tableLaporanKerja'); tb.innerHTML = '';
       if (!laporanKerjaData.length) {
-        tb.innerHTML = '<tr><td colspan="11" class="empty-state">Belum ada laporan</td></tr>';
+        tb.innerHTML = '<tr><td colspan="13" class="empty-state">Belum ada laporan</td></tr>';
         document.getElementById('lapLemburSummaryList').innerHTML = '<div style="color:var(--gray)">Tidak ada data lembur harian</div>';
         return;
       }
@@ -12124,11 +12304,13 @@
             totalJamKerja: 0,
             jamLembur: 0,
             totalPHL: 0,
+            totalOrangMasuk: 0,
             totalOrder: 0,
             totalPO: 0,
             totalInbound: 0,
             totalQty: 0,
             staffLembur: new Set(),
+            alasanLembur: new Set(),
             ids: []
           };
         }
@@ -12144,6 +12326,8 @@
         g.totalJamKerja += (d.totalJamKerja || 0);
         g.jamLembur += (d.jamLembur || 0);
         g.totalPHL += (d.totalPHL || 0);
+        g.totalOrangMasuk += ((d.totalOrang || 0) + (d.totalAdmin || 0));
+        if (d.alasanLembur) g.alasanLembur.add(d.alasanLembur);
         g.totalOrder += (d.totalOrder || 0);
         g.totalPO += (d.totalPo || 0);
         g.totalInbound += (d.totalInbound || 0);
@@ -12177,6 +12361,11 @@
           kpi = rawKpi > 0 ? Math.round(rawKpi) : '-';
         }
 
+        const alasanHtml = Array.from(g.alasanLembur)
+          .filter(Boolean)
+          .map(a => `<span style="display:inline-block; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 4px 10px; margin: 2px 2px 2px 0; font-size: 11px; color: var(--text); max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a}</span>`)
+          .join('');
+
         tb.innerHTML += `<tr>
       <td>${formatDate(t)}</td>
       <td>
@@ -12188,7 +12377,11 @@
         <strong>${g.jamLembur.toFixed(1)}</strong>
         ${g.staffLembur.size > 0 ? `<div style="font-size:10px; opacity:0.8;">(${g.staffLembur.size} Orang)</div>` : ''}
       </td>
+      <td align="left" style="min-width:180px;">
+        ${alasanHtml || '<span style="color:var(--gray); font-size:11px;">-</span>'}
+      </td>
       <td align="center">${g.totalPHL} Org</td>
+      <td align="center" style="color:var(--green); font-weight:700;">${g.totalOrangMasuk} Org</td>
       <td align="center">
         <div style="color:var(--teal); font-weight:700;">${totalOutput.toLocaleString('id-ID')}</div>
         <div style="font-size:10px; color:var(--gray)">${g.totalOrder > 0 ? 'Ord:' + g.totalOrder : ''} ${g.totalPO > 0 ? 'PO:' + g.totalPO : ''} ${g.totalInbound > 0 ? 'Inb:' + g.totalInbound : ''}</div>
@@ -12230,6 +12423,7 @@
           ${r.staffLemburNames.split(',').map(n => `<span style="background:var(--accent)22; color:var(--accent); padding:2px 8px; border-radius:4px; font-size:10px; border:1px solid var(--accent)33;">${n.trim()}</span>`).join('')}
         </div>
       </div>` : ''}
+      ${r.alasanLembur ? `<div style="margin-top:12px; font-size:12px; color:var(--green); font-weight:700;">Alasan Lembur: ${r.alasanLembur}</div>` : ''}
       ${r.kendala ? `<div style="margin-top:10px; font-size:11px; color:var(--amber); font-style:italic;">Kendala: ${r.kendala}</div>` : ''}
       <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:8px;">
          <button class="btn btn-ghost btn-sm" style="padding:2px 10px; font-size:11px; border:1px solid #ffffff22;" onclick="closeModal('modalDetailLaporan'); editLaporanKerja('${r.id}')">✏️ Edit</button>
@@ -12280,7 +12474,7 @@
       const oK = parseInt(v('lapOrangKurang')) || 0, jK = parseFloat(v('lapJamKurang')) || 0;
       const oL = parseInt(v('lapOrangLembur')) || 0, jL = parseFloat(v('lapLembur')) || 0;
 
-      const pBubble = v('lapPotongBubble'), bBubble = v('lapBuatBubble'), alsK = v('lapAlasanKurang');
+      const pBubble = v('lapPotongBubble'), bBubble = v('lapBuatBubble'), alsK = v('lapAlasanKurang'), alsL = v('lapAlasanLembur');
       const tot = v('lapTotalJam'); let ken = v('lapKendala');
       const ord = parseInt(v('lapOrder')) || 0, po = parseInt(v('lapPo')) || 0, qty = parseInt(v('lapQty')) || 0;
       const inb = parseInt(v('lapInbound')) || 0, qtyInb = parseInt(v('lapQtyInb')) || 0;
@@ -12293,6 +12487,7 @@
 
       if (!t || !pic) return toast('Lengkapi data', 'error');
       if (oK > 0 && !alsK) return toast('Alasan Pengurangan Orang wajib diisi!', 'error');
+      if (oL > 0 && !alsL) return toast('Alasan Lembur wajib diisi jika lembur > 0!', 'error');
 
       const editId = v('lapEditId');
 
@@ -12312,17 +12507,17 @@
         if (res.success) {
           toast(editId ? 'Laporan Diperbarui' : 'Laporan Berhasil Disimpan');
           closeModal('modalLaporanKerja'); loadLaporanKerja(); loadDashboard();
-          resetForm(['lapPic', 'lapKendala', 'lapOrder', 'lapPo', 'lapQty', 'lapInbound', 'lapQtyInb', 'lapPotongBubble', 'lapBuatBubble', 'lapAlasanKurang']);
+          resetForm(['lapPic', 'lapKendala', 'lapOrder', 'lapPo', 'lapQty', 'lapInbound', 'lapQtyInb', 'lapPotongBubble', 'lapBuatBubble', 'lapAlasanKurang', 'lapAlasanLembur']);
           selectedLemburStaff = new Set();
         } else toast(res.message, 'error');
       };
 
       if (editId) {
         const finalQty = (d === 'Inbound') ? qtyInb : qty;
-        google.script.run.withSuccessHandler(successCb).updateLaporanKerja(editId, t, d, pic, utama, oB * jB, oK * jK, jL, tot, finalKen, oL, admin, ord, currentUser.username, 0, selectedStaff, shf, phl, jPhl, po, finalQty, inb, pBubble, bBubble, alsK);
+        google.script.run.withSuccessHandler(successCb).updateLaporanKerja(editId, t, d, pic, utama, oB * jB, oK * jK, jL, tot, finalKen, oL, admin, ord, currentUser.username, 0, selectedStaff, shf, phl, jPhl, po, finalQty, inb, pBubble, bBubble, alsK, alsL);
       } else {
         const finalQty = (d === 'Inbound') ? qtyInb : qty;
-        google.script.run.withSuccessHandler(successCb).addLaporanKerja(t, d, pic, utama, oB * jB, oK * jK, jL, tot, finalKen, oL, admin, ord, currentUser.username, 0, selectedStaff, shf, phl, jPhl, po, finalQty, inb, pBubble, bBubble, alsK);
+        google.script.run.withSuccessHandler(successCb).addLaporanKerja(t, d, pic, utama, oB * jB, oK * jK, jL, tot, finalKen, oL, admin, ord, currentUser.username, 0, selectedStaff, shf, phl, jPhl, po, finalQty, inb, pBubble, bBubble, alsK, alsL);
       }
     }
 
@@ -13268,9 +13463,9 @@
       if (r === 'HR') {
         ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'aksesTugasConsumable', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
       } else if (r === 'Supervisor') {
-        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'aksesTugasConsumable', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'approvalAuditAsset'].forEach(set);
+        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'aksesTugasConsumable', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
       } else if (r === 'Vice Supervisor') {
-        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'aksesTugasConsumable', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'approvalAuditAsset'].forEach(set);
+        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'aksesTugasConsumable', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
       } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
         ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'aksesTugasConsumable'].forEach(set);
       }
@@ -15189,16 +15384,10 @@
         return;
       }
 
-      // Handle QR Scan Result (Attendance or Asset Audit)
+      // Handle QR Scan Result (Attendance)
       if (data.type === 'FCL_SCAN_RESULT') {
         const decodedText = data.data;
         if (!decodedText) return;
-
-        // Jika Modal Audit sedang terbuka, arahkan ke Audit Asset
-        if (document.getElementById('modalAssetAudit')?.style.display === 'flex') {
-          handleAssetScan(decodedText);
-          return;
-        }
 
         // Parse format FCL-EMP|Nama|Jabatan|ID
         let searchId = decodedText;
@@ -15575,7 +15764,6 @@
     // ASSET WAREHOUSE LOGIC
     // =================================== =========================
     let assetWarehouseData = [];
-    let assetAuditStatusData = {};
 
     function loadAssetWarehouse() {
       const tbody = document.getElementById('bodyAssetWarehouse');
@@ -15590,37 +15778,21 @@
         }
         assetWarehouseData = res.data;
 
-        // Fetch Audit Status
-        google.script.run.withSuccessHandler(auditRes => {
-          if (auditRes.success) assetAuditStatusData = auditRes.data;
-
-          // After fetching assets, fetch Map Zones
-          google.script.run.withSuccessHandler(mapRes => {
-            if (mapRes.success) {
-              awMapZones = Array.isArray(mapRes.data) ? mapRes.data : [];
-            }
-            renderAssetWarehouseTable();
-            awRenderMap();
-          }).getWarehouseMapData();
-        }).getAssetAuditStatus();
+        // After fetching assets, fetch Map Zones
+        google.script.run.withSuccessHandler(mapRes => {
+          if (mapRes.success) {
+            awMapZones = Array.isArray(mapRes.data) ? mapRes.data : [];
+          }
+          renderAssetWarehouseTable();
+          awRenderMap();
+        }).getWarehouseMapData();
 
       }).getAssetWarehouseData();
-
-      // Show approval button for authorized roles
-      const allowedPerms = JSON.parse(currentUser.permissions || '[]');
-      if (currentUser.role === 'admin' || allowedPerms.includes('approvalAuditAsset')) {
-        const btnAppr = document.getElementById('btnAuditApproval');
-        if (btnAppr) btnAppr.style.display = 'inline-block';
-      } else {
-        const btnAppr = document.getElementById('btnAuditApproval');
-        if (btnAppr) btnAppr.style.display = 'none';
-      }
     }
 
     function renderAssetWarehouseTable() {
       const q = v('searchAsset').toLowerCase();
       const divFilter = v('filterAssetDivisi');
-      const auditFilter = v('filterAssetAudit');
       const tbody = document.getElementById('bodyAssetWarehouse');
       if (!tbody) return;
       tbody.innerHTML = '';
@@ -15631,13 +15803,8 @@
         const strCode = d.code != null ? String(d.code).toLowerCase() : '';
         const matchesSearch = strNama.includes(q) || strCode.includes(q);
         const matchesDivisi = !divFilter || String(d.divisi) === divFilter;
-        
-        const isAudited = !!assetAuditStatusData[d.id];
-        let matchesAudit = true;
-        if (auditFilter === 'sudah') matchesAudit = isAudited;
-        if (auditFilter === 'belum') matchesAudit = !isAudited;
 
-        return matchesSearch && matchesDivisi && matchesAudit;
+        return matchesSearch && matchesDivisi;
       });
 
       // Update Stats (Global)
@@ -15805,602 +15972,6 @@
           loadAssetWarehouse();
         } else toast(res.message, 'error');
       }).bulkSyncAssetCodes();
-    }
-
-    // AUDIT LOGIC
-    let auditScanner = null;
-    let isAuditScanning = false;
-
-    function openAssetAuditModal() {
-      resetForm(['auditScanInput']);
-      setVal('auditPetugas', currentUser.username);
-      document.getElementById('audit-asset-detail').style.display = 'none';
-      document.getElementById('audit-scanner-container').style.display = 'none';
-      
-      openModal('modalAssetAudit');
-      
-      // Update with local data first if available
-      updateAuditSummaryTable();
-
-      // Refresh data assets from server
-      google.script.run
-        .withFailureHandler(err => {
-          console.error("Gagal refresh data aset:", err);
-          updateAuditSummaryTable();
-        })
-        .withSuccessHandler(res => {
-          if (res.success) {
-            assetWarehouseData = res.data;
-            updateAuditSummaryTable();
-          }
-        }).getAssetWarehouseData();
-
-      setTimeout(() => {
-        const input = document.getElementById('auditScanInput');
-        if (input) input.focus();
-      }, 500);
-
-      // Listener for external scanner (Enter key)
-      const input = document.getElementById('auditScanInput');
-      if (input) {
-        input.onkeypress = (e) => {
-          if (e.which === 13) {
-            handleAssetScan(input.value);
-            input.value = '';
-          }
-        };
-      }
-    }
-
-    async function closeAssetAuditModal() {
-      if (auditScanner && isAuditScanning) {
-        try {
-          await auditScanner.stop().catch(e => console.warn("Scanner stop error:", e));
-        } catch (e) { }
-      }
-      isAuditScanning = false;
-      document.getElementById('audit-scanner-container').style.display = 'none';
-      closeModal('modalAssetAudit');
-    }
-
-    function toggleAuditCamera() {
-       toggleQRScanner();
-    }
-
-    const VERCEL_QR_URL = 'https://fcl-camera-app.vercel.app/?mode=qr&continuous=true';
-    function toggleQRScanner() {
-      if (netlifyPopup && !netlifyPopup.closed) {
-        netlifyPopup.focus();
-        return;
-      }
-      const popupWidth = 500;
-      const popupHeight = 700;
-      const left = Math.round((screen.width - popupWidth) / 2);
-      const top = Math.round((screen.height - popupHeight) / 2);
-      netlifyPopup = window.open(
-        VERCEL_QR_URL,
-        'FCLScanner',
-        `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=no`
-      );
-      if (!netlifyPopup) {
-        toast('Pop-up diblokir browser!', 'error');
-      }
-    }
-
-    async function startAuditScanner() {
-      const container = document.getElementById('audit-scanner-container');
-      container.style.display = 'block';
-
-      if (!auditScanner) {
-        try {
-          auditScanner = new Html5Qrcode("audit-reader");
-        } catch (e) {
-          toast("Gagal inisialisasi scanner library", "error");
-          return;
-        }
-      }
-
-      const config = { fps: 15, qrbox: { width: 250, height: 250 } };
-
-      try {
-        await auditScanner.start(
-          { facingMode: "environment" },
-          config,
-          (decodedText) => {
-            handleAssetScan(decodedText);
-            closeAssetAuditModal(); // Close/Stop after success
-          }
-        );
-        isAuditScanning = true;
-      } catch (err) {
-        container.style.display = 'none';
-        isAuditScanning = false;
-        console.error("Camera Error:", err);
-        toast("Gagal akses kamera. Pastikan izin diberikan.", "error");
-      }
-    }
-
-    function handleAssetScan(code) {
-      if (!code) return;
-      const q = String(code).trim().toLowerCase();
-      const asset = assetWarehouseData.find(x => 
-        String(x.code || '').trim().toLowerCase() === q || 
-        String(x.id || '').trim().toLowerCase() === q
-      );
-      const detailDiv = document.getElementById('audit-asset-detail');
-
-      if (!asset) {
-        detailDiv.innerHTML = `<div style="color:var(--red); font-weight:700; text-align:center; padding:10px; border:1px dashed var(--red); border-radius:8px;">❌ Asset "${code}" tidak ditemukan dalam database!</div>`;
-        detailDiv.style.display = 'block';
-        toast('Asset tidak ditemukan!', 'error');
-        return;
-      }
-
-      // Show Selection
-      currentAuditAssetId = asset.id;
-      detailDiv.innerHTML = `
-        <div style="font-weight:800; border-bottom:1px solid var(--border-light); padding-bottom:8px; margin-bottom:8px; color:var(--teal);">🔍 ASSET DITEMUKAN</div>
-        <div style="display:grid; grid-template-columns: 100px 1fr; gap:5px; font-size:13px; margin-bottom:15px;">
-           <span class="text-muted">Nama:</span> <strong>${asset.nama}</strong>
-           <span class="text-muted">Kode:</span> <code style="color:var(--teal)">${asset.code}</code>
-        </div>
-        <div style="display:flex; gap:10px;">
-           <button class="btn btn-success w-100" onclick="doSubmitAudit('${asset.id}', 'Bagus')">✅ BAGUS</button>
-           <button class="btn btn-danger w-100" onclick="doSubmitAudit('${asset.id}', 'Rusak')">❌ RUSAK</button>
-        </div>
-      `;
-      detailDiv.style.display = 'block';
-      toast('Pilih kondisi untuk: ' + asset.nama, 'info');
-    }
-
-    function doSubmitAudit(assetId, kondisi) {
-      const detailDiv = document.getElementById('audit-asset-detail');
-      const originalHtml = detailDiv.innerHTML;
-      
-      detailDiv.innerHTML = `<div style="text-align:center; padding:20px; color:var(--teal);"><div class="spinner-border spinner-border-sm"></div> Menyimpan hasil audit (${kondisi})...</div>`;
-      
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          toast('✅ Audit ' + kondisi + ' berhasil dicatat!', 'success');
-          
-          // Refresh data & UI
-          loadAssetWarehouse();
-          updateAuditSummaryTable();
-          
-          detailDiv.style.display = 'none';
-          detailDiv.innerHTML = '';
-          
-          // Focus back to scan input for next item
-          setTimeout(() => {
-            const input = document.getElementById('auditScanInput');
-            if (input) {
-              input.value = '';
-              input.focus();
-            }
-          }, 400);
-        } else {
-          detailDiv.innerHTML = originalHtml;
-          toast(res.message, 'error');
-        }
-      }).addAssetAudit(assetId, kondisi, 'Scan via Mobile', currentUser.username);
-    }
-
-    function openAuditApprovalModal() {
-      const allowedPerms = JSON.parse(currentUser.permissions || '[]');
-      if (currentUser.role !== 'admin' && !allowedPerms.includes('approvalAuditAsset')) {
-        return toast('Anda tidak memiliki akses approval audit!', 'error');
-      }
-      openModal('modalAuditApproval');
-      const tbody = document.getElementById('auditApprovalBody');
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4">Memuat data...</td></tr>';
-      
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message, 'error');
-        const pending = res.data.filter(x => x.statusApproval === 'Pending');
-        renderAuditApprovalList(pending);
-      }).getAssetAuditLogs();
-    }
-
-    function renderAuditApprovalList(data) {
-      const tbody = document.getElementById('auditApprovalBody');
-      tbody.innerHTML = '';
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada audit yang perlu di-approve.</td></tr>';
-        return;
-      }
-      data.forEach(item => {
-        const asset = assetWarehouseData.find(x => x.id === item.assetId) || { nama: 'Unknown', code: '-' };
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${formatDate(item.tanggal)}</td>
-          <td><strong>${asset.nama}</strong><br><small>${asset.code}</small></td>
-          <td><span class="badge ${item.kondisi === 'Bagus' ? 'bg-success' : 'bg-danger'}">${item.kondisi}</span></td>
-          <td>${item.petugas}</td>
-          <td style="text-align:right;">
-             <button class="btn btn-teal btn-sm" onclick="doApproveAudit('${item.id}', 'Approved')">Approve</button>
-             <button class="btn btn-outline-danger btn-sm" onclick="doApproveAudit('${item.id}', 'Rejected')">Reject</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function doApproveAudit(id, status) {
-      toast('⏳ Memproses...', 'info');
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          toast('✅ Berhasil di-' + status);
-          openAuditApprovalModal(); // refresh
-          loadAssetWarehouse(); // This will refresh the main list and the audit mapping
-        } else toast(res.message, 'error');
-      }).approveAssetAudit(id, status, currentUser.username);
-    }
-
-    function printAuditReport() {
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message, 'error');
-        const logs = res.data;
-        const auditedMap = {};
-        logs.forEach(l => {
-          if (!auditedMap[l.assetId] || new Date(l.createdAt) > new Date(auditedMap[l.assetId].createdAt)) {
-            auditedMap[l.assetId] = l;
-          }
-        });
-
-        const now = new Date().toLocaleString('id-ID');
-        let html = `
-          <html>
-          <head>
-            <title>Laporan Audit Asset - ${now}</title>
-            <style>
-              body { font-family: 'Inter', sans-serif; padding: 20px; color: #333; }
-              .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-              th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-              th { background-color: #f8f9fa; font-weight: bold; }
-              .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-              .bg-success { background: #d1fae5; color: #065f46; }
-              .bg-warning { background: #fef3c7; color: #92400e; }
-              .bg-danger { background: #fee2e2; color: #991b1b; }
-              @media print { .no-print { display: none; } }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h2>LAPORAN HASIL AUDIT ASSET</h2>
-              <p>Dicetak pada: ${now} | Petugas: ${currentUser.nama}</p>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>Kode Asset</th>
-                  <th>Nama Asset</th>
-                  <th>Divisi</th>
-                  <th>Status Audit</th>
-                  <th>Kondisi</th>
-                  <th>Approval</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
-
-        assetWarehouseData.forEach((item, index) => {
-          const log = auditedMap[item.id];
-          const isAudited = !!log;
-          html += `
-            <tr>
-              <td>${index + 1}</td>
-              <td><code>${item.code}</code></td>
-              <td><strong>${item.nama}</strong></td>
-              <td>${item.divisi}</td>
-              <td>
-                <span class="badge ${isAudited ? 'bg-success' : 'bg-warning'}">
-                  ${isAudited ? 'TERSCAN' : 'BELUM TERSCAN'}
-                </span>
-              </td>
-              <td>${isAudited ? log.kondisi : '-'}</td>
-              <td>${isAudited ? log.statusApproval : '-'}</td>
-            </tr>
-          `;
-        });
-
-        html += `
-              </tbody>
-            </table>
-            <div style="margin-top: 50px; display: flex; justify-content: flex-end;">
-              <div style="text-align: center; width: 200px;">
-                <p>Mengetahui,</p>
-                <br><br><br>
-                <p><strong>( ________________ )</strong></p>
-                <p>Supervisor / Manager</p>
-              </div>
-            </div>
-            <script>window.print();<\/script>
-          </body>
-          </html>
-        `;
-
-        const win = window.open('', '_blank');
-        win.document.write(html);
-        win.document.close();
-      }).getAssetAuditLogs();
-    }
-
-    function updateAuditSummaryTable() {
-      const tbody = document.getElementById('auditSummaryBody');
-      if (!tbody) return;
-      
-      const countEl = document.getElementById('auditCountInfo');
-      const btnModal = document.getElementById('btnGenerateAuditModal');
-      
-      // Show loading only if currently empty
-      if (tbody.innerHTML.trim() === '' || tbody.innerHTML.includes('Sinkronisasi')) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4"><div class="spinner-border spinner-border-sm text-teal"></div><br><small class="text-muted">Sinkronisasi data audit...</small></td></tr>';
-      }
-
-      google.script.run
-        .withFailureHandler(err => {
-          tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">⚠️ Gagal terhubung ke server: ${err.message}</td></tr>`;
-        })
-        .withSuccessHandler(res => {
-          if (!res.success) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">⚠️ ${res.message}</td></tr>`;
-            return;
-          }
-          
-          assetWarehouseData = res.assets || [];
-          const logs = res.logs || [];
-          const auditedIds = new Set(logs.map(l => String(l.assetId)));
-          const auditedCount = Array.from(auditedIds).length;
-          const totalCount = assetWarehouseData.length;
-          
-          updateAuditProgressUI(auditedCount, totalCount);
-          if (countEl) countEl.textContent = `${auditedCount}/${totalCount} Ter-Audit`;
-          if (btnModal) btnModal.style.display = auditedCount > 0 ? 'block' : 'none';
-
-          const isMinusOnly = document.getElementById('auditViewMinus')?.checked;
-          let list = [...assetWarehouseData];
-          
-          if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Belum ada data aset di database.</td></tr>';
-            return;
-          }
-
-          if (isMinusOnly) {
-            list = list.filter(item => !auditedIds.has(String(item.id)));
-            if (list.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-success">🎉 Semua aset telah terscan!</td></tr>';
-              return;
-            }
-          }
-
-          // Sort: Unscanned first, then by name
-          list.sort((a,b) => {
-            const audA = auditedIds.has(String(a.id));
-            const audB = auditedIds.has(String(b.id));
-            if (audA !== audB) return audA ? 1 : -1;
-            return String(a.nama || '').localeCompare(String(b.nama || ''));
-          });
-
-          tbody.innerHTML = '';
-          list.forEach(item => {
-            const log = logs.find(l => String(l.assetId) === String(item.id));
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td style="padding-left:10px; font-family:monospace;">${item.code || '-'}</td>
-              <td style="font-weight:600;">${item.nama}</td>
-              <td style="text-align:center;">
-                ${log 
-                  ? `<span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; font-size:9px; border:1px solid rgba(16,185,129,0.2);">✅ ${log.statusApproval || 'Tercatat'}</span>`
-                  : `<span class="badge" style="background:rgba(239, 68, 68, 0.1); color:var(--red); font-size:9px; border:1px solid rgba(239, 68, 68, 0.2);">⏳ Minus</span>`
-                }
-              </td>
-            `;
-            tbody.appendChild(row);
-          });
-        }).getAuditSyncData();
-    }
-
-    // ==========================================
-    // AUDIT REPORT LOGIC
-    // ==========================================
-    let auditReportsData = [];
-
-    function loadAuditReports() {
-      const tb = document.getElementById('tableAuditReports');
-      if (tb) tb.innerHTML = '<tr><td colspan="8" class="text-center p-4">Memuat laporan...</td></tr>';
-      
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          auditReportsData = res.data;
-          renderAuditReports();
-        } else toast(res.message, 'error');
-      }).getAuditReports();
-    }
-
-    function renderAuditReports() {
-      const tb = document.getElementById('tableAuditReports');
-      if (!tb) return;
-      tb.innerHTML = '';
-      
-      if (auditReportsData.length === 0) {
-        tb.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-muted">Belum ada laporan audit</td></tr>';
-        return;
-      }
-
-      auditReportsData.sort((a,b) => b.id.localeCompare(a.id)).forEach(d => {
-        let allowedMenus = []; try { allowedMenus = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
-        const canApproveAudit = (currentUser.role === 'admin' || allowedMenus.includes('approvalAuditAsset'));
-
-        const row = `
-          <tr>
-            <td><code>${d.id}</code></td>
-            <td>${formatDate(d.tanggal)}</td>
-            <td>${d.auditor}</td>
-            <td>${d.totalAsset}</td>
-            <td>${d.terscan}</td>
-            <td><span class="${d.minus > 0 ? 'text-danger fw-bold' : ''}">${d.minus}</span></td>
-            <td><span class="badge-tb ${d.status === 'Approved' ? 'bg-success' : 'bg-warning'}">${d.status}</span></td>
-            <td>
-              <div style="display:flex; gap:4px;">
-                <button class="btn btn-ghost btn-sm" onclick="viewAuditReportDetail('${d.id}')">👁️</button>
-                ${(d.status === 'Pending' && canApproveAudit) ? 
-                  `<button class="btn btn-teal btn-sm" onclick="approveAuditReport('${d.id}')">✅</button>` : ''}
-              </div>
-            </td>
-          </tr>
-        `;
-        tb.innerHTML += row;
-      });
-    }
-
-    function doGenerateAuditReport() {
-      if (!confirm('Hasilkan laporan audit berdasarkan data scanning saat ini?')) return;
-      
-      const btn = document.getElementById('btnGenerateAuditReport');
-      btn.disabled = true; btn.textContent = '⏳ Memproses...';
-      
-      google.script.run.withSuccessHandler(res => {
-        btn.disabled = false; btn.textContent = '📄 Buat Laporan Hasil Audit';
-        if (res.success) {
-          toast('Laporan audit berhasil dibuat! Menunggu approval pimpinan.');
-          showPage('auditReport');
-        } else toast(res.message, 'error');
-      }).generateAuditReport(currentUser.nama);
-    }
-
-    function approveAuditReport(id) {
-      if (!confirm('Setujui laporan audit ini?')) return;
-      showLoading('Menyetujui laporan...');
-      google.script.run.withSuccessHandler(res => {
-        hideLoading();
-        if (res.success) {
-          toast('Laporan audit disetujui ✅');
-          loadAuditReports();
-        } else toast(res.message, 'error');
-      }).approveAuditReport(id, currentUser.nama);
-    }
-
-    function updateAuditProgressUI(auditedCount, totalCount) {
-      const text = document.getElementById('auditProgressText');
-      const btn = document.getElementById('btnGenerateAuditReport');
-      
-      if (!text || !btn) return;
-      
-      const isComplete = (auditedCount >= totalCount && totalCount > 0);
-      const diff = totalCount - auditedCount;
-      
-      text.innerHTML = `Ter-audit: <strong>${auditedCount}</strong> / ${totalCount} unit. ` + 
-                       (isComplete ? `<span class="text-success fw-bold">Audit Selesai! ✅</span>` : `<span class="text-danger">Minus: ${diff} unit ⏳</span>`);
-      
-      if (isComplete) {
-        btn.style.display = 'block';
-      } else {
-        btn.style.display = 'none';
-      }
-    }
-
-    function viewAuditReportDetail(id) {
-      const d = auditReportsData.find(x => x.id === id);
-      if (!d) return;
-
-      let historyHtml = '';
-      try {
-        const hist = JSON.parse(d.history || '[]');
-        historyHtml = hist.map(h => `<div class="task-log-item"><div class="task-log-dot"></div><div><div class="task-log-text">${h.action}</div><div class="task-log-time">${h.time} | oleh ${h.by}</div></div></div>`).join('');
-      } catch (e) { historyHtml = 'Gagal memuat riwayat.'; }
-
-      let content = `
-        <div style="background:rgba(255,255,255,0.02); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
-          <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <div>
-              <div style="font-size:11px; color:var(--gray); text-transform:uppercase; font-weight:700;">ID Laporan</div>
-              <div style="font-size:18px; font-weight:800; color:var(--accent);">#${d.id}</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:11px; color:var(--gray); text-transform:uppercase; font-weight:700;">Status</div>
-              <div class="badge-tb ${d.status === 'Approved' ? 'bg-success' : 'bg-warning'}">${d.status}</div>
-            </div>
-          </div>
-          
-          <div class="row g-3 mb-4">
-            <div class="col-6">
-              <div style="font-size:11px; color:var(--gray); text-transform:uppercase;">Tanggal Audit</div>
-              <div style="font-weight:700;">${formatDate(d.tanggal)}</div>
-            </div>
-            <div class="col-6">
-              <div style="font-size:11px; color:var(--gray); text-transform:uppercase;">Auditor</div>
-              <div style="font-weight:700;">${d.auditor}</div>
-            </div>
-          </div>
-
-          <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
-            <div class="row text-center">
-              <div class="col-4">
-                <div style="font-size:10px; color:var(--gray);">TOTAL ASSET</div>
-                <div style="font-size:20px; font-weight:800;">${d.totalAsset}</div>
-              </div>
-              <div class="col-4" style="border-left:1px solid #ffffff10; border-right:1px solid #ffffff10;">
-                <div style="font-size:10px; color:var(--gray);">TERSCAN</div>
-                <div style="font-size:20px; font-weight:800; color:var(--teal);">${d.terscan}</div>
-              </div>
-              <div class="col-4">
-                <div style="font-size:10px; color:var(--gray);">MINUS</div>
-                <div style="font-size:20px; font-weight:800; color:var(--red);">${d.minus}</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-size:12px; font-weight:700; color:var(--gray); margin-bottom:10px; text-transform:uppercase;">Riwayat Aktivitas</div>
-          <div class="task-log" style="max-height:100px; overflow-y:auto; margin-bottom:20px;">
-            ${historyHtml}
-          </div>
-
-          ${d.minus > 0 ? `
-            <div style="font-size:12px; font-weight:700; color:var(--red); margin-bottom:10px; text-transform:uppercase;">❌ Asset Hilang (Tidak Terscan)</div>
-            <div style="max-height:150px; overflow-y:auto; background:rgba(239, 68, 68, 0.05); border-radius:8px; padding:10px; font-size:11px;">
-              <ul style="margin:0; padding-left:20px; color:#f87171;">
-                ${JSON.parse(d.missingAssets || '[]').map(a => `<li>${a}</li>`).join('')}
-              </ul>
-            </div>
-          ` : '<div style="color:var(--green); font-size:12px; font-weight:700;">✅ Semua asset lengkap!</div>'}
-        </div>
-      `;
-
-      Swal.fire({
-        title: 'Detail Laporan Audit',
-        html: content,
-        width: '550px',
-        showCloseButton: true,
-        showConfirmButton: (d.status === 'Pending' && currentUser.permissions.includes('approvalAuditAsset')),
-        confirmButtonText: '✅ Setujui Laporan',
-        confirmButtonColor: 'var(--teal)',
-        showCancelButton: true,
-        cancelButtonText: 'Tutup',
-        cancelButtonColor: 'var(--gray)'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          approveAuditReport(d.id);
-        }
-      });
-    }
-
-    function submitAssetAudit() {
-      const id = currentAuditAssetId, kondisi = v('auditKondisi'), catatan = v('auditCatatan'), petugas = v('auditPetugas');
-      if (!id) return;
-
-      const btn = document.getElementById('btnSaveAudit');
-      btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
-
-      google.script.run.withSuccessHandler(res => {
-        btn.disabled = false; btn.textContent = '💾 Simpan Hasil Audit';
-        if (res.success) {
-          toast('✅ Audit Asset Berhasil Disimpan!');
-          closeAssetAuditModal();
-          loadAssetWarehouse(); // Refresh table status if it changed
-        } else toast(res.message, 'error');
-      }).addAssetAudit(id, kondisi, catatan, petugas);
     }
 
     function awPopulateZoneSelect(selectId, currentValue) {
@@ -17728,8 +17299,282 @@
         };
       }
     })();
+    // ==========================================
+    // STOCK OPNAME ASSET LOGIC
+    // ==========================================
+    let soAssetSession = null;
+    let soAssetLogs = [];
+    let soAssetUnscanned = [];
+    let soAssetScanner = null;
+
+    function switchAwTab(tab) {
+      document.getElementById('tabAwList').classList.remove('active');
+      document.getElementById('tabAwOpname').classList.remove('active');
+      document.getElementById('awTabListContent').style.display = 'none';
+      document.getElementById('awTabOpnameContent').style.display = 'none';
+
+      if (tab === 'list') {
+        document.getElementById('tabAwList').classList.add('active');
+        document.getElementById('awTabListContent').style.display = 'block';
+        renderAssetWarehouseTable();
+      } else if (tab === 'opname') {
+        document.getElementById('tabAwOpname').classList.add('active');
+        document.getElementById('awTabOpnameContent').style.display = 'block';
+        if (!document.getElementById('soAssetDate').value) {
+          document.getElementById('soAssetDate').value = new Date().toISOString().split('T')[0];
+        }
+      }
+    }
+
+    function startSoAssetSession() {
+      const tanggal = document.getElementById('soAssetDate').value;
+      const divisi = document.getElementById('soAssetDivisi').value;
+      if (!tanggal) return showToast('Pilih tanggal SO', 'warning');
+
+      document.getElementById('btnStartSoAsset').innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memulai...';
+      document.getElementById('btnStartSoAsset').disabled = true;
+
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          soAssetSession = {
+            id: res.id,
+            tanggal: tanggal,
+            divisi: divisi,
+            totalAsset: res.totalAsset,
+            terscan: 0
+          };
+          soAssetLogs = [];
+          
+          document.getElementById('btnStartSoAsset').style.display = 'none';
+          document.getElementById('btnResetSoAsset').style.display = 'inline-block';
+          document.getElementById('btnSubmitSoAsset').style.display = 'inline-block';
+          document.getElementById('soAssetDivisi').disabled = true;
+          document.getElementById('soAssetDate').disabled = true;
+          document.getElementById('soAssetActivePanel').style.display = 'block';
+          
+          initSoAssetScanner();
+          loadSoAssetUnscanned(divisi);
+        } else {
+          showToast(res.message, 'error');
+          document.getElementById('btnStartSoAsset').innerHTML = '▶ Mulai Sesi SO';
+          document.getElementById('btnStartSoAsset').disabled = false;
+        }
+      }).createAssetOpnameSession(tanggal, divisi, currentUser.username);
+    }
+
+    function resetSoAssetSession() {
+      if(!confirm('Yakin ingin reset sesi ini? Data scan yang belum disubmit akan hilang (dihapus).')) return;
+      if(soAssetSession && soAssetSession.id) {
+        google.script.run.deleteAssetOpnameSession(soAssetSession.id);
+      }
+      stopSoAssetScanner();
+      soAssetSession = null;
+      soAssetLogs = [];
+      soAssetUnscanned = [];
+      
+      document.getElementById('btnStartSoAsset').style.display = 'inline-block';
+      document.getElementById('btnStartSoAsset').innerHTML = '▶ Mulai Sesi SO';
+      document.getElementById('btnStartSoAsset').disabled = false;
+      document.getElementById('btnResetSoAsset').style.display = 'none';
+      document.getElementById('btnSubmitSoAsset').style.display = 'none';
+      document.getElementById('btnSubmitSoAsset').disabled = true;
+      document.getElementById('soAssetDivisi').disabled = false;
+      document.getElementById('soAssetDate').disabled = false;
+      document.getElementById('soAssetActivePanel').style.display = 'none';
+    }
+
+    function initSoAssetScanner() {
+      if(soAssetScanner) return; // already initialized
+      try {
+        soAssetScanner = new Html5QrcodeScanner("soAssetQrReader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+        soAssetScanner.render(onSoAssetScanSuccess, onSoAssetScanFailure);
+      } catch(e) {
+        console.warn("Scanner error:", e);
+      }
+    }
+
+    function stopSoAssetScanner() {
+      if(soAssetScanner) {
+        try { soAssetScanner.clear(); } catch(e) {}
+        soAssetScanner = null;
+      }
+    }
+
+    let isScanningSO = false;
+    function onSoAssetScanSuccess(decodedText) {
+      if (isScanningSO) return;
+      isScanningSO = true;
+      playBeep();
+      processSoAssetScan(decodedText);
+      setTimeout(() => { isScanningSO = false; }, 2000);
+    }
+    function onSoAssetScanFailure(error) { /* ignore */ }
+
+    function scanImageFileSoAsset(inputElem) {
+      if (!inputElem.files || inputElem.files.length === 0) return;
+      const file = inputElem.files[0];
+      
+      let hiddenDiv = document.getElementById('hiddenSoAssetFileScanner');
+      if (!hiddenDiv) {
+        hiddenDiv = document.createElement('div');
+        hiddenDiv.id = 'hiddenSoAssetFileScanner';
+        hiddenDiv.style.display = 'none';
+        document.body.appendChild(hiddenDiv);
+      }
+      
+      const html5QrCode = new Html5Qrcode("hiddenSoAssetFileScanner");
+      showToast('Memindai QR dari gambar...', 'info');
+      
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+          inputElem.value = '';
+          playBeep();
+          processSoAssetScan(decodedText);
+        })
+        .catch(err => {
+          inputElem.value = '';
+          showToast('QR Code tidak ditemukan pada gambar', 'warning');
+        });
+    }
+
+    function loadSoAssetUnscanned(divisi) {
+      document.getElementById('soAssetUnscannedList').innerHTML = '<tr><td colspan="5" class="text-center">Memuat daftar asset...</td></tr>';
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          soAssetUnscanned = res.data.filter(a => {
+            if(divisi && divisi !== 'Semua' && a.divisi !== divisi) return false;
+            return true;
+          });
+          renderSoAssetLists();
+        }
+      }).getAssetWarehouseData();
+    }
+
+    function processSoAssetScan(code) {
+      if(!code) return;
+      code = code.trim();
+      document.getElementById('soAssetManualCode').value = '';
+      
+      if(!soAssetSession) return showToast('Sesi belum dimulai', 'warning');
+
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          showToast('Asset terscan: ' + res.asset.nama, 'success');
+          // Tambah ke scanned list
+          soAssetLogs.unshift({
+            id: 'temp-'+Date.now(),
+            assetCode: res.asset.code,
+            assetNama: res.asset.nama,
+            divisi: res.asset.divisi,
+            qtyFisik: res.asset.qty, // default to system qty
+            kondisi: 'Baik',
+            scannedAt: new Date().toISOString()
+          });
+          soAssetSession.terscan++;
+          
+          // Hapus dari unscanned list
+          soAssetUnscanned = soAssetUnscanned.filter(a => String(a.code).trim().toLowerCase() !== code.toLowerCase());
+          
+          document.getElementById('btnSubmitSoAsset').disabled = false;
+          renderSoAssetLists();
+        } else {
+          showToast(res.message, res.alreadyScanned ? 'info' : 'error');
+        }
+      }).scanAssetForOpname(soAssetSession.id, code, 1, 'Baik', '', currentUser.username);
+    }
+
+    function renderSoAssetLists() {
+      // Progress
+      const total = soAssetSession.totalAsset || 1;
+      const scanned = soAssetSession.terscan || 0;
+      const pct = Math.min(100, Math.round((scanned / total) * 100));
+      document.getElementById('soAssetProgressBar').style.width = pct + '%';
+      document.getElementById('soAssetProgressText').textContent = scanned + ' / ' + total + ' Asset Ter-scan';
+      
+      // Update counters
+      document.getElementById('countSoScanned').textContent = scanned;
+      document.getElementById('countSoUnscanned').textContent = soAssetUnscanned.length;
+
+      // Scanned List
+      const tbodyS = document.getElementById('soAssetScannedList');
+      tbodyS.innerHTML = '';
+      if(soAssetLogs.length === 0) {
+        tbodyS.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada asset terscan</td></tr>';
+      } else {
+        soAssetLogs.forEach((l, i) => {
+          const time = new Date(l.scannedAt).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+          tbodyS.innerHTML += `
+            <tr>
+              <td>${i+1}</td>
+              <td style="font-weight:700; color:var(--teal);">${l.assetCode}</td>
+              <td>${l.assetNama}</td>
+              <td><span class="badge bg-secondary">${l.divisi}</span></td>
+              <td><input type="number" class="form-control form-control-sm" value="${l.qtyFisik}" style="width:70px;" onchange="updateSoQtyFisik('${l.id}', this.value)" readonly title="Qty saat ini (bisa diedit di versi berikutnya jika perlu)"></td>
+              <td><span class="badge bg-success">${l.kondisi}</span></td>
+              <td>${time}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // Unscanned List
+      const tbodyU = document.getElementById('soAssetUnscannedList');
+      tbodyU.innerHTML = '';
+      if(soAssetUnscanned.length === 0) {
+        tbodyU.innerHTML = '<tr><td colspan="5" class="text-center text-success">Semua asset telah terscan! 🎉</td></tr>';
+      } else {
+        soAssetUnscanned.forEach(a => {
+          tbodyU.innerHTML += `
+            <tr>
+              <td style="font-weight:700;">${a.code}</td>
+              <td>${a.nama}</td>
+              <td>${a.divisi}</td>
+              <td>${a.qty}</td>
+              <td><span class="badge" style="background:var(--red);">${a.status}</span></td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    function updateSoQtyFisik(logId, newVal) {
+      // Stub for local update, future enhancement if user wants to change qty after scan
+    }
+
+    function submitSoAssetReport() {
+      if(!soAssetSession || !soAssetSession.id) return;
+      if(!confirm('Ajukan laporan Stock Opname ini untuk approval?')) return;
+      
+      const btn = document.getElementById('btnSubmitSoAsset');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengajukan...';
+      btn.disabled = true;
+
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          showToast('Laporan berhasil diajukan!', 'success');
+          stopSoAssetScanner();
+          // Reset UI
+          switchAwTab('list');
+          document.getElementById('btnResetSoAsset').style.display = 'none';
+          btn.style.display = 'none';
+          document.getElementById('btnStartSoAsset').style.display = 'inline-block';
+          document.getElementById('btnStartSoAsset').innerHTML = '▶ Mulai Sesi SO';
+          document.getElementById('btnStartSoAsset').disabled = false;
+          document.getElementById('soAssetDivisi').disabled = false;
+          document.getElementById('soAssetDate').disabled = false;
+          document.getElementById('soAssetActivePanel').style.display = 'none';
+          soAssetSession = null;
+        } else {
+          showToast(res.message, 'error');
+          btn.innerHTML = '📋 Buat Laporan & Ajukan';
+          btn.disabled = false;
+        }
+      }).submitAssetOpname(soAssetSession.id, currentUser.username);
+    }
+    // ==========================================
 
   </script>
+
 
 
 
@@ -17898,74 +17743,6 @@
   </div>
 
   <!-- MODAL: Audit Asset (Scanner) -->
-  <div class="modal-overlay" id="modalAssetAudit">
-    <div class="custom-modal" style="width:550px;">
-      <button class="modal-close" onclick="closeAssetAuditModal()">x</button>
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <h3 class="mb-0">📷 Audit Asset Warehouse</h3>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Scan Barcode / Input Kode Asset</label>
-        <div class="input-group">
-          <input type="text" id="auditScanInput" class="form-control"
-            placeholder="Arahkan scanner ke sini atau ketik..." autofocus>
-          <button class="btn btn-teal" onclick="toggleAuditCamera()"><i class="bi bi-camera"></i> Kamera</button>
-        </div>
-        <small class="text-muted" style="font-size:10px;">* Tekan ENTER untuk memproses input scanner eksternal</small>
-      </div>
-
-      <!-- Video Scanner Container -->
-      <div id="audit-scanner-container"
-        style="display:none; background:#000; border-radius:12px; overflow:hidden; margin-bottom:15px; border:2px solid var(--teal);">
-        <div id="audit-reader" style="width:100%;"></div>
-      </div>
-
-      <!-- Detail Asset (Populated via JS) -->
-      <div id="audit-asset-detail" class="audit-detail-card" style="display:none; background:rgba(14,165,233,0.05); border-left:4px solid var(--teal); padding:12px; border-radius:8px; margin-bottom:15px;">
-        <!-- Content will be injected here -->
-      </div>
-
-      <div id="audit-summary-container" style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:15px;">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div style="font-weight:800; font-size:11px; color:var(--teal); text-transform:uppercase; letter-spacing:0.5px;">📋 Daftar Audit Asset (Terdaftar)</div>
-          <div class="d-flex gap-2 align-items-center">
-            <div class="btn-group" role="group" style="background: rgba(255,255,255,0.05); padding: 2px; border-radius: 8px;">
-              <input type="radio" class="btn-check" name="auditView" id="auditViewAll" checked onchange="updateAuditSummaryTable()">
-              <label class="btn btn-outline-teal btn-sm" for="auditViewAll" style="font-size:10px; border:none; padding:4px 12px; border-radius:6px;">Semua</label>
-              
-              <input type="radio" class="btn-check" name="auditView" id="auditViewMinus" onchange="updateAuditSummaryTable()">
-              <label class="btn btn-outline-danger btn-sm" for="auditViewMinus" style="font-size:10px; border:none; padding:4px 12px; border-radius:6px;">Minus Only</label>
-            </div>
-            <span id="auditCountInfo" class="badge bg-teal" style="font-size:10px;">0/0 Ter-Audit</span>
-            <button class="btn btn-outline-primary btn-sm" style="padding:2px 8px; font-size:10px;" onclick="printAuditReport()">🖨️ Cetak Laporan</button>
-          </div>
-        </div>
-        <div style="max-height:250px; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; background:rgba(255,255,255,0.02);">
-          <table class="table table-sm table-hover mb-0" style="font-size:11px;">
-             <thead style="position:sticky; top:0; background:var(--card-bg); z-index:10; border-bottom:2px solid var(--border-color);">
-               <tr>
-                 <th style="padding-left:10px;">Kode</th>
-                 <th>Nama Asset</th>
-                 <th style="text-align:center; width:100px;">Status Audit</th>
-               </tr>
-             </thead>
-             <tbody id="auditSummaryBody">
-                <!-- populated dynamically -->
-             </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="modal-footer px-0 pb-0 pt-3 mt-3 border-top" style="justify-content: space-between;">
-        <button class="btn btn-primary" id="btnGenerateAuditModal" onclick="doGenerateAuditReport()" style="display:none; background:var(--accent); border:none;">
-          📄 Buat Laporan Audit Asset
-        </button>
-        <button class="btn btn-ghost" onclick="closeAssetAuditModal()">Tutup</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: Bulk Print Asset -->
   <div class="modal-overlay" id="modalBulkPrintAsset">
     <div class="custom-modal" style="width:420px;">
@@ -17998,35 +17775,6 @@
       <div class="modal-footer px-0 pb-0 pt-3 mt-3 border-top">
         <button class="btn btn-ghost" onclick="closeModal('modalBulkPrintAsset')">Batal</button>
         <button class="btn btn-teal" onclick="doBulkPrintAsset()">🚀 Cetak Sekarang</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Approval Audit Asset -->
-  <div class="modal-overlay" id="modalAuditApproval">
-    <div class="custom-modal" style="width:700px; max-height:90vh; overflow-y:auto;">
-      <button class="modal-close" onclick="closeModal('modalAuditApproval')">x</button>
-      <div class="d-flex align-items-center gap-2 mb-3">
-        <h3 class="mb-0">⚖️ Approval Audit Asset</h3>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm" style="font-size:12px;">
-           <thead>
-             <tr>
-               <th>Tanggal</th>
-               <th>Asset</th>
-               <th>Kondisi</th>
-               <th>Petugas</th>
-               <th style="text-align:right;">Aksi</th>
-             </tr>
-           </thead>
-           <tbody id="auditApprovalBody">
-             <!-- data -->
-           </tbody>
-        </table>
-      </div>
-      <div class="modal-footer px-0 pb-0 pt-3 mt-3 border-top">
-        <button class="btn btn-ghost" onclick="closeModal('modalAuditApproval')">Tutup</button>
       </div>
     </div>
   </div>
