@@ -36,16 +36,16 @@ const CONFIG = {
     PACKING_LIST: 'PackingList',
     RIWAYAT_KARYAWAN: 'RiwayatKaryawan',
     SURAT_PERINGATAN: 'SuratPeringatan',
-    TUGAS_CONSUMABLE: 'TugasConsumable',
     TGL_MERAH: 'TglMerah',
     BOOKING_MOBIL: 'BookingMobil',
-    ABSENSI_LEMBUR: 'AbsensiLembur',
     WAREHOUSE_MAP: 'WarehouseMap',
     ABSENSI_KARYAWAN: 'AbsensiKaryawan',
     JADWAL_SHIFT: 'JadwalShift',
     JADWAL_ROSTER: 'JadwalRoster',
     ASSET_AUDIT_LOG: 'AssetAuditLog',
-    AUDIT_REPORTS: 'AuditReports'
+    AUDIT_REPORTS: 'AuditReports',
+    INVENTORY_CONTROL: 'InventoryControl',
+    INVENTORY_MONITORING: 'InventoryMonitoring'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
 };
@@ -122,6 +122,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
   setupSheet(ss, CONFIG.SHEETS.AUDIT_REPORTS, ['id','tanggal','auditor','totalAsset','terscan','minus','status','createdBy','createdAt','history']);
+  setupSheet(ss, CONFIG.SHEETS.INVENTORY_CONTROL, ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.INVENTORY_MONITORING, ['id', 'areaPosisi', 'keterangan', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -878,31 +880,6 @@ function formatSheetLembur() {
 }
 
 // ============================================================
-// ABSENSI LEMBUR (QR Code)
-// ============================================================
-
-function addAbsensiLembur(nama, divisi, karyawanId) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.ABSENSI_LEMBUR);
-    const now = new Date();
-    const tanggal = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    const jam = Utilities.formatDate(now, Session.getScriptTimeZone(), 'HH:mm:ss');
-    
-    // Check if already clocked in today
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-        const rowDate = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
-        if (rowDate === tanggal && String(data[i][3]) === String(nama)) {
-            return { success: false, message: nama + ' sudah absen hari ini pada ' + data[i][2] };
-        }
-    }
-    
-    sheet.appendRow([generateId(), tanggal, jam, nama, divisi, karyawanId || '', 'Clock IN', now.toISOString()]);
-    return { success: true, data: { nama, jam, tanggal } };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-// ============================================================
 // DASHBOARD & KEUANGAN
 // ============================================================
 function getDashboardData() {
@@ -950,8 +927,6 @@ function getDashboardData() {
     const totalKasIn = (kg.data||[]).filter(k => k.tipe === 'IN').reduce((s, k) => s + (k.nominal || 0), 0); 
     const totalKasOut = (kg.data||[]).filter(k => k.tipe === 'OUT').reduce((s, k) => s + (k.nominal || 0), 0);
     
-    const absensiLembur = getAbsensiLembur();
-    
     return { 
       success: true, 
       saldoGudang: sG.saldo || 0, 
@@ -961,8 +936,7 @@ function getDashboardData() {
       totalKasOut: totalKasOut, 
       kasData: sanitize(kg.data), 
       tbData: sanitize(tb.data), 
-      laporanData: sanitize(lk.success ? lk.data : []),
-      absensiLembur: sanitize(absensiLembur.success ? absensiLembur.data : [])
+      laporanData: sanitize(lk.success ? lk.data : [])
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -1535,6 +1509,22 @@ function updateStock(id, sku, nama, barcode, batch, expDate, satuan, stok, stokM
 }
 function deleteStock(id) { return deleteRow(CONFIG.SHEETS.STOCK, id); }
 
+function getBarangByCode(code) {
+  try {
+    if (!code) return { success: false, message: 'Kode kosong' };
+    const stock = getStock();
+    if (!stock.success) return stock;
+    
+    const results = stock.data.filter(s => 
+      String(s.sku).toLowerCase() === String(code).toLowerCase() || 
+      String(s.barcode).toLowerCase() === String(code).toLowerCase()
+    );
+    
+    if (results.length === 0) return { success: false, message: 'Barang tidak ditemukan: ' + code };
+    return { success: true, data: results };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
 // ============================================================
 // MOVE STOCK - Pindah Stok ke Lokasi Lain
 // ============================================================
@@ -1955,6 +1945,100 @@ function updateBuktiPackingUrl(orderId, noOrderFallback, url) {
 }
 
 function deleteOrder(id, noOrder) { return deleteRow(CONFIG.SHEETS.ORDER, id, noOrder, 1); }
+
+/**
+ * Memperbarui jumlah barang yang sudah dipacking/divalidasi
+ * @param {string} orderId ID Order
+ * @param {Array|string} validationItems Array [{id: detailId, packedQty: number}]
+ */
+/**
+ * FINALISASI VALIDASI & KIRIM ORDER (All-in-One Optimization)
+ * Menggabungkan update packed qty, status order, bukti packing, dan potong stok dalam 1 call.
+ */
+function finalizeOrderValidation(orderId, noOrder, validationDataJson, photoUrl) {
+  try {
+    const orderSheet = getSheet(CONFIG.SHEETS.ORDER);
+    const detailSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
+    
+    const orderData = orderSheet.getDataRange().getValues();
+    const detailData = detailSheet.getDataRange().getValues();
+    const stockData = stockSheet.getDataRange().getValues();
+    
+    const items = typeof validationDataJson === 'string' ? JSON.parse(validationDataJson) : validationDataJson;
+    const now = new Date().toISOString();
+
+    // 1. Update Order Detail (Packed Qty)
+    for (let i = 1; i < detailData.length; i++) {
+      const detailId = String(detailData[i][0]);
+      const match = items.find(it => String(it.id) === detailId);
+      if (match) {
+        detailSheet.getRange(i + 1, 11).setValue(parseFloat(match.packedQty) || 0);
+      }
+    }
+
+    // 2. Cari & Update Order Utama
+    let orderRow = -1;
+    for (let i = 1; i < orderData.length; i++) {
+      if (String(orderData[i][0]) === String(orderId) || String(orderData[i][1]) === String(noOrder)) {
+        orderRow = i + 1;
+        break;
+      }
+    }
+    if (orderRow === -1) throw new Error('Order tidak ditemukan');
+
+    orderSheet.getRange(orderRow, 6).setValue('Terkirim'); // Status
+    orderSheet.getRange(orderRow, 11).setValue(now); // SentAt
+    if (photoUrl) orderSheet.getRange(orderRow, 12).setValue(photoUrl); // BuktiPacking
+
+    // 3. Potong Stok
+    const rowId = orderData[orderRow-1][0];
+    const rowNoOrder = orderData[orderRow-1][1];
+    
+    for (let i = 1; i < detailData.length; i++) {
+      const match = (rowId && String(detailData[i][1]) === String(rowId)) || (rowNoOrder && String(detailData[i][2]) === String(rowNoOrder));
+      if (match) {
+        const stockId = String(detailData[i][3]);
+        const skuFallback = String(detailData[i][4]);
+        const qtyToDeduct = parseFloat(detailData[i][6]) || 0;
+        
+        // Cari baris di stockSheet
+        for (let j = 1; j < stockData.length; j++) {
+          if ((stockId && String(stockData[j][0]) === stockId) || (!stockId && skuFallback && String(stockData[j][1]) === skuFallback)) {
+            const currentStok = parseFloat(stockData[j][7]) || 0;
+            stockSheet.getRange(j + 1, 8).setValue(currentStok - qtyToDeduct);
+            stockSheet.getRange(j + 1, 13).setValue(now);
+            break;
+          }
+        }
+      }
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: 'Finalize Error: ' + e.message };
+  }
+}
+
+function updatePackedQty(orderId, validationItems) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const items = typeof validationItems === 'string' ? JSON.parse(validationItems) : validationItems;
+    
+    let updatedCount = 0;
+    for (let i = 1; i < data.length; i++) {
+      const detailId = String(data[i][0]);
+      const match = items.find(it => String(it.id) === detailId);
+      
+      if (match) {
+        sheet.getRange(i + 1, 11).setValue(parseFloat(match.packedQty) || 0); // Column K
+        updatedCount++;
+      }
+    }
+    return { success: true, count: updatedCount };
+  } catch (e) { return { success: false, message: e.message }; }
+}
 
 function kirimOrder(id, noOrderFallback) {
   try {
@@ -3097,166 +3181,7 @@ function updateBookingStatus(id, newStatus) {
 
 // ============================================================
 // MODUL TUGAS CONSUMABLE
-// ============================================================
-function getTugasConsumable() {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const data = sheet.getDataRange().getValues();
-    const result = [];
-    for (let i = 1; i < data.length; i++) {
-      result.push({
-        id: data[i][0],
-        tanggal: data[i][1] ? Utilities.formatDate(new Date(data[i][1]), Session.getScriptTimeZone(), "yyyy-MM-dd") : '',
-        pemberiTugas: data[i][2],
-        picName: data[i][3],
-        targetPotong: parseInt(data[i][4]) || 0,
-        targetBuat: parseInt(data[i][5]) || 0,
-        actualPotong: parseInt(data[i][6]) || 0,
-        actualBuat: parseInt(data[i][7]) || 0,
-        status: data[i][8],
-        catatan: data[i][9],
-        createdAt: data[i][10],
-        updatedAt: data[i][11],
-        finishedBy: data[i][12] || '-'
-      });
-    }
-    return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
-}
 
-function addTugasConsumable(data) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    sheet.appendRow([
-      generateId(), 
-      data.tanggal, 
-      data.pemberiTugas, 
-      data.picName, 
-      parseInt(data.targetPotong)||0, 
-      parseInt(data.targetBuat)||0, 
-      0, 0, 'Pending', '', 
-      new Date().toISOString(), 
-      new Date().toISOString(),
-      '' // finishedBy
-    ]);
-    return { success: true };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function updateTugasConsumable(data) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const values = sheet.getDataRange().getValues();
-    for (let i = 1; i < values.length; i++) {
-        if (String(values[i][0]) === String(data.id)) {
-            const row = i + 1;
-            // Jika status Selesai, update hasil aktual
-            if (data.status === 'Selesai') {
-                sheet.getRange(row, 7).setValue(parseInt(data.actualPotong) || 0);
-                sheet.getRange(row, 8).setValue(parseInt(data.actualBuat) || 0);
-                sheet.getRange(row, 9).setValue('Selesai');
-                sheet.getRange(row, 10).setValue(data.catatan || '');
-                sheet.getRange(row, 12).setValue(new Date().toISOString()); // updatedAt
-                sheet.getRange(row, 13).setValue(data.finishedBy || ''); // finishedBy
-            } else {
-                // Update basic info (Edit mode)
-                sheet.getRange(row, 2).setValue(data.tanggal);
-                sheet.getRange(row, 4).setValue(data.picName);
-                sheet.getRange(row, 5).setValue(parseInt(data.targetPotong) || 0);
-                sheet.getRange(row, 6).setValue(parseInt(data.targetBuat) || 0);
-                sheet.getRange(row, 12).setValue(new Date().toISOString());
-            }
-            return { success: true };
-        }
-    }
-    return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-function deleteTugasConsumable(id) {
-  return deleteRow(CONFIG.SHEETS.TUGAS_CONSUMABLE, id);
-}
-
-function addBulkTugasConsumable(rows) {
-  try {
-    const sheet = getSheet(CONFIG.SHEETS.TUGAS_CONSUMABLE);
-    const now = new Date().toISOString();
-    const rowsToAdd = rows.map(r => [
-      generateId(), r.tanggal, r.pemberiTugas, r.picName, parseInt(r.targetPotong)||0, parseInt(r.targetBuat)||0, 0, 0, 'Pending', '', now, now
-    ]);
-    if (rowsToAdd.length > 0) {
-      sheet.getRange(sheet.getLastRow() + 1, 1, rowsToAdd.length, 12).setValues(rowsToAdd);
-    }
-    return { success: true, count: rowsToAdd.length };
-  } catch (e) { return { success: false, message: e.message }; }
-}
-
-// ============================================================
-// MODUL ABSENSI LEMBUR (SERVER SIDE)
-// ============================================================
-function getAbsensiLembur(startDate, endDate) {
-  try {
-    const ss = getSpreadsheet();
-    const tz = ss.getSpreadsheetTimeZone();
-    const sheet = ss.getSheetByName(CONFIG.SHEETS.ABSENSI_LEMBUR);
-    if (!sheet) return { success: true, data: [] };
-    
-    const data = sheet.getDataRange().getValues();
-    const result = [];
-    const todayStr = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
-    
-    // Konversi parameter tanggal ke objek Date untuk perbandingan
-    const startObj = startDate ? new Date(startDate) : null;
-    const endObj = endDate ? new Date(endDate) : null;
-    if (startObj) startObj.setHours(0, 0, 0, 0);
-    if (endObj) endObj.setHours(23, 59, 59, 999);
-
-    for (let i = 1; i < data.length; i++) {
-      if (!data[i][1]) continue; // Skip jika tanggal kosong
-      
-      let rowTglObj;
-      let rowTglStr = '';
-      
-      if (data[i][1] instanceof Date) {
-        rowTglObj = data[i][1];
-        rowTglStr = Utilities.formatDate(rowTglObj, tz, 'yyyy-MM-dd');
-      } else {
-        rowTglStr = String(data[i][1]).trim().split('T')[0];
-        rowTglObj = new Date(rowTglStr);
-      }
-      
-      // Logika Filter
-      let isMatch = false;
-      if (startObj && endObj) {
-        const compareDate = new Date(rowTglStr);
-        compareDate.setHours(0, 0, 0, 0);
-        isMatch = (compareDate >= startObj && compareDate <= endObj);
-      } else {
-        isMatch = (rowTglStr === todayStr);
-      }
-      
-      if (isMatch) {
-        result.push({
-          id: data[i][0],
-          tanggal: rowTglStr,
-          jam: data[i][2],
-          nama: data[i][3],
-          divisi: data[i][4],
-          karyawanId: data[i][5],
-          status: data[i][6],
-          createdAt: data[i][7]
-        });
-      }
-    }
-    // Urutkan berdasarkan tanggal & jam terbaru di atas
-    result.sort((a, b) => {
-      const dateTimeA = String(a.tanggal) + ' ' + String(a.jam);
-      const dateTimeB = String(b.tanggal) + ' ' + String(b.jam);
-      return dateTimeB.localeCompare(dateTimeA);
-    });
-    return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.messsage }; }
-}
 
 // ============================================================
 // MODUL ABSENSI KARYAWAN 
@@ -4722,4 +4647,146 @@ function getAssetOpnamePendingApprovals() {
     if (!res.success) return { success: true, data: [] };
     return { success: true, data: (res.data || []).filter(s => s.status === 'Pending Approval') };
   } catch(e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// INVENTORY CONTROL & MONITORING
+// ============================================================
+function getInventoryControl() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.INVENTORY_CONTROL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        tanggalPengerjaan: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
+        cycleCount: data[i][2],
+        lokasi: data[i][3],
+        sku: data[i][4],
+        batch: data[i][5],
+        exp: data[i][6] instanceof Date ? Utilities.formatDate(data[i][6], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][6]),
+        stockTTX: data[i][7],
+        stockMabang: data[i][8],
+        stockFisik: data[i][9],
+        selisihMabang: data[i][10],
+        selisihTTX: data[i][11],
+        action: data[i][12],
+        keterangan: data[i][13],
+        createdBy: data[i][14],
+        createdAt: data[i][15]
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function saveInventoryControl(data) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.INVENTORY_CONTROL);
+    const sheetData = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
+    const rowData = [
+      data.id || generateId(),
+      data.tanggalPengerjaan,
+      data.cycleCount,
+      data.lokasi,
+      data.sku,
+      data.batch,
+      data.exp,
+      data.stockTTX,
+      data.stockMabang,
+      data.stockFisik,
+      data.selisihMabang,
+      data.selisihTTX,
+      data.action,
+      data.keterangan,
+      data.createdBy,
+      now
+    ];
+
+    if (data.id) {
+      for (let i = 1; i < sheetData.length; i++) {
+        if (String(sheetData[i][0]) === String(data.id)) {
+          sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+          return { success: true, id: data.id };
+        }
+      }
+    }
+    
+    sheet.appendRow(rowData);
+    return { success: true, id: rowData[0] };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deleteInventoryControl(id) {
+  return deleteRow(CONFIG.SHEETS.INVENTORY_CONTROL, id);
+}
+
+function getInventoryMonitoring() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.INVENTORY_MONITORING);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        areaPosisi: data[i][1],
+        keterangan: data[i][2],
+        updatedAt: data[i][3]
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateInventoryMonitoring(id, areaPosisi, keterangan) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.INVENTORY_MONITORING);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
+    if (id) {
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(id)) {
+          sheet.getRange(i + 1, 2).setValue(areaPosisi);
+          sheet.getRange(i + 1, 3).setValue(keterangan);
+          sheet.getRange(i + 1, 4).setValue(now);
+          return { success: true };
+        }
+      }
+    }
+    
+    sheet.appendRow([generateId(), areaPosisi, keterangan, now]);
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * API Bridge for Vercel/External Hosting
+ * Mengizinkan aplikasi frontend di luar Google (seperti Vercel) memanggil fungsi di kode.gs
+ */
+function doPost(e) {
+  try {
+    const params = JSON.parse(e.postData.contents);
+    const funcName = params.func;
+    const args = params.args || [];
+    
+    // Keamanan: Hanya izinkan fungsi yang tersedia di global scope
+    if (typeof this[funcName] === 'function') {
+      const result = this[funcName].apply(null, args);
+      return ContentService.createTextOutput(JSON.stringify(result))
+        .setMimeType(ContentService.MimeType.JSON);
+    } else {
+      throw new Error('Fungsi ' + funcName + ' tidak ditemukan di server.');
+    }
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'API Error: ' + err.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }
