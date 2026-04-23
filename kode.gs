@@ -383,7 +383,8 @@ function getPendingApprovals() {
        ijin: (getIjin().data || []),
        lembur: (getLembur().data || []),
        asset: (getAsset().data || []),
-       stockOpname: (getStockOpname().data || [])
+       stockOpname: (getStockOpname().data || []),
+       assetOpname: (getAssetOpnamePendingApprovals().data || [])
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -400,6 +401,8 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
       sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12; namaCol = 3; tglCol = 2;
     } else if (tipe === 'opname') {
       return approveStockOpname(id, action === 'Approve' ? 'Approved' : 'Rejected', userNama);
+    } else if (tipe === 'assetOpname') {
+      return approveAssetOpname(id, action, userNama);
     } else {
       return { success: false, message: 'Tipe tidak dikenali' };
     }
@@ -1176,14 +1179,15 @@ function getLaporanKerja() {
         totalInbound: parseInt(data[i][22]) || 0,
         pendapatanPotongBubble: parseFloat(data[i][23]) || 0,
         pendapatanBuatBubble: parseFloat(data[i][24]) || 0,
-        alasanPengurangan: data[i][25] || ''
+        alasanPengurangan: data[i][25] || '',
+        alasanLembur: data[i][26] || ''
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan) {
+function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan, alasanLembur) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
     const data = sheet.getDataRange().getValues();
@@ -1202,7 +1206,7 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
     }
 
     sheet.appendRow([
-      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || ''
+      generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || '', alasanLembur || ''
     ]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -1244,7 +1248,7 @@ function importLaporanBulk(dataArr, username) {
           parseInt(d.totalPHL) || 0, 
           parseFloat(d.jamKerjaPHL) || 0, 
           0, parseInt(d.totalQty) || 0, 0, 0, 0, 
-          d.alasanPengurangan || ''
+          d.alasanPengurangan || '', d.alasanLembur || ''
         ]);
         existingKeys.add(key);
         count++;
@@ -1255,14 +1259,14 @@ function importLaporanBulk(dataArr, username) {
 }
 
 function deleteLaporanKerja(id) { return deleteRow(CONFIG.SHEETS.LAPORAN_KERJA, id); }
-function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan) {
+function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pengurangan, jamLembur, totalJamKerja, kendala, totalStaff, totalAdmin, totalOrder, createdBy, sisaOrder, staffLemburNames, shift, totalPHL, jamKerjaPHL, totalPO, totalQty, totalInbound, pendapatanPotongBubble, pendapatanBuatBubble, alasanPengurangan, alasanLembur) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LAPORAN_KERJA);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        sheet.getRange(i + 1, 2, 1, 25).setValues([[
-          tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || ''
+        sheet.getRange(i + 1, 2, 1, 26).setValues([[
+          tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', shift || 'Pagi', parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || '', alasanLembur || ''
         ]]);
         return { success: true };
       }
@@ -4402,4 +4406,320 @@ function getMyAttendanceToday(nama) {
   } catch (e) {
     return { success: false, message: "Error Server: " + e.toString() };
   }
+}
+
+// ============================================================
+// STOCK OPNAME ASSET
+// ============================================================
+
+/**
+ * Ambil semua sesi Stock Opname Asset (untuk history & approval list)
+ */
+function getAssetOpnameSessions() {
+  try {
+    const ss = getSpreadsheet();
+    let sheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sheet) {
+      sheet = ss.insertSheet('AssetOpnameSession');
+      sheet.appendRow(['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
+      sheet.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id:         data[i][0],
+        tanggal:    data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]||''),
+        divisi:     data[i][2] || 'Semua',
+        status:     data[i][3] || 'Draft',
+        totalAsset: parseInt(data[i][4]) || 0,
+        terscan:    parseInt(data[i][5]) || 0,
+        createdBy:  data[i][6],
+        createdAt:  data[i][7] instanceof Date ? data[i][7].toISOString() : String(data[i][7]||''),
+        approvedBy: data[i][8] || '',
+        approvedAt: data[i][9] || '',
+        history:    data[i][10] || '[]'
+      });
+    }
+    return { success: true, data: result };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Mulai sesi Stock Opname Asset baru
+ */
+function createAssetOpnameSession(tanggal, divisi, createdBy) {
+  try {
+    // Cari semua asset sesuai filter divisi
+    const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const assetData = assetSheet.getDataRange().getValues();
+    let totalAsset = 0;
+    for (let i = 1; i < assetData.length; i++) {
+      if (assetData[i].join('').trim() === '') continue;
+      const aDiv = String(assetData[i][4] || '');
+      if (!divisi || divisi === 'Semua' || aDiv === divisi) totalAsset++;
+    }
+
+    const ss = getSpreadsheet();
+    let sheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sheet) {
+      sheet = ss.insertSheet('AssetOpnameSession');
+      sheet.appendRow(['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
+      sheet.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    }
+
+    const id = 'SO-AST-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss');
+    const now = new Date().toISOString();
+    const historyInit = JSON.stringify([{ action: 'Sesi dibuat', by: createdBy, time: now }]);
+
+    sheet.appendRow([id, tanggal, divisi || 'Semua', 'Draft', totalAsset, 0, createdBy, now, '', '', historyInit]);
+    return { success: true, id: id, totalAsset: totalAsset };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Ambil detail sesi + semua log scan-nya
+ */
+function getAssetOpnameSessionDetail(sessionId) {
+  try {
+    // Ambil session
+    const ss = getSpreadsheet();
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sesSheet) return { success: false, message: 'Sheet sesi tidak ditemukan' };
+    const sesData = sesSheet.getDataRange().getValues();
+    let session = null;
+    for (let i = 1; i < sesData.length; i++) {
+      if (String(sesData[i][0]) === String(sessionId)) {
+        session = {
+          id: sesData[i][0], tanggal: sesData[i][1], divisi: sesData[i][2],
+          status: sesData[i][3], totalAsset: parseInt(sesData[i][4])||0,
+          terscan: parseInt(sesData[i][5])||0, createdBy: sesData[i][6],
+          createdAt: sesData[i][7], approvedBy: sesData[i][8], approvedAt: sesData[i][9],
+          history: sesData[i][10] || '[]'
+        };
+        break;
+      }
+    }
+    if (!session) return { success: false, message: 'Sesi tidak ditemukan' };
+
+    // Ambil log
+    let logSheet = ss.getSheetByName('AssetOpnameLog');
+    if (!logSheet) return { success: true, session: session, logs: [] };
+    const logData = logSheet.getDataRange().getValues();
+    const logs = [];
+    for (let i = 1; i < logData.length; i++) {
+      if (String(logData[i][1]) !== String(sessionId)) continue;
+      if (logData[i].join('').trim() === '') continue;
+      logs.push({
+        id:         logData[i][0],
+        sessionId:  logData[i][1],
+        assetId:    logData[i][2],
+        assetCode:  logData[i][3],
+        assetNama:  logData[i][4],
+        divisi:     logData[i][5],
+        qtyFisik:   parseFloat(logData[i][6]) || 1,
+        qtySistem:  parseFloat(logData[i][7]) || 1,
+        kondisi:    logData[i][8] || 'Baik',
+        catatan:    logData[i][9] || '',
+        scannedBy:  logData[i][10],
+        scannedAt:  logData[i][11] instanceof Date ? logData[i][11].toISOString() : String(logData[i][11]||'')
+      });
+    }
+    return { success: true, session: session, logs: logs };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Rekam satu scan asset dalam sesi
+ */
+function scanAssetForOpname(sessionId, assetCode, qtyFisik, kondisi, catatan, scannedBy) {
+  try {
+    // Validasi: cari asset berdasarkan kode
+    const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const assetData = assetSheet.getDataRange().getValues();
+    let foundAsset = null;
+    for (let i = 1; i < assetData.length; i++) {
+      if (String(assetData[i][1]).trim().toLowerCase() === String(assetCode).trim().toLowerCase()) {
+        foundAsset = {
+          id: assetData[i][0], code: assetData[i][1], nama: assetData[i][2],
+          divisi: assetData[i][4], qty: parseFloat(assetData[i][9]) || 1
+        };
+        break;
+      }
+    }
+    if (!foundAsset) return { success: false, message: 'Kode asset tidak ditemukan: ' + assetCode };
+
+    // Cek sudah pernah scan dalam sesi ini?
+    const ss = getSpreadsheet();
+    let logSheet = ss.getSheetByName('AssetOpnameLog');
+    if (!logSheet) {
+      logSheet = ss.insertSheet('AssetOpnameLog');
+      logSheet.appendRow(['id','sessionId','assetId','assetCode','assetNama','divisi','qtyFisik','qtySistem','kondisi','catatan','scannedBy','scannedAt']);
+      logSheet.getRange(1,1,1,12).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+      logSheet.setFrozenRows(1);
+    }
+    const logData = logSheet.getDataRange().getValues();
+    for (let i = 1; i < logData.length; i++) {
+      if (String(logData[i][1]) === String(sessionId) && String(logData[i][3]).toLowerCase() === String(assetCode).trim().toLowerCase()) {
+        return { success: false, message: 'Asset ini sudah di-scan dalam sesi ini', alreadyScanned: true };
+      }
+    }
+
+    // Tambah log
+    const id = generateId();
+    const now = new Date().toISOString();
+    logSheet.appendRow([id, sessionId, foundAsset.id, foundAsset.code, foundAsset.nama, foundAsset.divisi,
+      parseFloat(qtyFisik)||1, foundAsset.qty, kondisi||'Baik', catatan||'', scannedBy, now]);
+
+    // Update counter terscan di session
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    if (sesSheet) {
+      const sesData = sesSheet.getDataRange().getValues();
+      for (let i = 1; i < sesData.length; i++) {
+        if (String(sesData[i][0]) === String(sessionId)) {
+          const current = parseInt(sesData[i][5]) || 0;
+          sesSheet.getRange(i+1, 6).setValue(current + 1);
+          break;
+        }
+      }
+    }
+    return { success: true, asset: foundAsset };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Submit sesi → status Pending Approval
+ */
+function submitAssetOpname(sessionId, createdBy) {
+  try {
+    const ss = getSpreadsheet();
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sesSheet) return { success: false, message: 'Sheet sesi tidak ditemukan' };
+    const sesData = sesSheet.getDataRange().getValues();
+    for (let i = 1; i < sesData.length; i++) {
+      if (String(sesData[i][0]) === String(sessionId)) {
+        if (String(sesData[i][3]) !== 'Draft') return { success: false, message: 'Sesi ini sudah disubmit atau selesai' };
+        sesSheet.getRange(i+1, 4).setValue('Pending Approval');
+        let hist = [];
+        try { hist = JSON.parse(sesData[i][10] || '[]'); } catch(e) {}
+        hist.push({ action: 'Diajukan untuk approval', by: createdBy, time: new Date().toISOString() });
+        sesSheet.getRange(i+1, 11).setValue(JSON.stringify(hist));
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Sesi tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Approve atau Reject sesi Stock Opname Asset
+ * Jika Approve: update qty & status tiap asset di AssetWarehouse sesuai hasil scan
+ */
+function approveAssetOpname(sessionId, action, approverNama) {
+  try {
+    const ss = getSpreadsheet();
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sesSheet) return { success: false, message: 'Sheet sesi tidak ditemukan' };
+    const sesData = sesSheet.getDataRange().getValues();
+    let sessionRow = -1;
+
+    for (let i = 1; i < sesData.length; i++) {
+      if (String(sesData[i][0]) === String(sessionId)) {
+        sessionRow = i;
+        break;
+      }
+    }
+    if (sessionRow === -1) return { success: false, message: 'Sesi tidak ditemukan' };
+
+    const now = new Date();
+    const nowStr = now.toISOString();
+    const newStatus = (action === 'Approve') ? 'Approved' : 'Ditolak';
+
+    // Update status sesi
+    sesSheet.getRange(sessionRow+1, 4).setValue(newStatus);
+    sesSheet.getRange(sessionRow+1, 9).setValue(approverNama);
+    sesSheet.getRange(sessionRow+1, 10).setValue(nowStr);
+    let hist = [];
+    try { hist = JSON.parse(sesData[sessionRow][10] || '[]'); } catch(e) {}
+    hist.push({ action: action === 'Approve' ? 'Disetujui' : 'Ditolak', by: approverNama, time: nowStr });
+    sesSheet.getRange(sessionRow+1, 11).setValue(JSON.stringify(hist));
+
+    // Jika Approve → update AssetWarehouse
+    if (action === 'Approve') {
+      const logSheet = ss.getSheetByName('AssetOpnameLog');
+      if (logSheet) {
+        const logData = logSheet.getDataRange().getValues();
+        const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+        const assetData = assetSheet.getDataRange().getValues();
+        const nowLocale = now.toLocaleString('id-ID');
+
+        for (let li = 1; li < logData.length; li++) {
+          if (String(logData[li][1]) !== String(sessionId)) continue;
+          const assetId   = String(logData[li][2]);
+          const qtyFisik  = parseFloat(logData[li][6]) || 1;
+          const kondisi   = String(logData[li][8] || 'Baik');
+
+          // Cari & update di AssetWarehouse
+          for (let ai = 1; ai < assetData.length; ai++) {
+            if (String(assetData[ai][0]) === assetId) {
+              assetSheet.getRange(ai+1, 10).setValue(qtyFisik); // qty
+              // Update status berdasarkan kondisi
+              let newAssetStatus = assetData[ai][5] || 'Aktif';
+              if (kondisi === 'Rusak') newAssetStatus = 'Tidak Aktif';
+              else if (kondisi === 'Hilang') newAssetStatus = 'Hilang';
+              assetSheet.getRange(ai+1, 6).setValue(newAssetStatus);
+              // Tambah history
+              const oldHist = assetData[ai][8] || '';
+              const entry = `🔄 SO Asset disetujui oleh ${approverNama} pada ${nowLocale}. Qty Fisik: ${qtyFisik}, Kondisi: ${kondisi}`;
+              assetSheet.getRange(ai+1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+              break;
+            }
+          }
+        }
+      }
+    }
+    return { success: true, newStatus: newStatus };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Hapus sesi Draft (belum disubmit)
+ */
+function deleteAssetOpnameSession(sessionId) {
+  try {
+    const ss = getSpreadsheet();
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    if (!sesSheet) return { success: false, message: 'Sheet tidak ditemukan' };
+    const sesData = sesSheet.getDataRange().getValues();
+    for (let i = 1; i < sesData.length; i++) {
+      if (String(sesData[i][0]) === String(sessionId)) {
+        if (String(sesData[i][3]) !== 'Draft') return { success: false, message: 'Hanya sesi Draft yang dapat dihapus' };
+        sesSheet.deleteRow(i+1);
+        // Hapus semua log terkait
+        const logSheet = ss.getSheetByName('AssetOpnameLog');
+        if (logSheet) {
+          const logData = logSheet.getDataRange().getValues();
+          for (let li = logData.length - 1; li >= 1; li--) {
+            if (String(logData[li][1]) === String(sessionId)) logSheet.deleteRow(li+1);
+          }
+        }
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Sesi tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Ambil sesi Pending Approval untuk panel approval global
+ */
+function getAssetOpnamePendingApprovals() {
+  try {
+    const res = getAssetOpnameSessions();
+    if (!res.success) return { success: true, data: [] };
+    return { success: true, data: (res.data || []).filter(s => s.status === 'Pending Approval') };
+  } catch(e) { return { success: false, message: e.message }; }
 }
