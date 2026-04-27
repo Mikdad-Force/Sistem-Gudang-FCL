@@ -26,7 +26,8 @@ const CONFIG = {
     ORDER_DETAIL: 'OrderDetail',
     RETUR: 'Retur',
     RETUR_DETAIL: 'ReturDetail',
-    HANDOVER: 'Handover',
+    STOCK_CONTROL: 'Stock Control',
+    STOCK_CONTROL_DETAIL: 'StockControlDetail',
     KLAIM: 'Klaim',
     KLAIM_DETAIL: 'KlaimDetail',
     TUGAS_PROJECT: 'TugasProject',
@@ -47,15 +48,16 @@ const CONFIG = {
     INVENTORY_CONTROL: 'InventoryControl',
     INVENTORY_MONITORING: 'InventoryMonitoring'
   },
-  DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC'
+  DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC',
+  BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo'  // Folder untuk Bukti Pembayaran Booking Mobil
 };
 
 // ============================================================
 // ENTRY POINT
 // ============================================================
 function doGet(e) {
-  // Trigger update untuk mengatasi kolom kosong (title/judul Header)
-  try { ForceUpdateAllHeaders(); } catch(err) {}
+  // Trigger update untuk mengatasi kolom kosong (title/judul Header) - DINONAKTIFKAN untuk performa
+  // try { ForceUpdateAllHeaders(); } catch(err) {}
 
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
@@ -103,7 +105,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty']);
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.HANDOVER, ['id', 'tanggal', 'pic', 'resi', 'pengerjaan', 'keterangan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL, ['id', 'tanggal', 'pic', 'area', 'kategori', 'alasan', 'karyawan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL_DETAIL, ['id', 'stockControlId', 'lokasi', 'sku', 'batch', 'exp', 'stockMabang', 'stockTtx', 'stockFisik', 'selisihMabang', 'selisihTtx', 'aksi', 'alasan']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.KLAIM_DETAIL, ['id', 'klaimId', 'sku', 'harga']);
   setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
@@ -112,12 +115,10 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TUGAS_CONSUMABLE, ['id', 'tanggal', 'pemberiTugas', 'picName', 'targetPotong', 'targetBuat', 'actualPotong', 'actualBuat', 'status', 'catatan', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.ABSENSI_LEMBUR, ['id', 'tanggal', 'jam', 'nama', 'divisi', 'karyawanId', 'status', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
@@ -125,6 +126,11 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_CONTROL, ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_MONITORING, ['id', 'areaPosisi', 'keterangan', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
+
+  // Khusus Roster karena headers dinamis 1-31
+  const rosterHeaders = ["Bulan", "Nama"];
+  for (let i = 1; i <= 31; i++) rosterHeaders.push(i.toString());
+  setupSheet(ss, CONFIG.SHEETS.JADWAL_ROSTER, rosterHeaders);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
@@ -135,6 +141,11 @@ function setupDatabase() {
 }
 
 function setupSheet(ss, sheetName, headers) {
+  // SAFETY GUARD: Prevent creation of default "SheetXXX" if name is missing or invalid
+  if (!sheetName || typeof sheetName !== 'string' || sheetName.trim() === "" || sheetName === "undefined" || sheetName === "null") {
+    console.error('Skipping setupSheet: sheetName is invalid ->', sheetName);
+    return null;
+  }
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
@@ -152,6 +163,29 @@ function setupSheet(ss, sheetName, headers) {
 // Fungsi manual untuk trigger update header yang kosong di Google Sheets
 function ForceUpdateAllHeaders() {
   setupDatabase();
+}
+
+/**
+ * Menghapus sheet otomatis yang tidak terpakai (Sheet1, Sheet2, dll)
+ * Peringatan: Gunakan dengan hati-hati, pastikan tidak ada data di sheet tersebut.
+ */
+function cleanupJunkSheets() {
+  const ss = getSpreadsheet();
+  const sheets = ss.getSheets();
+  const pattern = /^Sheet\d+$/i;
+  let count = 0;
+  
+  sheets.forEach(sheet => {
+    const name = sheet.getName();
+    // Hanya hapus jika namanya cocok pola Sheet + angka DAN barisnya kosong (hanya header atau kosong sama sekali)
+    if (pattern.test(name)) {
+      if (sheet.getLastRow() <= 1) {
+        ss.deleteSheet(sheet);
+        count++;
+      }
+    }
+  });
+  return { success: true, message: count + " sheet sampah berhasil dihapus." };
 }
 
 // ============================================================
@@ -386,7 +420,8 @@ function getPendingApprovals() {
        lembur: (getLembur().data || []),
        asset: (getAsset().data || []),
        stockOpname: (getStockOpname().data || []),
-       assetOpname: (getAssetOpnamePendingApprovals().data || [])
+       assetOpname: (getAssetOpnamePendingApprovals().data || []),
+       stockControl: (getStockControl().data || [])
     };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -403,8 +438,10 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
       sheetName = CONFIG.SHEETS.ASSET; statusCol = 9; historyCol = 12; namaCol = 3; tglCol = 2;
     } else if (tipe === 'opname') {
       return approveStockOpname(id, action === 'Approve' ? 'Approved' : 'Rejected', userNama);
-    } else if (tipe === 'assetOpname') {
+    } else if (tipe === 'assetopname') {
       return approveAssetOpname(id, action, userNama);
+    } else if (tipe === 'stockcontrol') {
+      return updateStockControlStatus(id, action === 'Approve' ? 'Disetujui' : 'Ditolak');
     } else {
       return { success: false, message: 'Tipe tidak dikenali' };
     }
@@ -1250,11 +1287,14 @@ function updateLaporanKerja(id, tanggal, divisi, pic, totalOrang, perbantuan, pe
 }
 
 // ============================================================
-// HANDOVER & KLAIM
+// STOCK CONTROL (REPLACING HANDOVER)
 // ============================================================
-function getHandover() {
+/**
+ * Get Master Stock Control Records
+ */
+function getStockControl() {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.HANDOVER);
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
@@ -1263,32 +1303,179 @@ function getHandover() {
         id: data[i][0],
         tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
         pic: data[i][2],
-        resi: data[i][3],
-        pengerjaan: data[i][4],
-        keterangan: data[i][5],
-        status: data[i][6],
-        createdBy: data[i][7],
-        createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8]||'')
+        area: data[i][3],
+        kategori: data[i][4],
+        alasan: data[i][5],
+        karyawan: data[i][6],
+        status: data[i][7],
+        createdBy: data[i][8],
+        createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||'')
       });
     }
     return { success: true, data: result };
   } catch (e) { return { success: false, message: e.message }; }
 }
-function addHandover(tanggal, pic, resi, pengerjaan, keterangan, createdBy) {
-  try { getSheet(CONFIG.SHEETS.HANDOVER).appendRow([generateId(), tanggal, pic, resi, pengerjaan, keterangan, 'Pending', createdBy, new Date().toISOString()]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
-}
-function updateHandoverStatus(id, status, resiFallback) {
+// Register globally
+this['getStockControl'] = getStockControl;
+
+function getStockControlStats() {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.HANDOVER); const data = sheet.getDataRange().getValues();
+    const masterSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const masters = masterSheet.getDataRange().getValues();
+    const details = detailSheet.getDataRange().getValues();
+
+    const opnameMasters = [];
+    for (let i = 1; i < masters.length; i++) {
+      if (masters[i][4] === 'Stock Opname') {
+        opnameMasters.push({ id: masters[i][0], tanggal: masters[i][1] });
+      }
+    }
+
+    const detailMap = {};
+    for (let j = 1; j < details.length; j++) {
+      const mid = details[j][1];
+      if (!detailMap[mid]) detailMap[mid] = [];
+      detailMap[mid].push({
+        sm: details[j][9], // selisihMabang
+        st: details[j][10] // selisihTtx
+      });
+    }
+
+    let totalItems = 0;
+    let correctItems = 0;
+    const trend = {};
+
+    opnameMasters.forEach(m => {
+      const items = detailMap[m.id] || [];
+      const tgl = m.tanggal instanceof Date ? Utilities.formatDate(m.tanggal, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(m.tanggal);
+      
+      if (!trend[tgl]) trend[tgl] = { total: 0, correct: 0 };
+
+      items.forEach(it => {
+        totalItems++;
+        trend[tgl].total++;
+        if (Number(it.sm) === 0 && Number(it.st) === 0) {
+          correctItems++;
+          trend[tgl].correct++;
+        }
+      });
+    });
+
+    return {
+      success: true,
+      stats: {
+        totalItems,
+        correctItems,
+        accuracy: totalItems > 0 ? (correctItems / totalItems) * 100 : 0
+      },
+      trend: Object.entries(trend).sort((a,b) => a[0].localeCompare(b[0])).map(([t, v]) => ({
+        tanggal: t,
+        accuracy: v.total > 0 ? (v.correct / v.total) * 100 : 0
+      }))
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+this['getStockControlStats'] = getStockControlStats;
+
+/**
+ * Get Detail Items for a specific Master Record
+ */
+function getStockControlDetail(masterId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]) === String(masterId)) {
+        result.push({
+          id: data[i][0],
+          lokasi: data[i][2],
+          sku: data[i][3],
+          batch: data[i][4],
+          exp: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
+          stockMabang: data[i][6],
+          stockTtx: data[i][7],
+          stockFisik: data[i][8],
+          selisihMabang: data[i][9],
+          selisihTtx: data[i][10],
+          aksi: data[i][11],
+          alasan: data[i][12]
+        });
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+// Register globally
+this['getStockControlDetail'] = getStockControlDetail;
+
+/**
+ * Add New Stock Control Record
+ */
+function addStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, createdBy) {
+  try { 
+    const masterId = generateId();
+    const sheetMaster = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    
+    // Status Logic: If any item is "Adjust Stock", set to "Menunggu Approval"
+    let status = 'Selesai';
+    if (kategori === 'Stock Opname' && items && items.length > 0) {
+      const needsAdjustment = items.some(it => it.aksi === 'Adjust Stock');
+      if (needsAdjustment) status = 'Menunggu Approval';
+    }
+
+    sheetMaster.appendRow([
+      masterId, tanggal, pic, area, kategori, alasan, karyawan, status, createdBy, new Date().toISOString()
+    ]); 
+
+    if (items && Array.isArray(items) && items.length > 0) {
+      const sheetDetail = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+      items.forEach(it => {
+        sheetDetail.appendRow([
+          generateId(), masterId, it.lokasi, it.sku, it.batch, it.exp, 
+          it.stockMabang, it.stockTtx, it.stockFisik, it.selisihMabang, it.selisihTtx, it.aksi, it.alasan
+        ]);
+      });
+    }
+    return { success: true }; 
+  } catch (e) { return { success: false, message: e.message }; }
+}
+this['addStockControl'] = addStockControl;
+
+function updateStockControlStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL); 
+    const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) { 
-      if ((id && String(data[i][0]) === String(id)) || (!id && resiFallback && String(data[i][3]) === String(resiFallback))) { 
-        sheet.getRange(i + 1, 7).setValue(status); return { success: true }; 
+      if (String(data[i][0]) === String(id)) { 
+        sheet.getRange(i + 1, 8).setValue(status); 
+        return { success: true }; 
       } 
     }
     return { success: false, message: 'Data tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
-function deleteHandover(id) { return deleteRow(CONFIG.SHEETS.HANDOVER, id); }
+
+function deleteStockControl(id) { 
+  const res = deleteRow(CONFIG.SHEETS.STOCK_CONTROL, id);
+  if (res.success) {
+    // Delete details too
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (String(data[i][1]) === String(id)) {
+        sheet.deleteRow(i + 1);
+      }
+    }
+  }
+  return res;
+}
+
+function importStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, username) {
+  return addStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, username);
+}
+this['importStockControl'] = importStockControl;
 
 function getKlaim() {
   try {
@@ -3109,8 +3296,8 @@ function getBookingMobil() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return { success: true, data: [] };
     
-    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 10
-    const data = sheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 17 (termasuk biaya dan bukti pembayaran)
+    const data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
     const result = [];
     
     for (let i = 0; i < data.length; i++) {
@@ -3132,14 +3319,21 @@ function getBookingMobil() {
             rute: String(row[6] || '-'),
             status: String(row[7] || 'Belum Jalan'),
             createdBy: String(row[8] || '-'),
-            createdAt: row[9]
+            createdAt: row[9],
+            parkir: Number(row[10] || 0),
+            tol: Number(row[11] || 0),
+            bensin: Number(row[12] || 0),
+            lainLain: Number(row[13] || 0),
+            totalBiaya: Number(row[14] || 0),
+            buktiPembayaranUrl: String(row[15] || ''),
+            driverNotes: String(row[16] || '')
         });
     }
     return { success: true, data: result, totalOnSheet: lastRow - 1 };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, createdBy) {
+function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, createdBy, parkir, tol, bensin, lainLain) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
     const data = sheet.getDataRange().getValues();
@@ -3156,7 +3350,28 @@ function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, c
 
     const id = generateId();
     const createdAt = new Date().toISOString();
-    sheet.appendRow([id, tanggal, pic, jamBerangkat, tujuan, keterangan, rute, 'Belum Jalan', createdBy, createdAt]);
+    const totalBiaya = (Number(parkir) || 0) + (Number(tol) || 0) + (Number(bensin) || 0) + (Number(lainLain) || 0);
+    
+    sheet.appendRow([
+      id, 
+      tanggal, 
+      pic, 
+      jamBerangkat, 
+      tujuan, 
+      keterangan, 
+      rute, 
+      'Belum Jalan', 
+      createdBy, 
+      createdAt,
+      Number(parkir) || 0,
+      Number(tol) || 0,
+      Number(bensin) || 0,
+      Number(lainLain) || 0,
+      totalBiaya,
+      '', // buktiPembayaranUrl - akan diupdate setelah upload file
+      ''  // driverNotes - akan diupdate oleh driver nanti
+    ]);
+    
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -3178,6 +3393,154 @@ function updateBookingStatus(id, newStatus) {
     return { success: false, message: 'ID tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
 }
+
+// Update Bukti Pembayaran URL untuk Booking Mobil
+function updateBuktiPembayaranBookingUrl(bookingId, buktiUrl) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(bookingId)) {
+        sheet.getRange(i + 1, 16).setValue(buktiUrl); // Kolom 16 = buktiPembayaranUrl
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'ID booking tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// Update Driver Notes untuk Booking Mobil
+function updateDriverNotesBooking(bookingId, driverNotes) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(bookingId)) {
+        sheet.getRange(i + 1, 17).setValue(driverNotes); // Kolom 17 = driverNotes
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'ID booking tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// Update Biaya Booking Mobil (Parkir, Tol, Bensin, Lain-lain)
+function updateBiayaBooking(bookingId, parkir, tol, bensin, lainLain) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(bookingId)) {
+        const p = Number(parkir) || 0;
+        const t = Number(tol) || 0;
+        const b = Number(bensin) || 0;
+        const l = Number(lainLain) || 0;
+        const total = p + t + b + l;
+        
+        sheet.getRange(i + 1, 11).setValue(p);      // Kolom 11 = parkir
+        sheet.getRange(i + 1, 12).setValue(t);      // Kolom 12 = tol
+        sheet.getRange(i + 1, 13).setValue(b);      // Kolom 13 = bensin
+        sheet.getRange(i + 1, 14).setValue(l);      // Kolom 14 = lainLain
+        sheet.getRange(i + 1, 15).setValue(total);  // Kolom 15 = totalBiaya
+        return { success: true, totalBiaya: total };
+      }
+    }
+    return { success: false, message: 'ID booking tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function uploadChunkBookingPayment(chunkData, chunkIndex, uploadId) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const id = uploadId || Utilities.getUuid();
+    const key = 'payment_chunk_' + id + '_' + chunkIndex;
+    
+    // Google Apps Script cache limit is 100KB per key. Chunk size is 90KB.
+    // If somehow it's larger, we split it.
+    if (chunkData.length <= 90000) {
+      cache.put(key, chunkData, 21600);
+      cache.put('payment_meta_' + id + '_count', String(chunkIndex + 1), 21600);
+    } else {
+      const half = Math.ceil(chunkData.length / 2);
+      cache.put(key + '_a', chunkData.substring(0, half), 21600);
+      cache.put(key + '_b', chunkData.substring(half), 21600);
+      cache.put(key + '_split', '1', 21600);
+      cache.put('payment_meta_' + id + '_count', String(chunkIndex + 1), 21600);
+    }
+    return { success: true, uploadId: id };
+  } catch (e) {
+    return { success: false, message: 'Upload Chunk Error: ' + e.message };
+  }
+}
+
+function finalizeBookingPaymentUpload(uploadId, fileName, mimeType) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const countStr = cache.get('payment_meta_' + uploadId + '_count');
+    if (!countStr) return { success: false, message: 'Sesi upload tidak ditemukan atau sudah kedaluwarsa' };
+    
+    const totalChunks = parseInt(countStr);
+    let fullBase64 = '';
+    for (let i = 0; i < totalChunks; i++) {
+      const key = 'payment_chunk_' + uploadId + '_' + i;
+      const isSplit = cache.get(key + '_split');
+      if (isSplit) {
+        fullBase64 += (cache.get(key + '_a') || '') + (cache.get(key + '_b') || '');
+      } else {
+        fullBase64 += cache.get(key) || '';
+      }
+    }
+    
+    if (!fullBase64) return { success: false, message: 'Data file kosong atau gagal direkonstruksi' };
+    
+    const blob = Utilities.newBlob(Utilities.base64Decode(fullBase64), mimeType || 'application/octet-stream', fileName);
+    const folderId = CONFIG.BOOKING_PAYMENT_FOLDER_ID || CONFIG.DRIVE_FOLDER_ID;
+    const folder = DriveApp.getFolderById(folderId);
+    const file = folder.createFile(blob);
+    
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(err) {}
+    
+    return { success: true, url: file.getUrl() };
+  } catch (e) {
+    return { success: false, message: 'Finalize Upload Error: ' + e.message };
+  }
+}
+
+// Fungsi Upload Instan untuk file kecil (< 10MB)
+function uploadPaymentBookingInstant(base64, fileName, mimeType, bookingId) {
+  try {
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, fileName);
+    const folderId = CONFIG.BOOKING_PAYMENT_FOLDER_ID || CONFIG.DRIVE_FOLDER_ID;
+    const folder = DriveApp.getFolderById(folderId);
+    const file = folder.createFile(blob);
+    
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch(err) {}
+    
+    const url = file.getUrl();
+    
+    // Update URL di spreadsheet secara otomatis
+    const res = updateBuktiPembayaranBookingUrl(bookingId, url);
+    if (!res.success) return { success: false, message: 'File terupload tapi gagal update data: ' + res.message };
+    
+    return { success: true, url: url };
+  } catch (e) {
+    return { success: false, message: 'Instant Upload Error: ' + e.message };
+  }
+}
+
+// Ensure global scope visibility for doPost bridge
+this.uploadChunkBookingPayment = uploadChunkBookingPayment;
+this.finalizeBookingPaymentUpload = finalizeBookingPaymentUpload;
+this.updateBuktiPembayaranBookingUrl = updateBuktiPembayaranBookingUrl;
+this.uploadPaymentBookingInstant = uploadPaymentBookingInstant;
+
+
+
+
 
 // ============================================================
 // MODUL TUGAS CONSUMABLE
@@ -4343,13 +4706,7 @@ function getMyAttendanceToday(nama) {
 function getAssetOpnameSessions() {
   try {
     const ss = getSpreadsheet();
-    let sheet = ss.getSheetByName('AssetOpnameSession');
-    if (!sheet) {
-      sheet = ss.insertSheet('AssetOpnameSession');
-      sheet.appendRow(['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
-      sheet.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
-      sheet.setFrozenRows(1);
-    }
+    let sheet = setupSheet(ss, 'AssetOpnameSession', ['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
@@ -4388,13 +4745,7 @@ function createAssetOpnameSession(tanggal, divisi, createdBy) {
     }
 
     const ss = getSpreadsheet();
-    let sheet = ss.getSheetByName('AssetOpnameSession');
-    if (!sheet) {
-      sheet = ss.insertSheet('AssetOpnameSession');
-      sheet.appendRow(['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
-      sheet.getRange(1,1,1,11).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
-      sheet.setFrozenRows(1);
-    }
+    let sheet = setupSheet(ss, 'AssetOpnameSession', ['id','tanggal','divisi','status','totalAsset','terscan','createdBy','createdAt','approvedBy','approvedAt','history']);
 
     const id = 'SO-AST-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss');
     const now = new Date().toISOString();
@@ -4479,13 +4830,7 @@ function scanAssetForOpname(sessionId, assetCode, qtyFisik, kondisi, catatan, sc
 
     // Cek sudah pernah scan dalam sesi ini?
     const ss = getSpreadsheet();
-    let logSheet = ss.getSheetByName('AssetOpnameLog');
-    if (!logSheet) {
-      logSheet = ss.insertSheet('AssetOpnameLog');
-      logSheet.appendRow(['id','sessionId','assetId','assetCode','assetNama','divisi','qtyFisik','qtySistem','kondisi','catatan','scannedBy','scannedAt']);
-      logSheet.getRange(1,1,1,12).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
-      logSheet.setFrozenRows(1);
-    }
+    let logSheet = setupSheet(ss, 'AssetOpnameLog', ['id','sessionId','assetId','assetCode','assetNama','divisi','qtyFisik','qtySistem','kondisi','catatan','scannedBy','scannedAt']);
     const logData = logSheet.getDataRange().getValues();
     for (let i = 1; i < logData.length; i++) {
       if (String(logData[i][1]) === String(sessionId) && String(logData[i][3]).toLowerCase() === String(assetCode).trim().toLowerCase()) {
@@ -4772,16 +5117,19 @@ function updateInventoryMonitoring(id, areaPosisi, keterangan) {
 function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
-    const funcName = params.func;
+    const funcName = (params.func || "").trim();
     const args = params.args || [];
     
-    // Keamanan: Hanya izinkan fungsi yang tersedia di global scope
-    if (typeof this[funcName] === 'function') {
-      const result = this[funcName].apply(null, args);
+    // Cari fungsi di global scope (globalThis atau this)
+    const targetScope = typeof globalThis !== 'undefined' ? globalThis : this;
+    const func = targetScope[funcName];
+
+    if (typeof func === 'function') {
+      const result = func.apply(null, args);
       return ContentService.createTextOutput(JSON.stringify(result))
         .setMimeType(ContentService.MimeType.JSON);
     } else {
-      throw new Error('Fungsi ' + funcName + ' tidak ditemukan di server.');
+      throw new Error('Fungsi "' + funcName + '" tidak ditemukan atau tidak dapat diakses di server (check global scope).');
     }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({
