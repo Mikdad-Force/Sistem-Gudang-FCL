@@ -3765,8 +3765,7 @@
             </div>
             <div class="nav-item" onclick="showPage('grafikLaporan')" data-i18n="grafikLaporan"><span
                 class="icon">📈</span> Grafik Laporan</div>
-            <div class="nav-item" onclick="showPage('handover')" data-i18n="handover"><span class="icon">📦</span> Hand
-              Over</div>
+            <div class="nav-item" onclick="showPage('handover')" data-i18n="handover"><span class="icon">📦</span> Stock Control</div>
             <div class="nav-item" onclick="showPage('klaim')" data-i18n="klaim"><span class="icon">⚠️</span> Klaim Paket
             </div>
             <div class="nav-item" onclick="showPage('tugasProject')" data-i18n="tugasProject"><span
@@ -4553,22 +4552,74 @@
           </div>
 
           <div class="page" id="page-handover">
+            <div class="fp-info-box mb-3">
+              <div class="fp-title">📦 Stock Control & Akurasi Stock</div>
+              <div style="font-size:12px; color:var(--text-muted);">Validasi Stock - Stock Terbaru & Tingkat Akurasi Opname</div>
+            </div>
+
+            <!-- DASHBOARD SECTION -->
+            <div class="stats-grid mb-3">
+              <div class="stat-card teal">
+                <div class="stat-label">Total Item Audit</div>
+                <div class="stat-value" id="dsTotalItem">0</div>
+                <div class="stat-trend">Bulan Ini</div>
+              </div>
+              <div class="stat-card green">
+                <div class="stat-label">Akurasi Rata-rata</div>
+                <div class="stat-value" id="dsAccuracy">0%</div>
+                <div class="stat-trend" id="dsAccuracyTrend">Memuat...</div>
+              </div>
+              <div class="stat-card red">
+                <div class="stat-label">Item Selisih</div>
+                <div class="stat-value" id="dsVarianceItem">0</div>
+                <div class="stat-trend">Perlu Approval</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <div class="card" style="height:100%;">
+                  <div class="card-header"><h4>Tren Akurasi Stock</h4></div>
+                  <div class="card-body" style="height:250px;">
+                    <canvas id="chartStockAccuracy"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card" style="height:100%;">
+                  <div class="card-header"><h4>Status Approval Adjust</h4></div>
+                  <div class="card-body">
+                    <div id="dsApprovalSummary" style="font-size:13px;">
+                      <div class="d-flex justify-content-between mb-2"><span>Pending</span> <span class="badge bg-warning" id="dsCountPending">0</span></div>
+                      <div class="d-flex justify-content-between mb-2"><span>Disetujui</span> <span class="badge bg-success" id="dsCountApproved">0</span></div>
+                      <div class="d-flex justify-content-between mb-2"><span>Ditolak</span> <span class="badge bg-danger" id="dsCountRejected">0</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="card">
               <div class="card-header">
-                <h4>📦 Laporan Hand Over</h4><button class="btn btn-primary" onclick="openModal('modalHandover')">+
-                  Tambah Laporan</button>
+                <h4 data-i18n="laporanHandover">📋 Daftar Laporan Stock Control</h4>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-primary" onclick="openStockControlForm()">+ Tambah Laporan</button>
+                  <button class="btn btn-ghost" onclick="downloadStockControlTemplate()">📋 Template Excel</button>
+                  <button class="btn btn-ghost" onclick="document.getElementById('scExcelInput').click()">📥 Impor Excel</button>
+                  <input type="file" id="scExcelInput" style="display:none" accept=".xlsx, .xls" onchange="importStockControlExcel(this)">
+                </div>
               </div>
               <div class="table-wrap">
-                <table class="table table-hover table-striped align-middle mt-2">
+                <table class="table table-hover table-striped align-middle mt-2" style="font-size: 11px;">
                   <thead>
                     <tr>
-                      <th>Tanggal</th>
-                      <th>Nama PIC</th>
-                      <th>No. Resi</th>
-                      <th>Pengerjaan</th>
-                      <th>Keterangan</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
+                      <th data-i18n="tanggal">Tanggal</th>
+                      <th>PIC</th>
+                      <th data-i18n="areaPosisi">Area/Posisi</th>
+                      <th data-i18n="kategori">Kategori</th>
+                      <th>Alasan / Temuan</th>
+                      <th data-i18n="status">Status</th>
+                      <th>#</th>
                     </tr>
                   </thead>
                   <tbody id="tableHandover"></tbody>
@@ -5436,8 +5487,8 @@
                 <div style="display:flex; gap:8px;">
                   <button class="btn btn-ghost btn-sm" onclick="loadBookingMobil()" title="Refresh Data">🔄
                     Refresh</button>
-                  <button class="btn btn-primary" onclick="openBookingModal()" data-i18n="tambahBooking">+ Tambah
-                    Booking</button>
+                  <button class="btn btn-teal btn-sm" onclick="window.open('https://drive.google.com/drive/folders/1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo', '_blank')" title="Buka Folder Google Drive">📁 Buka Folder Bukti</button>
+                  <button class="btn btn-primary" onclick="openBookingModal()" data-i18n="tambahBooking">+ Tambah Booking</button>
                 </div>
               </div>
               <div class="table-wrap">
@@ -5449,7 +5500,7 @@
                       <th>Jam Berangkat</th>
                       <th>Tujuan</th>
                       <th>Keterangan</th>
-                      <th>Rute</th>
+                      <th>Total Biaya</th>
                       <th>Status</th>
                       <th>Aksi</th>
                     </tr>
@@ -6237,31 +6288,60 @@
           </div>
 
           <div class="modal-overlay" id="modalHandover">
-            <div class="custom-modal"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button>
-              <h3 data-i18n="inputLaporanHandover">📦 Input Laporan Hand Over</h3>
+            <div class="custom-modal" style="max-width: 950px;"><button class="modal-close" onclick="closeModal('modalHandover')">✕</button>
+              <h3 data-i18n="inputLaporanHandover">📦 Laporan Stock Control</h3>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label" data-i18n="tanggal">Tanggal</label><input type="date"
-                    class="form-control" id="hoTanggal"></div>
-                <div class="col-md mb-2"><label class="form-label" data-i18n="namaPic">Nama PIC</label><input
-                    type="text" class="form-control" id="hoPic" placeholder="Nama pengurus"></div>
+                <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control" id="hoTanggal"></div>
+                <div class="col-md mb-2"><label class="form-label">Nama PIC</label><input type="text" class="form-control" id="hoPic" placeholder="Nama pengurus"></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label" data-i18n="nomorResi">Nomor Resi</label><input
-                    type="text" class="form-control" id="hoResi" placeholder="Masukkan nomor resi"></div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label" data-i18n="pengerjaan">Pengerjaan</label><input
-                    type="text" class="form-control" id="hoPengerjaan"
-                    placeholder="Misal: Repacking, Ganti Label, dll."></div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md mb-2"><label class="form-label" data-i18n="keteranganTambahan">Keterangan
-                    Tambahan</label><input type="text" class="form-control" id="hoKeterangan" placeholder="Opsional...">
+                <div class="col-md mb-2"><label class="form-label" data-i18n="areaPosisi">Area / Posisi</label><input type="text" class="form-control" id="hoArea" placeholder="Masukkan area atau posisi"></div>
+                <div class="col-md mb-2"><label class="form-label" data-i18n="kategori">Kategori</label>
+                  <select class="form-control" id="hoKategori" onchange="onStockControlKategoriChange()">
+                    <option value="Stock Opname">Stock Opname</option>
+                    <option value="Laporan Lapangan">Laporan Lapangan</option>
+                  </select>
                 </div>
               </div>
-              <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')"
-                  data-i18n="batal">Batal</button><button class="btn btn-primary" onclick="submitHandover()"
-                  data-i18n="simpanLaporan">💾 Simpan Laporan</button></div>
+              
+              <div class="row mb-3">
+                <div class="col-md-8 mb-2">
+                  <label class="form-label" id="hoAlasanLabel">Keterangan Alasan / Temuan</label>
+                  <textarea class="form-control" id="hoAlasan" rows="1" placeholder="Masukkan keterangan tambahan..."></textarea>
+                </div>
+                <div class="col-md-4 mb-2" id="hoSectionKaryawan" style="display:none;">
+                  <label class="form-label">Karyawan (Opsional)</label>
+                  <input type="text" class="form-control" id="hoKaryawan" placeholder="Nama karyawan">
+                </div>
+              </div>
+
+              <!-- Section for Multiple Items -->
+              <div id="hoSectionItems">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <h6 style="margin:0; color:var(--teal); font-weight: 800;">📦 Daftar Item / SKU</h6>
+                  <button class="btn btn-primary btn-sm" onclick="addStockControlItemRow()">+ Tambah Item</button>
+                </div>
+                <div class="table-wrap" style="max-height: 350px; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                  <table class="table table-sm align-middle" style="font-size:11px; min-width: 850px;">
+                    <thead class="table-dark">
+                      <tr>
+                        <th style="width:100px">Lokasi</th>
+                        <th style="width:160px">SKU</th>
+                        <th style="width:110px">Batch</th>
+                        <th style="width:140px">Exp Date</th>
+                        <th style="width:85px">Mabang</th>
+                        <th style="width:85px">TTX</th>
+                        <th style="width:85px">Fisik</th>
+                        <th style="width:110px">Aksi</th>
+                        <th style="width:40px">#</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hoItemsList"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modalHandover')">Batal</button><button class="btn btn-primary" onclick="submitStockControl()">💾 Simpan Laporan</button></div>
             </div>
           </div>
           <div class="modal-overlay" id="modalKlaim">
@@ -6308,7 +6388,7 @@
           </div>
 
           <div class="modal-overlay" id="modalBookingMobil">
-            <div class="custom-modal" style="width:500px;"><button class="modal-close"
+            <div class="custom-modal" style="width:600px; max-height:90vh; overflow-y:auto;"><button class="modal-close"
                 onclick="closeModal('modalBookingMobil')">✕</button>
               <h3>🚗 Booking Mobil</h3>
               <div class="row mb-3">
@@ -6357,11 +6437,132 @@
                     id="bmKeterangan" placeholder="Keterangan tambahan..." style="min-height:80px;"></textarea></div>
               </div>
               <label class="form-label">Rute Perjalanan</label>
-              <input type="text" class="form-control" id="bmRute" placeholder="Masukkan rute perjalanan...">
+              <input type="text" class="form-control" id="bmRute" placeholder="Masukkan rute perjalanan..." class="mb-3">
+              
+              <hr>
+              <h5 style="margin-top:15px; margin-bottom:15px;">💰 Estimasi Biaya Perjalanan</h5>
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Parkir (Rp)</label>
+                  <input type="number" class="form-control" id="bmParkir" placeholder="0" value="0" min="0" oninput="calculateTotalCostBooking()">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Tol (Rp)</label>
+                  <input type="number" class="form-control" id="bmTol" placeholder="0" value="0" min="0" oninput="calculateTotalCostBooking()">
+                </div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Bensin (Rp)</label>
+                  <input type="number" class="form-control" id="bmBensin" placeholder="0" value="0" min="0" oninput="calculateTotalCostBooking()">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Lain-lain (Rp)</label>
+                  <input type="number" class="form-control" id="bmLainLain" placeholder="0" value="0" min="0" oninput="calculateTotalCostBooking()">
+                </div>
+              </div>
+              <div class="alert alert-info mb-3" style="padding:12px; border-radius:8px;">
+                <strong>Total Estimasi Biaya:</strong> <span id="bmTotalBiaya" style="font-size:18px; font-weight:bold; color:var(--accent);">Rp 0</span>
+              </div>
+              
               <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('modalBookingMobil')">Batal</button>
                 <button class="btn btn-primary" id="btnSaveBooking" onclick="submitBookingMobil()">💾 Simpan
                   Booking</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Upload Bukti Pembayaran Booking Mobil -->
+          <div class="modal-overlay" id="modalUploadBuktiBayarBooking">
+            <div class="custom-modal" style="width:500px;">
+              <button class="modal-close" onclick="closeModal('modalUploadBuktiBayarBooking')">✕</button>
+              <h3>📸 Upload Bukti Pembayaran</h3>
+              <input type="hidden" id="ubkBookingId">
+              
+              <div style="margin-bottom:15px;">
+                <p style="font-size:14px; color:var(--text-muted);">ID Booking: <strong id="ubkNoBooking">-</strong></p>
+              </div>
+
+              <!-- Drop Zone -->
+              <div id="ubkDropZone" style="border:2px dashed var(--border-light); border-radius:12px; padding:30px; text-align:center; cursor:pointer; margin-bottom:15px; transition:all 0.3s;">
+                <div style="font-size:32px; margin-bottom:10px;">📁</div>
+                <div style="font-size:14px; font-weight:600; margin-bottom:5px;">Klik atau Drag File di sini</div>
+                <div style="font-size:12px; color:var(--text-muted);">JPG, PNG, PDF (Max 20MB)</div>
+                <input type="file" id="ubkFileInput" accept="image/*,.pdf" onchange="handleFileSelectBookingPayment(this)" style="display:none;">
+              </div>
+
+              <script>
+                document.getElementById('ubkDropZone').addEventListener('click', () => document.getElementById('ubkFileInput').click());
+                document.getElementById('ubkDropZone').addEventListener('dragover', e => e.preventDefault());
+                document.getElementById('ubkDropZone').addEventListener('drop', e => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files.length) handleFileSelectBookingPayment({files: e.dataTransfer.files});
+                });
+              </script>
+
+              <!-- File Preview -->
+              <div id="ubkFilePreview" style="display:none; margin-bottom:15px;">
+                <div style="padding:12px; background:rgba(16,185,129,0.1); border-radius:8px; border:1px solid var(--border-light);">
+                  <div style="font-weight:600; margin-bottom:5px;">✅ File Terpilih:</div>
+                  <div id="ubkFileName" style="font-size:13px; word-break:break-all;"></div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="clearFileSelectionPaymentBooking()">Batal</button>
+                <button class="btn btn-primary" id="btnDoUploadPayment" onclick="handleUploadPaymentProof()" disabled>📤 Upload</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Input Biaya Driver (untuk update biaya setelah perjalanan) -->
+          <div class="modal-overlay" id="modalInputBiayaDriver">
+            <div class="custom-modal" style="width:500px;">
+              <button class="modal-close" onclick="closeModal('modalInputBiayaDriver')">✕</button>
+              <h3>💰 Input Biaya Perjalanan Aktual</h3>
+              <input type="hidden" id="ibdBookingId">
+              
+              <div style="margin-bottom:15px;">
+                <p style="font-size:14px; color:var(--text-muted);">ID Booking: <strong id="ibdNoBooking">-</strong></p>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Parkir Aktual (Rp)</label>
+                  <input type="number" class="form-control" id="ibdParkir" placeholder="0" value="0" min="0" oninput="calculateTotalCostDriver()">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Tol Aktual (Rp)</label>
+                  <input type="number" class="form-control" id="ibdTol" placeholder="0" value="0" min="0" oninput="calculateTotalCostDriver()">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Bensin Aktual (Rp)</label>
+                  <input type="number" class="form-control" id="ibdBensin" placeholder="0" value="0" min="0" oninput="calculateTotalCostDriver()">
+                </div>
+                <div class="col-md mb-2">
+                  <label class="form-label">Lain-lain (Rp)</label>
+                  <input type="number" class="form-control" id="ibdLainLain" placeholder="0" value="0" min="0" oninput="calculateTotalCostDriver()">
+                </div>
+              </div>
+
+              <div class="alert alert-info mb-3" style="padding:12px; border-radius:8px;">
+                <strong>Total Biaya Aktual:</strong> <span id="ibdTotalBiaya" style="font-size:18px; font-weight:bold; color:var(--accent);">Rp 0</span>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md mb-2">
+                  <label class="form-label">Catatan Driver</label>
+                  <textarea class="form-control" id="ibdCatatan" placeholder="Catatan perjalanan..." style="min-height:80px;"></textarea>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalInputBiayaDriver')">Batal</button>
+                <button class="btn btn-primary" id="btnSaveDriverCost" onclick="submitDriverCostUpdate()">💾 Simpan Biaya</button>
               </div>
             </div>
           </div>
@@ -7014,7 +7215,7 @@
                   <label class="form-label"><input type="checkbox" value="expense"> Expense List</label>
                   <label class="form-label"><input type="checkbox" value="laporanKerja"> Laporan Kerja</label>
                   <label class="form-label"><input type="checkbox" value="grafikLaporan"> Grafik Laporan</label>
-                  <label class="form-label"><input type="checkbox" value="handover"> Hand Over</label>
+                  <label class="form-label"><input type="checkbox" value="handover"> Stock Control</label>
                   <label class="form-label"><input type="checkbox" value="klaim"> Klaim Paket</label>
                   <label class="form-label"><input type="checkbox" value="tugasProject"> Tugas Project</label>
                   <label class="form-label"><input type="checkbox" value="bookingMobil"> 🚗 Booking Mobil</label>
@@ -7055,6 +7256,7 @@
                   <label class="form-label" style="color:var(--amber)"><input type="checkbox" value="aksesHr"> ⚖️ Akses
                     Persetujuan HR</label>
                   <label class="form-label" style="color:var(--green)"><input type="checkbox" value="aksesApprovalAssetOpname"> 🏪 Approval Asset Opname</label>
+                  <label class="form-label" style="color:var(--accent)"><input type="checkbox" value="aksesApprovalStockControl"> ⚖️ Akses Persetujuan Stock Control</label>
                   <label class="form-label" style="color:var(--orange)"><input type="checkbox"
                       value="aksesLemburLangsung"> ⏱️ Akses Lembur Langsung</label>
                   <label class="form-label" style="color:var(--orange)" data-i18n="lemburTanpaLaporan"><input
@@ -8126,7 +8328,7 @@
         expense: "Expense List",
         laporanKerja: "Laporan Kerja",
         grafikLaporan: "Grafik Laporan",
-        handover: "Hand Over",
+        handover: "Stock Control",
         klaim: "Klaim Paket",
         tugasProject: "Tugas Project",
         karyawan: "Karyawan",
@@ -8287,7 +8489,7 @@
         lamaLembur: "Lama Lembur",
         kpi: "KPI (Total Output / Jam)",
         totalKeseluruhanJam: "Total Keseluruhan Jam",
-        inputHandover: "Input Hand Over",
+        inputHandover: "Input Stock Control",
         inputKlaim: "Input Klaim Paket",
         hargaPaket: "Harga Paket",
         buatTugasBaru: "Buat Tugas Baru",
@@ -8365,7 +8567,7 @@
         totalJamKerja: "Total Keseluruhan Jam Kerja",
         totalOrderan: "Total Orderan",
         kpiOrdJam: "KPI (Ord/Jam)",
-        laporanHandover: "📦 Laporan Hand Over",
+        laporanHandover: "📦 Laporan Stock Control",
         laporanKlaimPaket: "⚠️ Laporan Klaim Paket",
         totalTagihanPending: "Total Tagihan (Pending)",
         totalSelesaiDibayar: "Total Selesai Dibayar",
@@ -8458,7 +8660,7 @@
         detailLaporanKerja: "Detail Laporan Kerja",
         tutup: "Tutup",
         cetakLaporan: "Cetak Laporan",
-        inputLaporanHandover: "Input Laporan Hand Over",
+        inputLaporanHandover: "Input Laporan Stock Control",
         nomorResi: "Nomor Resi",
         pengerjaan: "Pengerjaan",
         keteranganTambahan: "Keterangan Tambahan",
@@ -8492,6 +8694,13 @@
         formLembur: "Form Pengajuan Lembur",
         jumlahJamLembur: "Jumlah Jam Lembur",
         keteranganTugasLembur: "Keterangan / Tugas Lembur",
+        areaPosisi: "Area / Posisi",
+        stkMabang: "Stock Mabang",
+        stkTtx: "Stock TTX",
+        stkFisik: "Stock Fisik",
+        selisihMabang: "Selisih Mabang",
+        selisihTtx: "Selisih TTX",
+        aksiPerbaikan: "Aksi Perbaikan",
 
         formAsset: "Form Pengajuan Asset",
         estimasiHarga: "Estimasi Harga (Rp)",
@@ -8536,7 +8745,7 @@
         expense: "Expense List",
         laporanKerja: "Daily Report",
         grafikLaporan: "Report Graph",
-        handover: "Hand Over",
+        handover: "Stock Control",
         klaim: "Parcel Claim",
         tugasProject: "Project Tasks",
         karyawan: "Employees",
@@ -8699,7 +8908,7 @@
         lamaLembur: "Overtime Duration",
         kpi: "KPI (Output/Hour)",
         totalKeseluruhanJam: "Total Total Hours",
-        inputHandover: "Input Hand Over",
+        inputHandover: "Input Stock Control",
         inputKlaim: "Input Claim Report",
         hargaPaket: "Package Price",
         buatTugasBaru: "Create New Task",
@@ -8717,6 +8926,13 @@
         tglKadaluarsaSP: "Expiry Date",
         formIjinCuti: "Leave/Permission Form",
         formLembur: "Overtime Request Form",
+        areaPosisi: "Area / Position",
+        stkMabang: "Mabang Stock",
+        stkTtx: "TTX Stock",
+        stkFisik: "Physical Stock",
+        selisihMabang: "Mabang Diff",
+        selisihTtx: "TTX Diff",
+        aksiPerbaikan: "Corrective Action",
         formLemburKhusus: "Special Overtime Form",
         // New Inventory Keys
         formInboundTitle: "📥 Inbound Goods Form",
@@ -8777,7 +8993,7 @@
         totalJamKerja: "Total Working Hours",
         totalOrderan: "Total Orders",
         kpiOrdJam: "KPI (Ord/Hr)",
-        laporanHandover: "📦 Handover Report",
+        laporanHandover: "📦 Stock Control Report",
         laporanKlaimPaket: "⚠️ Package Claim Report",
         totalTagihanPending: "Total Pending Bill",
         totalSelesaiDibayar: "Total Paid Out",
@@ -8870,7 +9086,7 @@
         detailLaporanKerja: "Work Report Detail",
         tutup: "Close",
         cetakLaporan: "Print Report",
-        inputLaporanHandover: "Handover Report Input",
+        inputLaporanHandover: "Stock Control Report Input",
         nomorResi: "Tracking Number",
         pengerjaan: "Work Details",
         keteranganTambahan: "Additional Notes",
@@ -8947,7 +9163,7 @@
         expense: "费用列表",
         laporanKerja: "工作报告",
         grafikLaporan: "报告图表",
-        handover: "移交",
+        handover: "库存控制",
         klaim: "件索赔",
         tugasProject: "项目任务",
         karyawan: "员工数据",
@@ -9110,7 +9326,7 @@
         lamaLembur: "加班时长",
         kpi: "KPI (产出/小时)",
         totalKeseluruhanJam: "总时数",
-        inputHandover: "输入交接报告",
+        inputHandover: "输入库存控制报告",
         inputKlaim: "输入索赔报告",
         hargaPaket: "包裹价格",
         buatTugasBaru: "创建新任务",
@@ -9128,6 +9344,13 @@
         tglKadaluarsaSP: "过期日期",
         formIjinCuti: "请假表单",
         formLembur: "加班申请表",
+        areaPosisi: "区域 / 位置",
+        stkMabang: "Mabang 库存",
+        stkTtx: "TTX 库存",
+        stkFisik: "实物库存",
+        selisihMabang: "Mabang 差异",
+        selisihTtx: "TTX 差异",
+        aksiPerbaikan: "改进措施",
         formLemburKhusus: "特殊加班表",
         // New Inventory Keys
         formInboundTitle: "📥 入库表单",
@@ -9188,7 +9411,7 @@
         totalJamKerja: "总工作小时数",
         totalOrderan: "总订单数",
         kpiOrdJam: "绩效（订单/小时）",
-        laporanHandover: "📦 交接报告",
+        laporanHandover: "📦 库存控制报告",
         laporanKlaimPaket: "⚠️ 包裹索赔报告",
         totalTagihanPending: "待处理账单总额",
         totalSelesaiDibayar: "已支付总额",
@@ -9281,7 +9504,7 @@
         detailLaporanKerja: "工作报告详情",
         tutup: "关闭",
         cetakLaporan: "打印报告",
-        inputLaporanHandover: "输入交接报告",
+        inputLaporanHandover: "输入库存控制报告",
         nomorResi: "快递单号",
         pengerjaan: "工作详情",
         keteranganTambahan: "附加备注",
@@ -9817,10 +10040,9 @@
 
 
     function initApp() {
-      try { loadMyAttendanceSummary(); } catch (e) { console.error('Early Attendance Load Error:', e); }
-      try { loadMyAttendanceSummary(); } catch (e) { console.error('Early Attendance Load Error:', e); }
-      try { loadMyAttendanceSummary(); } catch (e) { console.error('Early Attendance Load Error:', e); }
-      try { loadMyAttendanceSummary(); } catch (e) { console.error('Early Attendance Load Error:', e); }
+      // Remove redundant attendance loading from startup - causes app to hang
+      // These will be loaded after menu is displayed
+      
       // Emergency Layout Fix: Force-hide all overlays
       const ls = document.getElementById('loadingScreen');
       const lp = document.getElementById('loginPage');
@@ -9903,18 +10125,25 @@
       if (dashboardVal) dashboardVal.style.display = (role === 'admin' || allowedMenus.includes('dashboardValidasiLembur')) ? 'block' : 'none';
 
       if (typeof checkPendingApprovals === 'function') {
-        checkPendingApprovals();
+        try { checkPendingApprovals(); } catch(e) { console.warn('checkPendingApprovals error:', e); }
         setInterval(checkPendingApprovals, 2 * 60 * 1000); // 2 minutes
       }
-      loadNotifications();
-      // loadMyAttendanceSummary (moved to top of initApp)
-      setInterval(loadNotifications, 1 * 60 * 1000); // 1 minute
-      if (typeof loadUsersDropdown === 'function') loadUsersDropdown();
+      try { loadNotifications(); } catch(e) { console.warn('loadNotifications error:', e); }
+      // loadMyAttendanceSummary (moved after menu display to prevent app hang)
+      setInterval(() => { try { loadNotifications(); } catch(e) { } }, 1 * 60 * 1000); // 1 minute
+      if (typeof loadUsersDropdown === 'function') {
+        try { loadUsersDropdown(); } catch(e) { console.warn('loadUsersDropdown error:', e); }
+      }
 
       // Forced Password Change Check
       if (currentUser.isDefaultPassword) {
         forceChangePassword();
       }
+
+      // Load attendance summary AFTER the app is displayed
+      setTimeout(() => {
+        try { loadMyAttendanceSummary(); } catch(e) { console.warn('Attendance load error:', e); }
+      }, 500);
     }
     // checkPendingApprovals original implementation is below
 
@@ -9997,7 +10226,7 @@
     const pageTitles = {
       dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', expense: '💸 Expense List',
       karyawan: '👥 Data Karyawan', laporanKerja: '📝 Input Laporan Kerja', grafikLaporan: '📈 Dashboard Laporan Kerja',
-      handover: '📦 Laporan Hand Over', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
+      handover: '📦 Laporan Stock Control', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
       ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', pengajuanAsset: '📦 Pengajuan Asset',
       organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
       users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Dokumen INBOUND',
@@ -10010,7 +10239,7 @@
     const pageLoaders = {
       dashboard: loadDashboard, kasGudang: loadKasGudang, teamBuilding: loadTB, expense: loadExpense,
       karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
-      handover: loadHandover, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
+      handover: loadStockControl, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
       organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
       approval: loadCentralizedApprovals
@@ -10081,23 +10310,69 @@
 
     // === APPROVAL ===
     function canApprove(status, role, category) {
-      if (role === 'admin' || role === 'Super Admin') return true;
+      console.log('canApprove called:', {status, role, category});
+      if (role === 'admin' || role === 'Super Admin') {
+        console.log('  -> Admin role, returning true');
+        return true;
+      }
       let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
       
       if (category === 'Asset Opname') return userPerms.includes('aksesApprovalAssetOpname');
+      if (category === 'Stock Control') return userPerms.includes('aksesApprovalStockControl');
 
-      if (userPerms.includes('aksesApproval')) return true;
+      if (userPerms.includes('aksesApproval')) {
+        console.log('  -> Has aksesApproval permission, returning true');
+        return true;
+      }
 
-      const isPimpinan = (role === 'admin' || role === 'Super Admin' || role === 'SPV' || role === 'Supervisor' || role === 'Vice SPV' || role === 'Vice Supervisor' || role === 'Vice VPV' || role === 'HR' || role === 'Supervisor HR' || role === 'Team Leader' || role === 'TL' || role.includes('Team Leader') || role.includes('Supervisor') || role.includes('SPV') || role.includes('HR'));
+      const isTL = (role === 'Team Leader' || role === 'TL' || role.includes('Team Leader'));
+      const isVice = (role === 'Vice Supervisor' || role === 'Vice SPV' || role === 'Vice VPV' || role.includes('Vice'));
+      const isSPV = (role === 'Supervisor' || role === 'SPV' || role === 'Supervisor HR' || (role.includes('Supervisor') && !role.includes('Vice')));
+      const isHR = (role === 'HR' || role === 'Supervisor HR' || role.includes('HR'));
+
+      console.log('  -> Role checks:', {isTL, isVice, isSPV, isHR});
 
       // Safety and final status check (Approved, Disetujui, Tolak, Rejected are final)
-      if (!status) return false;
+      if (!status) {
+        console.log('  -> No status, returning false');
+        return false;
+      }
       const finalStatuses = ['Disetujui', 'Tolak', 'Disetujui Admin', 'Approved', 'Rejected', 'Approved Admin', 'Ditolak'];
-      if (finalStatuses.includes(status)) return false;
+      if (finalStatuses.includes(status)) {
+        console.log('  -> Final status, returning false');
+        return false;
+      }
 
-      // UNIVERSAL VISIBILITY: Seluruh pimpinan bisa melihat item yang sedang menunggu approval (transparansi)
-      if (isPimpinan) return true;
+      // Enforce hierarchical approval: TL -> Vice -> SPV -> HR
+      if (status === 'Pending Team Leader') {
+        const result = isTL;
+        console.log('  -> Pending Team Leader, isTL=' + result);
+        return result;
+      }
+      if (status === 'Pending Vice Supervisor') {
+        const result = isVice;
+        console.log('  -> Pending Vice Supervisor, isVice=' + result);
+        return result;
+      }
+      if (status === 'Pending Supervisor') {
+        const result = isSPV;
+        console.log('  -> Pending Supervisor, isSPV=' + result);
+        return result;
+      }
+      if (status === 'Pending HR') {
+        const result = isHR;
+        console.log('  -> Pending HR, isHR=' + result);
+        return result;
+      }
 
+      // Fallback untuk status 'Pending' (Record lama atau Default)
+      if (status === 'Pending') {
+        const result = isTL;
+        console.log('  -> Pending (legacy), isTL=' + result);
+        return result;
+      }
+
+      console.log('  -> Unknown status, returning false');
       return false;
     }
     function checkPendingApprovals() {
@@ -10119,7 +10394,7 @@
               total++;
               items.push(d);
               if (dashList) {
-                const page = (type === 'Ijin' || type === 'Ijin/Cuti') ? 'ijin' : (type === 'Lembur' ? 'lembur' : (type === 'Asset' ? 'pengajuanAsset' : (type === 'Asset Opname' ? 'assetWarehouse' : 'stockOpname')));
+                const page = (type === 'Ijin' || type === 'Ijin/Cuti') ? 'ijin' : (type === 'Lembur' ? 'lembur' : (type === 'Asset' ? 'pengajuanAsset' : (type === 'Asset Opname' ? 'assetWarehouse' : (type === 'Stock Control' ? 'handover' : 'stockOpname'))));
                 const staff = d.nama || d.karyawan || d.sku || '-';
                 dashList.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="badge-tb">${type}</span></td><td><strong>${staff}</strong></td><td><span class="badge-pending">⏳ ${status}</span></td><td><button class="btn btn-ghost btn-sm" onclick="showPage('${page}')">Lihat</button></td></tr>`;
               }
@@ -10133,6 +10408,7 @@
         filterPending(res.asset, 'Asset');
         filterPending(res.stockOpname, 'Stock Opname');
         filterPending(res.assetOpname, 'Asset Opname');
+        filterPending(res.stockControl, 'Stock Control');
 
         pendingApprovalCount = total;
         const centralBadge = document.getElementById('badgeTotalApproval');
@@ -11030,12 +11306,14 @@
             let actionHtml = `<button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>`;
 
             let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
-            const canAppr = canApprove(d.status, role);
+            const escapedNamaIjin = (d.nama || '').replace(/'/g, "\\'");
+            const tanggalStrIjin = d.tanggal || '';
+            const canAppr = canApprove(d.status, role, 'Ijin/Cuti');
 
             if (canAppr) {
               actionHtml += `
-                <button class="btn btn-teal btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Approve','${d.nama}','${d.tanggal}')">Setuju</button>
-                <button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Reject','${d.nama}','${d.tanggal}')">Tolak</button>
+                <button class="btn btn-teal btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Approve','${escapedNamaIjin}','${tanggalStrIjin}')">Setuju</button>
+                <button class="btn btn-danger btn-sm" style="padding:2px 8px; font-size:11px;" onclick="processApproval('Ijin','${d.id}','Reject','${escapedNamaIjin}','${tanggalStrIjin}')">Tolak</button>
               `;
             }
 
@@ -11126,12 +11404,14 @@
         let actionHtml = `<button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>`;
 
         let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
-        const canAppr = canApprove(d.status, role);
+        const escapedNamaLembur = (d.nama || '').replace(/'/g, "\\'");
+        const tanggalStrLembur = d.tanggal || '';
+        const canAppr = canApprove(d.status, role, 'Lembur');
 
         if (canAppr) {
           actionHtml += `
-            <button class="btn btn-teal btn-sm" onclick="processApproval('Lembur','${d.id}','Approve','${d.nama}','${d.tanggal}')">Setuju</button>
-            <button class="btn btn-danger btn-sm" onclick="processApproval('Lembur','${d.id}','Reject','${d.nama}','${d.tanggal}')">Tolak</button>
+            <button class="btn btn-teal btn-sm" onclick="processApproval('Lembur','${d.id}','Approve','${escapedNamaLembur}','${tanggalStrLembur}')">Setuju</button>
+            <button class="btn btn-danger btn-sm" onclick="processApproval('Lembur','${d.id}','Reject','${escapedNamaLembur}','${tanggalStrLembur}')">Tolak</button>
           `;
         }
 
@@ -12438,11 +12718,370 @@
     }
 
 
-    // HANDOVER & KLAIM
-    function loadHandover() { google.script.run.withSuccessHandler(res => { const tb = document.getElementById('tableHandover'); tb.innerHTML = ''; if (!res.data.length) tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>'; else res.data.forEach(d => tb.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td>${d.pic}</td><td><strong>${d.resi}</strong></td><td>${d.pengerjaan}</td><td>${d.keterangan || '-'}</td><td><select onchange="updateHOStatus('${d.id}',this.value)" style="background:transparent;color:var(--white);border:1px solid #ffffff22;border-radius:4px;padding:2px"><option value="Pending" ${d.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Selesai" ${d.status === 'Selesai' ? 'selected' : ''}>Selesai</option></select></td><td><button class="btn btn-danger btn-sm" onclick="delHandover('${d.id}')">🗑️</button></td></tr>`); }).getHandover(); }
-    function submitHandover() { const t = v('hoTanggal'), p = v('hoPic'), r = v('hoResi'), pj = v('hoPengerjaan'), k = v('hoKeterangan'); if (!t || !p || !r) return toast('Lengkapi form', 'error'); google.script.run.withSuccessHandler(res => { if (res.success) { toast('Berhasil'); closeModal('modalHandover'); loadHandover(); resetForm(['hoResi', 'hoKeterangan']); } else toast(res.message, 'error') }).addHandover(t, p, r, pj, k, currentUser.username); }
-    function updateHOStatus(id, st) { google.script.run.withSuccessHandler(res => { if (res.success) toast('Status update'); else toast(res.message, 'error') }).updateHandoverStatus(id, st); }
-    function delHandover(id) { if (confirm('Hapus?')) google.script.run.withSuccessHandler(res => { if (res.success) { toast('Dihapus'); loadHandover(); } }).deleteHandover(id); }
+    // STOCK CONTROL (REPLACING HANDOVER)
+    function loadStockControl() {
+      google.script.run.withSuccessHandler(res => {
+        const tb = document.getElementById('tableHandover');
+        tb.innerHTML = '';
+        if (!res.data || !res.data.length) {
+          tb.innerHTML = '<tr><td colspan="7" class="empty-state">Kosong</td></tr>';
+        } else {
+          res.data.forEach(d => {
+            tb.innerHTML += `<tr id="sc-master-${d.id}">
+              <td>
+                <button class="btn-toggle-row" onclick="toggleStockControlDetail('${d.id}','${d.area}','${d.kategori}','${d.alasan.replace(/'/g,"\\'") || ''}','${d.karyawan.replace(/'/g,"\\'") || ''}')">
+                  <i class="bi bi-plus-circle"></i>
+                </button>
+                ${formatDate(d.tanggal)}
+              </td>
+              <td>${d.pic}</td>
+              <td><strong>${d.area}</strong></td>
+              <td>${d.kategori}</td>
+              <td><span style="font-size:10px">${d.alasan || '-'}</span></td>
+              <td>
+                <select onchange="updateStockControlStatus('${d.id}',this.value)" class="status-select ${d.status === 'Selesai' || d.status === 'Disetujui' || d.status === 'Validasi Stock' ? 'badge-approved' : (d.status === 'Menunggu Approval' ? 'badge-pending' : 'badge-nonaktif')}">
+                  <option value="Pending" ${d.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                  <option value="Menunggu Approval" ${d.status === 'Menunggu Approval' ? 'selected' : ''}>⏳ Approval</option>
+                  <option value="Validasi Stock" ${d.status === 'Validasi Stock' ? 'selected' : ''}>✅ Validasi Stock</option>
+                  <option value="Disetujui" ${d.status === 'Disetujui' ? 'selected' : ''}>Disetujui</option>
+                  <option value="Selesai" ${d.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                  <option value="Ditolak" ${d.status === 'Ditolak' ? 'selected' : ''}>Ditolak</option>
+                </select>
+              </td>
+              <td><button class="btn btn-danger btn-sm" onclick="delStockControl('${d.id}')">🗑️</button></td>
+            </tr>
+            <tr id="sc-detail-${d.id}" class="row-detail" style="display:none;">
+              <td colspan="7"><div class="detail-container"><div class="loading-inline">Memuat detail...</div></div></td>
+            </tr>`;
+          });
+        }
+      }).getStockControl();
+    }
+
+    function toggleStockControlDetail(id, area, kategori, alasan, karyawan) {
+      const detailRow = document.getElementById(`sc-detail-${id}`);
+      const btn = document.querySelector(`#sc-master-${id} .btn-toggle-row`);
+      if (detailRow.style.display === 'none') {
+        const cont = detailRow.querySelector('.detail-container');
+        
+        if (kategori === 'Laporan Lapangan') {
+          cont.innerHTML = `
+            <div style="background:rgba(255,255,255,0.03); padding:16px; border-radius:12px; border:1px solid #ffffff10; line-height:1.6;">
+              <div style="color:var(--accent); font-weight:800; font-size:12px; margin-bottom:12px; text-transform:uppercase; letter-spacing:1px;">🔎 Detail Temuan Lapangan</div>
+              <div class="row">
+                <div class="col-md-3 mb-2"><span style="color:var(--gray); font-size:11px;">PIC PELAPOR</span><br><strong>${btn.parentElement.nextElementSibling.textContent}</strong></div>
+                <div class="col-md-3 mb-2"><span style="color:var(--gray); font-size:11px;">AREA / POSISI</span><br><strong>${area}</strong></div>
+                <div class="col-md-3 mb-2"><span style="color:var(--gray); font-size:11px;">KARYAWAN TERLIBAT</span><br><strong>${karyawan || '-'}</strong></div>
+                <div class="col-md-3 mb-2"><span style="color:var(--gray); font-size:11px;">KETERANGAN TEMUAN</span><br><div style="font-size:13px; color:var(--light);">${alasan || '-'}</div></div>
+              </div>
+            </div>`;
+        } else if (cont.innerHTML.includes('Memuat detail...')) {
+          google.script.run.withSuccessHandler(res => {
+            if (res.success) {
+              let html = `
+                <div style="margin-bottom:8px; font-weight:700; font-size:11px; color:var(--teal); text-transform:uppercase;">📦 Detail Items - ${area}</div>
+                <table class="detail-table" style="font-size:10px;">
+                  <thead>
+                    <tr>
+                      <th>Lokasi</th><th>SKU</th><th>Batch</th><th>Exp</th><th>Mabang</th><th>TTX</th><th>Fisik</th><th>Selisih</th><th>Aksi</th><th>Alasan</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+              res.data.forEach(it => {
+                const selM = parseFloat(it.selisihMabang) || 0, selT = parseFloat(it.selisihTtx) || 0;
+                html += `<tr>
+                  <td>${it.lokasi || '-'}</td>
+                  <td><strong>${it.sku}</strong></td>
+                  <td>${it.batch || '-'}</td>
+                  <td>${it.exp || '-'}</td>
+                  <td>${it.stockMabang}</td>
+                  <td>${it.stockTtx}</td>
+                  <td>${it.stockFisik}</td>
+                  <td>M:${selM > 0 ? '+' : ''}${selM} / T:${selT > 0 ? '+' : ''}${selT}</td>
+                  <td>${it.aksi || '-'}</td>
+                  <td>${it.alasan || '-'}</td>
+                </tr>`;
+              });
+              html += `</tbody></table>`;
+              cont.innerHTML = html;
+            } else {
+              cont.innerHTML = `<span style="color:var(--red)">Gagal memuat: ${res.message}</span>`;
+            }
+          }).getStockControlDetail(id);
+        }
+        detailRow.style.display = 'table-row';
+        btn.innerHTML = '<i class="bi bi-dash-circle"></i>';
+        btn.classList.add('active');
+      } else {
+        detailRow.style.display = 'none';
+        btn.innerHTML = '<i class="bi bi-plus-circle"></i>';
+        btn.classList.remove('active');
+      }
+    }
+
+    function addStockControlItemRow(data = {}) {
+      const tb = document.getElementById('hoItemsList');
+      const row = document.createElement('tr');
+      row.className = 'sc-item-row';
+      row.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm sc-it-lok" style="font-size:11px; padding: 6px 4px;" value="${data.lokasi || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm sc-it-sku" style="font-size:11px; padding: 6px 4px;" value="${data.sku || ''}" placeholder="SKU"></td>
+        <td><input type="text" class="form-control form-control-sm sc-it-batch" style="font-size:11px; padding: 6px 4px;" value="${data.batch || ''}"></td>
+        <td><input type="date" class="form-control form-control-sm sc-it-exp" style="font-size:11px; padding: 6px 4px;" value="${data.exp || ''}"></td>
+        <td><input type="number" class="form-control form-control-sm sc-it-mabang" style="font-size:11px; padding: 6px 4px;" value="${data.stockMabang || 0}" oninput="calcScSelisih(this)"></td>
+        <td><input type="number" class="form-control form-control-sm sc-it-ttx" style="font-size:11px; padding: 6px 4px;" value="${data.stockTtx || 0}" oninput="calcScSelisih(this)"></td>
+        <td><input type="number" class="form-control form-control-sm sc-it-fisik" style="font-size:11px; padding: 6px 4px;" value="${data.stockFisik || 0}" oninput="calcScSelisih(this)"></td>
+        <td>
+          <select class="form-control form-control-sm sc-it-aksi" style="font-size:10px; padding: 6px 2px;">
+            <option value="Adjust Stock" ${data.aksi==='Adjust Stock'?'selected':''}>Adjust</option>
+            <option value="Cari Stock" ${data.aksi==='Cari Stock'?'selected':''}>Cari</option>
+            <option value="-" ${data.aksi==='-'?'selected':''}>-</option>
+          </select>
+        </td>
+        <td><button class="btn btn-danger btn-sm" style="padding: 2px 8px;" onclick="this.parentElement.parentElement.remove()">✕</button></td>
+      `;
+      tb.appendChild(row);
+    }
+
+    function calcScSelisih(el) {
+      // Logic placeholder for UI feedback if needed
+    }
+
+    function openStockControlForm() {
+      resetForm(['hoTanggal', 'hoPic', 'hoArea', 'hoKategori', 'hoAlasan', 'hoKaryawan']);
+      setToday('hoTanggal');
+      document.getElementById('hoItemsList').innerHTML = '';
+      onStockControlKategoriChange();
+      openModal('modalHandover');
+      addStockControlItemRow();
+    }
+
+    function submitStockControl() {
+      const t = v('hoTanggal'), p = v('hoPic'), a = v('hoArea'), cat = v('hoKategori'), alasan = v('hoAlasan'), karyawan = v('hoKaryawan');
+      if (!t || !p || !a) return toast('Lengkapi data utama', 'error');
+
+      const items = [];
+      document.querySelectorAll('.sc-item-row').forEach(row => {
+        const sku = row.querySelector('.sc-it-sku').value;
+        if (sku || cat === 'Stock Opname') {
+          const m = parseFloat(row.querySelector('.sc-it-mabang').value)||0;
+          const ttx = parseFloat(row.querySelector('.sc-it-ttx').value)||0;
+          const f = parseFloat(row.querySelector('.sc-it-fisik').value)||0;
+          items.push({
+            lokasi: row.querySelector('.sc-it-lok').value,
+            sku: sku,
+            batch: row.querySelector('.sc-it-batch').value,
+            exp: row.querySelector('.sc-it-exp').value,
+            stockMabang: m,
+            stockTtx: ttx,
+            stockFisik: f,
+            selisihMabang: f - m,
+            selisihTtx: f - ttx,
+            aksi: row.querySelector('.sc-it-aksi').value,
+            alasan: ''
+          });
+        }
+      });
+
+      if (cat === 'Stock Opname' && items.length === 0) return toast('Tambahkan minimal 1 item', 'error');
+
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          toast('Berhasil'); closeModal('modalHandover'); loadStockControl();
+        } else toast(res.message, 'error');
+      }).addStockControl(t, p, a, cat, alasan, karyawan, items, currentUser.username);
+    }
+
+    function onStockControlKategoriChange() {
+      const cat = v('hoKategori');
+      const sectionItems = document.getElementById('hoSectionItems');
+      const sectionKaryawan = document.getElementById('hoSectionKaryawan');
+      const labelAlasan = document.getElementById('hoAlasanLabel');
+
+      if (cat === 'Laporan Lapangan') {
+        sectionItems.style.display = 'none';
+        sectionKaryawan.style.display = 'block';
+        labelAlasan.textContent = 'Keterangan Temuan';
+      } else {
+        sectionItems.style.display = 'block';
+        sectionKaryawan.style.display = 'flex'; // row
+        labelAlasan.textContent = 'Keterangan Alasan';
+      }
+    }
+
+    function downloadStockControlTemplate() {
+      const headers = [["Tanggal (YYYY-MM-DD)", "PIC", "Area", "Kategori", "Alasan Utama", "Karyawan", "Lokasi Item", "SKU", "Batch", "Exp (YYYY-MM-DD)", "Stok Mabang", "Stok TTX", "Stok Fisik", "Aksi"]];
+      const ws = XLSX.utils.aoa_to_sheet(headers);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Template");
+      XLSX.writeFile(wb, "Template_Stock_Control.xlsx");
+    }
+
+    function importStockControlExcel(el) {
+      const file = el.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type: 'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        
+        if (!rows.length) return toast('File kosong', 'error');
+        
+        // Group by Master fields (Tanggal, PIC, Area, Kategori)
+        const groups = {};
+        rows.forEach(r => {
+          const key = `${r["Tanggal (YYYY-MM-DD)"]}_${r["PIC"]}_${r["Area"]}`;
+          if (!groups[key]) {
+            groups[key] = {
+              t: r["Tanggal (YYYY-MM-DD)"], p: r["PIC"], a: r["Area"], cat: r["Kategori"] || 'Stock Opname',
+              alasan: r["Alasan Utama"] || '', kar: r["Karyawan"] || '', items: []
+            };
+          }
+          if (r["SKU"]) {
+            const m = parseFloat(r["Stok Mabang"])||0, ttx = parseFloat(r["Stok TTX"])||0, f = parseFloat(r["Stok Fisik"])||0;
+            groups[key].items.push({
+              lokasi: r["Lokasi Item"] || '', sku: r["SKU"], batch: r["Batch"] || '', exp: r["Exp (YYYY-MM-DD)"] || '',
+              stockMabang: m, stockTtx: ttx, stockFisik: f, selisihMabang: f-m, selisihTtx: f-ttx, aksi: r["Aksi"] || '-'
+            });
+          }
+        });
+
+        const promises = Object.values(groups).map(g => {
+          return new Promise(resolve => {
+            google.script.run.withSuccessHandler(resolve).importStockControl(g.t, g.p, g.a, g.cat, g.alasan, g.kar, g.items, currentUser.username);
+          });
+        });
+
+        Promise.all(promises).then(() => {
+          toast('Impor Berhasil'); loadStockControl(); el.value = '';
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function loadDashboardStock() {
+      // 1. Fetch Stats & Trend
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          document.getElementById('dsTotalItem').textContent = res.stats.totalItems;
+          document.getElementById('dsAccuracy').textContent = res.stats.accuracy.toFixed(1) + '%';
+          
+          const trendText = document.getElementById('dsAccuracyTrend');
+          if (res.trend && res.trend.length >= 2) {
+            const last = res.trend[res.trend.length - 1].accuracy;
+            const prev = res.trend[res.trend.length - 2].accuracy;
+            const diff = last - prev;
+            trendText.innerHTML = `<span style="color:${diff >= 0 ? 'var(--green)' : 'var(--red)'}">${diff >= 0 ? '↑' : '↓'} ${Math.abs(diff).toFixed(1)}%</span> vs sesi sebelumnya`;
+          } else {
+            trendText.textContent = 'Data trend belum cukup';
+          }
+
+          // Render Trend Chart
+          renderStockTrendChart(res.trend);
+        }
+      }).getStockControlStats();
+
+      // 2. Fetch Master Records for Approval Summary & Laporan Lapangan
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          const pending = res.data.filter(d => d.status === 'Menunggu Approval').length;
+          const approved = res.data.filter(d => d.status === 'Disetujui').length;
+          const rejected = res.data.filter(d => d.status === 'Ditolak' || d.status === 'Dibatalkan').length;
+          
+          document.getElementById('dsCountPending').textContent = pending;
+          document.getElementById('dsCountApproved').textContent = approved;
+          document.getElementById('dsCountRejected').textContent = rejected;
+          document.getElementById('dsVarianceItem').textContent = pending;
+
+          // Render Laporan Lapangan Table
+          const llData = res.data.filter(d => d.kategori === 'Laporan Lapangan').sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal)).slice(0, 5);
+          const tb = document.getElementById('dsLaporanLapanganTable');
+          tb.innerHTML = '';
+          if (llData.length === 0) {
+            tb.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada laporan lapangan</td></tr>';
+          } else {
+            llData.forEach(d => {
+              tb.innerHTML += `<tr>
+                <td><strong>${d.pic}</strong></td>
+                <td><span class="badge-tb">${d.area}</span></td>
+                <td style="font-size:12px;">${d.alasan}</td>
+                <td>${d.karyawan || '-'}</td>
+              </tr>`;
+            });
+          }
+        }
+      }).getStockControl();
+    }
+
+    let chartStockAcc = null;
+    function renderStockTrendChart(trend) {
+      const canvas = document.getElementById('chartStockAccuracy');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (chartStockAcc) chartStockAcc.destroy();
+      
+      const labels = trend.map(t => formatDate(t.tanggal));
+      const data = trend.map(t => t.accuracy.toFixed(1));
+
+      chartStockAcc = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Akurasi (%)',
+            data: data,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#10b981'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          },
+          plugins: { 
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Akurasi: ${context.parsed.y}%`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateStockControlStatus(id, st) {
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          toast('Status Berhasil Diperbarui');
+          loadStockControl();
+          loadDashboardStock();
+        } else {
+          toast(res.message, 'error');
+        }
+      }).updateStockControlStatus(id, st);
+    }
+
+    function delStockControl(id) {
+      if (confirm('Apakah Anda yakin ingin menghapus laporan ini?')) {
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) {
+            toast('Laporan Dihapus');
+            loadStockControl();
+          }
+        }).deleteStockControl(id);
+      }
+    }
 
     function loadKlaim() {
       google.script.run.withSuccessHandler(res => {
@@ -14484,7 +15123,9 @@
     let assetDataAll = [];
 
     function loadAsset() {
+      console.log('loadAsset called. currentUser:', currentUser);
       google.script.run.withSuccessHandler(res => {
+        console.log('Asset data received:', res);
         if (!res.success) return;
         assetDataAll = res.data;
         const tb = document.getElementById('tableAsset'); tb.innerHTML = '';
@@ -14497,10 +15138,12 @@
             const priLabel = d.prioritas === 'Kritis' ? '🔴 Kritis' : d.prioritas === 'Mendesak' ? '🟡 Mendesak' : '🟢 Normal';
             let userPerms = []; try { userPerms = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
             const canDel = currentUser.username === d.createdBy && (d.status === 'Pending HR' || d.status === 'Pending Team Leader');
-            const canApr = canApprove(d.status, currentUser.role);
+            const canApr = canApprove(d.status, currentUser.role, 'Asset');
             if (d.status === 'Disetujui') appr++;
             else if (d.status === 'Ditolak') rej++;
             else pend++;
+            const escapedNama = (d.nama || '').replace(/'/g, "\\'");
+            const tanggalStr = d.tanggal || '';
             tb.innerHTML += `<tr>
           <td>${formatDate(d.tanggal)}</td>
           <td><strong>${d.nama}</strong></td>
@@ -14512,7 +15155,7 @@
           <td><span class="${stsCls}">${d.status}</span></td>
           <td style="display:flex;gap:4px;flex-wrap:wrap;">
             <button class="btn btn-ghost btn-sm" onclick="showHistoryModal('${encodeURIComponent(d.history)}')">Riwayat</button>
-            ${canApr ? `<button class="btn btn-success btn-sm" onclick="processApproval('asset','${d.id}','Approve','${d.nama}','${d.tanggal}')">✅</button><button class="btn btn-danger btn-sm" onclick="processApproval('asset','${d.id}','Reject','${d.nama}','${d.tanggal}')">❌</button>` : ''}
+            ${canApr ? `<button class="btn btn-success btn-sm" onclick="processApproval('asset','${d.id}','Approve','${escapedNama}','${tanggalStr}')">✅</button><button class="btn btn-danger btn-sm" onclick="processApproval('asset','${d.id}','Reject','${escapedNama}','${tanggalStr}')">❌</button>` : ''}
             ${canDel ? `<button class="btn btn-danger btn-sm" onclick="delAsset('${d.id}')">Batal</button>` : ''}
           </td>
         </tr>`;
@@ -14848,13 +15491,18 @@
           return dB - dA;
         }).forEach(d => {
           const statusClass = d.status === 'Sampai di Tujuan' ? 'badge-approved' : (d.status === 'Sudah Jalan' ? 'badge-processing' : 'badge-pending');
-          htmlRows += `<tr>
+          const totalBiaya = Number(d.totalBiaya) || 0;
+          const totalBiayaText = totalBiaya > 0 ? `Rp ${totalBiaya.toLocaleString('id-ID')}` : '-';
+          const buktiPembayaranBtnDisabled = !d.buktiPembayaranUrl ? '' : ' disabled';
+          const buktiPembayaranBtnText = d.buktiPembayaranUrl ? '✅ Sudah Upload' : '📤 Upload Bukti';
+          
+          htmlRows += `<tr data-booking-id="${d.id}" data-booking-parkir="${d.parkir}" data-booking-tol="${d.tol}" data-booking-bensin="${d.bensin}" data-booking-lainlain="${d.lainLain}" data-booking-notes="${(d.driverNotes || '').replace(/"/g, '&quot;')}">
             <td>${formatDate(d.tanggal)}</td>
             <td><strong>${d.pic}</strong></td>
             <td>${d.jamBerangkat}</td>
-            <td>${d.tujuan}</td>
+            <td><strong>${d.tujuan}</strong></td>
             <td><small>${d.keterangan || '-'}</small></td>
-            <td><span class="badge-tb">${d.rute}</span></td>
+            <td style="font-weight:600; color:var(--accent);">${totalBiayaText}</td>
             <td>
               <select class="form-select form-select-sm status-select ${statusClass}" onchange="changeBookingStatus('${d.id}', this.value)" style="width: auto; display: inline-block;">
                 <option value="Belum Jalan" ${d.status === 'Belum Jalan' ? 'selected' : ''}>⏳ Belum Jalan</option>
@@ -14862,7 +15510,10 @@
                 <option value="Sampai di Tujuan" ${d.status === 'Sampai di Tujuan' ? 'selected' : ''}>✅ Sampai</option>
               </select>
             </td>
-            <td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-primary btn-sm" onclick="openUploadPaymentProofModal('${d.id}', '${d.tanggal}')" title="Upload Bukti Pembayaran" ${buktiPembayaranBtnDisabled}>${buktiPembayaranBtnText}</button>
+              ${d.buktiPembayaranUrl ? `<a href="${d.buktiPembayaranUrl}" target="_blank" class="btn btn-teal btn-sm" title="Lihat Bukti">👁️ Lihat</a>` : ''}
+              <button class="btn btn-warning btn-sm" onclick="openDriverCostFromRow(this)" title="Input Biaya Actual">💰 Biaya</button>
               <button class="btn btn-danger btn-sm" onclick="doDeleteBooking('${d.id}')" title="Hapus">✕</button>
             </td>
           </tr>`;
@@ -14881,7 +15532,21 @@
       setVal('bmTujuan', '');
       setVal('bmKeterangan', '');
       setVal('bmRute', '');
+      setVal('bmParkir', '0');
+      setVal('bmTol', '0');
+      setVal('bmBensin', '0');
+      setVal('bmLainLain', '0');
+      calculateTotalCostBooking();
       openModal('modalBookingMobil');
+    }
+
+    function calculateTotalCostBooking() {
+      const parkir = Number(v('bmParkir')) || 0;
+      const tol = Number(v('bmTol')) || 0;
+      const bensin = Number(v('bmBensin')) || 0;
+      const lainLain = Number(v('bmLainLain')) || 0;
+      const total = parkir + tol + bensin + lainLain;
+      document.getElementById('bmTotalBiaya').textContent = 'Rp ' + total.toLocaleString('id-ID');
     }
 
     function updateRouteSuggestion() {
@@ -14905,6 +15570,8 @@
 
     function submitBookingMobil() {
       const t = v('bmTanggal'), p = v('bmPic'), j = v('bmJamBerangkat'), tj = v('bmTujuan'), k = v('bmKeterangan'), r = v('bmRute');
+      const parkir = v('bmParkir'), tol = v('bmTol'), bensin = v('bmBensin'), lainLain = v('bmLainLain');
+      
       if (!t || !j || !tj) return toast('Lengkapi Tanggal, Jam, dan Tujuan', 'error');
 
       const btn = document.getElementById('btnSaveBooking');
@@ -14918,7 +15585,7 @@
           closeModal('modalBookingMobil');
           loadBookingMobil();
         } else toast(res.message, 'error');
-      }).addBookingMobil(t, p, j, tj, k, r, currentUser.username);
+      }).addBookingMobil(t, p, j, tj, k, r, currentUser.username, parkir, tol, bensin, lainLain);
     }
 
     function doDeleteBooking(id) {
@@ -14939,6 +15606,216 @@
           loadBookingMobil();
         } else toast(res.message, 'error');
       }).updateBookingStatus(id, newStatus);
+    }
+
+    // ============================================================
+    // UPLOAD BUKTI PEMBAYARAN BOOKING MOBIL
+    // ============================================================
+    let selectedPaymentFile = null;
+    let currentPaymentBookingId = null;
+
+    function openUploadPaymentProofModal(id, noBooking) {
+      currentPaymentBookingId = id;
+      document.getElementById('ubkBookingId').value = id;
+      document.getElementById('ubkNoBooking').textContent = noBooking;
+      clearFileSelectionPaymentBooking();
+      openModal('modalUploadBuktiBayarBooking');
+    }
+
+    function handleFileSelectBookingPayment(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 20 * 1024 * 1024) {
+        toast('Ukuran file maksimal 20MB', 'error');
+        input.value = '';
+        return;
+      }
+      selectedPaymentFile = file;
+      document.getElementById('ubkFileName').textContent = file.name;
+      document.getElementById('ubkFilePreview').style.display = 'block';
+      document.getElementById('ubkDropZone').style.display = 'none';
+      document.getElementById('btnDoUploadPayment').disabled = false;
+    }
+
+    function clearFileSelectionPaymentBooking() {
+      selectedPaymentFile = null;
+      document.getElementById('ubkFileInput').value = '';
+      document.getElementById('ubkFileName').textContent = '';
+      document.getElementById('ubkFilePreview').style.display = 'none';
+      document.getElementById('ubkDropZone').style.display = 'block';
+      document.getElementById('btnDoUploadPayment').disabled = true;
+    }
+
+    function handleUploadPaymentProof() {
+      if (!selectedPaymentFile) {
+        toast('Silakan pilih file terlebih dahulu.', 'warning');
+        return;
+      }
+      if (!currentPaymentBookingId) {
+        toast('ID Booking tidak ditemukan.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnDoUploadPayment');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Mengupload...';
+
+      const errorHandler = (err) => {
+        toast('Terjadi kesalahan: ' + (err.message || err), 'error');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      };
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const b64 = e.target.result.split(',')[1];
+        
+        // JIKA FILE < 15MB, GUNAKAN UPLOAD INSTAN (LEBIH CEPAT)
+        if (selectedPaymentFile.size < 15 * 1024 * 1024) {
+          google.script.run
+            .withFailureHandler(errorHandler)
+            .withSuccessHandler(res => {
+              btn.disabled = false;
+              btn.textContent = originalText;
+              if (res.success) {
+                toast('✅ Bukti Pembayaran Berhasil Disimpan!', 'success');
+                clearFileSelectionPaymentBooking();
+                closeModal('modalUploadBuktiBayarBooking');
+                loadBookingMobil();
+              } else {
+                toast(res.message, 'error');
+              }
+            }).uploadPaymentBookingInstant(b64, selectedPaymentFile.name, selectedPaymentFile.type, currentPaymentBookingId);
+        } else {
+          // JIKA FILE SANGAT BESAR (> 15MB), GUNAKAN CHUNKING AGAR TIDAK LIMIT
+          const chunkSize = 90000;
+          const chunks = [];
+          for (let i = 0; i < b64.length; i += chunkSize) {
+            chunks.push(b64.substring(i, i + chunkSize));
+          }
+
+          let cIdx = 0;
+          let uId = '';
+          const sendChunk = () => {
+            btn.innerHTML = `⏳ Mengupload... ${Math.round((cIdx / chunks.length) * 100)}%`;
+            if (cIdx < chunks.length) {
+              google.script.run
+                .withFailureHandler(errorHandler)
+                .withSuccessHandler(res => {
+                  if (res.success) {
+                    uId = res.uploadId;
+                    cIdx++;
+                    sendChunk();
+                  } else {
+                    toast(res.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                  }
+                }).uploadChunkBookingPayment(chunks[cIdx], cIdx, uId);
+            } else {
+              btn.innerHTML = '⏳ Memproses...';
+              google.script.run
+                .withFailureHandler(errorHandler)
+                .withSuccessHandler(res => {
+                  if (res.success) {
+                    google.script.run
+                      .withFailureHandler(errorHandler)
+                      .withSuccessHandler(res2 => {
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                        if (res2.success) {
+                          toast('✅ Bukti Pembayaran Berhasil Disimpan!', 'success');
+                          clearFileSelectionPaymentBooking();
+                          closeModal('modalUploadBuktiBayarBooking');
+                          loadBookingMobil();
+                        } else {
+                          toast(res2.message, 'error');
+                        }
+                      }).updateBuktiPembayaranBookingUrl(currentPaymentBookingId, res.url);
+                  } else {
+                    toast(res.message, 'error');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                  }
+                }).finalizeBookingPaymentUpload(uId, selectedPaymentFile.name, selectedPaymentFile.type);
+            }
+          };
+          sendChunk();
+        }
+      };
+      reader.readAsDataURL(selectedPaymentFile);
+    }
+
+
+    // ============================================================
+    // INPUT BIAYA DRIVER
+    // ============================================================
+    let currentDriverCostBookingId = null;
+
+    function openDriverCostFromRow(btn) {
+      const row = btn.closest('tr');
+      const id = row.dataset.bookingId;
+      const tanggal = row.cells[0].textContent;
+      const parkir = row.dataset.bookingParkir;
+      const tol = row.dataset.bookingTol;
+      const bensin = row.dataset.bookingBensin;
+      const lainLain = row.dataset.bookingLainlain;
+      const notes = row.dataset.bookingNotes.replace(/&quot;/g, '"');
+      
+      openDriverCostModal(id, tanggal, parkir, tol, bensin, lainLain, notes);
+    }
+
+    function openDriverCostModal(id, noBooking, existingParkir, existingTol, existingBensin, existingLainLain, existingNotes) {
+      currentDriverCostBookingId = id;
+      document.getElementById('ibdBookingId').value = id;
+      document.getElementById('ibdNoBooking').textContent = noBooking;
+      document.getElementById('ibdParkir').value = existingParkir || 0;
+      document.getElementById('ibdTol').value = existingTol || 0;
+      document.getElementById('ibdBensin').value = existingBensin || 0;
+      document.getElementById('ibdLainLain').value = existingLainLain || 0;
+      document.getElementById('ibdCatatan').value = existingNotes || '';
+      calculateTotalCostDriver();
+      openModal('modalInputBiayaDriver');
+    }
+
+    function calculateTotalCostDriver() {
+      const parkir = Number(document.getElementById('ibdParkir').value) || 0;
+      const tol = Number(document.getElementById('ibdTol').value) || 0;
+      const bensin = Number(document.getElementById('ibdBensin').value) || 0;
+      const lainLain = Number(document.getElementById('ibdLainLain').value) || 0;
+      const total = parkir + tol + bensin + lainLain;
+      document.getElementById('ibdTotalBiaya').textContent = 'Rp ' + total.toLocaleString('id-ID');
+    }
+
+    function submitDriverCostUpdate() {
+      const parkir = document.getElementById('ibdParkir').value;
+      const tol = document.getElementById('ibdTol').value;
+      const bensin = document.getElementById('ibdBensin').value;
+      const lainLain = document.getElementById('ibdLainLain').value;
+      const catatan = document.getElementById('ibdCatatan').value;
+
+      const btn = document.getElementById('btnSaveDriverCost');
+      const oldTxt = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.textContent = oldTxt;
+        if (res.success) {
+          toast('Biaya perjalanan berhasil diupdate! ✅');
+          closeModal('modalInputBiayaDriver');
+          loadBookingMobil();
+        } else {
+          toast(res.message, 'error');
+        }
+      }).updateBiayaBooking(currentDriverCostBookingId, parkir, tol, bensin, lainLain);
+
+      // Update driver notes
+      google.script.run.withSuccessHandler(() => {
+        // Notes sudah tersimpan, tidak perlu notifikasi tambahan
+      }).updateDriverNotesBooking(currentDriverCostBookingId, catatan);
     }
 
     // ============================================================
@@ -16648,6 +17525,10 @@
               filter.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
             }
             loadShiftRoster();
+          }
+          if (name === 'handover') {
+            loadStockControl();
+            loadDashboardStock();
           }
         };
       }
