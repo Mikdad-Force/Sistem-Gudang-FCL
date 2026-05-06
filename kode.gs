@@ -46,7 +46,8 @@ const CONFIG = {
     ASSET_AUDIT_LOG: 'AssetAuditLog',
     AUDIT_REPORTS: 'AuditReports',
     INVENTORY_CONTROL: 'InventoryControl',
-    INVENTORY_MONITORING: 'InventoryMonitoring'
+    INVENTORY_MONITORING: 'InventoryMonitoring',
+    BOOKING_MOBIL_DETAIL: 'BookingMobilDetail'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC',
   BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo'  // Folder untuk Bukti Pembayaran Booking Mobil
@@ -118,7 +119,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes']);
+  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes']);
+  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL_DETAIL, ['id', 'bookingId', 'tanggal', 'namaCustomer', 'noPo', 'totalCartoon', 'parkir', 'tol', 'pkbm', 'lainLain', 'keterangan', 'buktiUrls']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
@@ -126,6 +128,9 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_CONTROL, ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_MONITORING, ['id', 'areaPosisi', 'keterangan', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
+
+  // Ensure installable triggers exist for onEdit syncing
+  ensureTriggers();
 
   // Khusus Roster karena headers dinamis 1-31
   const rosterHeaders = ["Bulan", "Nama"];
@@ -1309,7 +1314,8 @@ function getStockControl() {
         karyawan: data[i][6],
         status: data[i][7],
         createdBy: data[i][8],
-        createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||'')
+        createdAt: data[i][9] instanceof Date ? data[i][9].toISOString() : String(data[i][9]||''),
+        syncLog: data[i][10] || ''
       });
     }
     return { success: true, data: result };
@@ -1400,7 +1406,10 @@ function getStockControlDetail(masterId) {
           selisihMabang: data[i][9],
           selisihTtx: data[i][10],
           aksi: data[i][11],
-          alasan: data[i][12]
+          alasan: data[i][12],
+          stockFisikStaff: data[i][13] || 0,
+          selisihMabangStaff: data[i][14] || 0,
+          selisihTtxStaff: data[i][15] || 0
         });
       }
     }
@@ -1411,37 +1420,84 @@ function getStockControlDetail(masterId) {
 this['getStockControlDetail'] = getStockControlDetail;
 
 /**
- * Add New Stock Control Record
+ * Save or Update Stock Control Record
  */
-function addStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, createdBy) {
-  try { 
-    const masterId = generateId();
-    const sheetMaster = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+function saveStockControl(id, tanggal, pic, area, kategori, alasan, karyawan, items, createdBy) {
+  try {
+    const masterSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const masterData = masterSheet.getDataRange().getValues();
+    const detailData = detailSheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    const nowLocal = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
     
-    // Status Logic: If any item is "Adjust Stock", set to "Menunggu Approval"
+    let masterId = id || generateId();
+    let isUpdate = !!id;
+    let masterRowIndex = -1;
+    let oldSyncLog = '';
+    
+    // Status Logic
     let status = 'Selesai';
     if (kategori === 'Stock Opname' && items && items.length > 0) {
       const needsAdjustment = items.some(it => it.aksi === 'Adjust Stock');
       if (needsAdjustment) status = 'Menunggu Approval';
     }
 
-    sheetMaster.appendRow([
-      masterId, tanggal, pic, area, kategori, alasan, karyawan, status, createdBy, new Date().toISOString()
-    ]); 
+    if (isUpdate) {
+      for (let i = 1; i < masterData.length; i++) {
+        if (String(masterData[i][0]) === String(masterId)) {
+          masterRowIndex = i + 1;
+          oldSyncLog = String(masterData[i][10] || '');
+          masterSheet.getRange(masterRowIndex, 2, 1, 7).setValues([[tanggal, pic, area, kategori, alasan, karyawan, status]]);
+          break;
+        }
+      }
+      if (masterRowIndex === -1) throw new Error('Data tidak ditemukan');
+      
+      // Delete old details
+      for (let j = detailData.length - 1; j >= 1; j--) {
+        if (String(detailData[j][1]) === String(masterId)) {
+          detailSheet.deleteRow(j + 1);
+        }
+      }
+    } else {
+      masterSheet.appendRow([masterId, tanggal, pic, area, kategori, alasan, karyawan, status, createdBy, now, '']);
+      masterRowIndex = masterSheet.getLastRow();
+    }
 
-    if (items && Array.isArray(items) && items.length > 0) {
-      const sheetDetail = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    // Save details and calculate variance
+    let hasVariance = false;
+    if (items && Array.isArray(items)) {
       items.forEach(it => {
-        sheetDetail.appendRow([
-          generateId(), masterId, it.lokasi, it.sku, it.batch, it.exp, 
-          it.stockMabang, it.stockTtx, it.stockFisik, it.selisihMabang, it.selisihTtx, it.aksi, it.alasan
+        const m = parseFloat(it.m) || 0;
+        const ttx = parseFloat(it.ttx) || 0;
+        const f = parseFloat(it.f) || 0;
+        const fs = parseFloat(it.fStaff) || 0;
+        const sm = f - m;
+        const st = f - ttx;
+        const sms = fs ? (fs - m) : 0;
+        const sts = fs ? (fs - ttx) : 0;
+        
+        if (sm !== 0 || st !== 0 || sms !== 0 || sts !== 0) hasVariance = true;
+        
+        detailSheet.appendRow([
+          generateId(), masterId, it.lokasi, it.sku, it.batch, it.exp, m, ttx, f, sm, st, it.aksi, it.alasan,
+          fs, sms, sts
         ]);
       });
     }
-    return { success: true }; 
-  } catch (e) { return { success: false, message: e.message }; }
+
+    // Update log
+    const logType = isUpdate ? '🔄 Diperbarui' : '✨ Dibuat';
+    const newLog = `${logType}: ${nowLocal}. ${hasVariance ? 'Ada Selisih' : 'Cocok'}.`;
+    masterSheet.getRange(masterRowIndex, 11).setValue(newLog + (oldSyncLog ? '\n' + oldSyncLog : ''));
+
+    return { success: true, message: isUpdate ? 'Berhasil memperbarui laporan' : 'Berhasil menyimpan laporan', masterId: masterId };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
 }
-this['addStockControl'] = addStockControl;
+this['saveStockControl'] = saveStockControl;
 
 function updateStockControlStatus(id, status) {
   try {
@@ -1457,6 +1513,8 @@ function updateStockControlStatus(id, status) {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
+this['updateStockControlStatus'] = updateStockControlStatus;
+
 function deleteStockControl(id) { 
   const res = deleteRow(CONFIG.SHEETS.STOCK_CONTROL, id);
   if (res.success) {
@@ -1471,11 +1529,272 @@ function deleteStockControl(id) {
   }
   return res;
 }
+this['deleteStockControl'] = deleteStockControl;
 
 function importStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, username) {
   return addStockControl(tanggal, pic, area, kategori, alasan, karyawan, items, username);
 }
 this['importStockControl'] = importStockControl;
+
+/**
+ * Validasi & Hitung Ulang Stock untuk semua laporan dalam kategori dan rentang waktu tertentu.
+ * Memperbarui selisihMabang dan selisihTtx pada setiap detail item,
+ * serta memperbarui status master jika ada perbedaan yang perlu dikoreksi.
+ */
+function validateAndRecalculateStock(kategori, tglMulai, tglAkhir, username) {
+  try {
+    const masterSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const masterData = masterSheet.getDataRange().getValues();
+    const detailData = detailSheet.getDataRange().getValues();
+
+    const dateFrom = new Date(tglMulai);
+    const dateTo = new Date(tglAkhir);
+    dateTo.setHours(23, 59, 59); // Include entire last day
+
+    let masterUpdated = 0;
+    let detailUpdated = 0;
+    let totalItems = 0;
+    let correctItems = 0;
+
+    // Build detail row index keyed by masterId for fast lookup
+    const detailRowMap = {}; // masterId -> [{rowIndex, data}]
+    for (let j = 1; j < detailData.length; j++) {
+      if (detailData[j].join('').trim() === '') continue;
+      const mid = String(detailData[j][1]);
+      if (!detailRowMap[mid]) detailRowMap[mid] = [];
+      detailRowMap[mid].push({ rowIndex: j + 1, row: detailData[j] });
+    }
+
+    for (let i = 1; i < masterData.length; i++) {
+      if (masterData[i].join('').trim() === '') continue;
+
+      // Filter by kategori
+      const rowKategori = String(masterData[i][4] || '');
+      if (kategori && rowKategori !== kategori) continue;
+
+      // Filter by date range
+      const tglRaw = masterData[i][1];
+      const tglDate = tglRaw instanceof Date ? tglRaw : new Date(tglRaw);
+      if (isNaN(tglDate.getTime()) || tglDate < dateFrom || tglDate > dateTo) continue;
+
+      const masterId = String(masterData[i][0]);
+      const items = detailRowMap[masterId] || [];
+      let masterHasVariance = false;
+
+      items.forEach(item => {
+        totalItems++;
+        const row = item.row;
+        const m = parseFloat(row[6]) || 0;   // stockMabang
+        const ttx = parseFloat(row[7]) || 0; // stockTtx
+        const f = parseFloat(row[8]) || 0;   // stockFisik
+
+        const newSelisihMabang = f - m;
+        const newSelisihTtx = f - ttx;
+
+        const oldSelisihMabang = parseFloat(row[9]) || 0;
+        const oldSelisihTtx = parseFloat(row[10]) || 0;
+
+        // Recalculate Staff if exists
+        const fs = parseFloat(row[13]) || 0; // stockFisikStaff
+        if (fs) {
+          detailSheet.getRange(item.rowIndex, 15).setValue(fs - m); // col O
+          detailSheet.getRange(item.rowIndex, 16).setValue(fs - ttx); // col P
+        }
+
+        // Recalculate and update if different
+        if (newSelisihMabang !== oldSelisihMabang || newSelisihTtx !== oldSelisihTtx) {
+          detailSheet.getRange(item.rowIndex, 10).setValue(newSelisihMabang); // col J = selisihMabang
+          detailSheet.getRange(item.rowIndex, 11).setValue(newSelisihTtx);   // col K = selisihTtx
+          detailUpdated++;
+          masterHasVariance = true;
+        } else if (newSelisihMabang !== 0 || newSelisihTtx !== 0) {
+          masterHasVariance = true;
+        }
+
+        if (newSelisihMabang === 0 && newSelisihTtx === 0) correctItems++;
+      });
+
+      // Update master status based on variance
+      if (items.length > 0) {
+        const currentStatus = String(masterData[i][7] || '');
+        let newStatus = masterHasVariance ? 'Menunggu Approval' : 'Selesai';
+        // Don't downgrade already-approved records
+        if (currentStatus === 'Disetujui' || currentStatus === 'Ditolak') newStatus = currentStatus;
+
+        if (newStatus !== currentStatus) {
+          masterSheet.getRange(i + 1, 8).setValue(newStatus);
+          masterUpdated++;
+        }
+      }
+    }
+
+    const accuracy = totalItems > 0 ? ((correctItems / totalItems) * 100).toFixed(1) : '0.0';
+    return {
+      success: true,
+      message: `${detailUpdated} item diperbarui, ${masterUpdated} laporan dikoreksi. Akurasi: ${accuracy}% (${correctItems}/${totalItems})`,
+      detailUpdated,
+      masterUpdated,
+      totalItems,
+      correctItems,
+      accuracy: parseFloat(accuracy)
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+this['validateAndRecalculateStock'] = validateAndRecalculateStock;
+
+/**
+ * Recalculate variance for a single Stock Control record
+ */
+function recalculateSingleStockControl(masterId) {
+  try {
+    const masterSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const masterData = masterSheet.getDataRange().getValues();
+    const detailData = detailSheet.getDataRange().getValues();
+    
+    let hasVariance = false;
+    let updatedCount = 0;
+    let varianceChanged = false;
+    
+    for (let j = 1; j < detailData.length; j++) {
+      if (String(detailData[j][1]) === String(masterId)) {
+        const m = parseFloat(detailData[j][6]) || 0;   // stockMabang
+        const ttx = parseFloat(detailData[j][7]) || 0; // stockTtx
+        const f = parseFloat(detailData[j][8]) || 0;   // stockFisik
+        
+        const oldSm = parseFloat(detailData[j][9]) || 0;
+        const oldSt = parseFloat(detailData[j][10]) || 0;
+        
+        const sm = f - m;
+        const st = f - ttx;
+        
+        // Staff Recalculate
+        const fs = parseFloat(detailData[j][13]) || 0;
+        if (fs) {
+          detailSheet.getRange(j + 1, 15).setValue(fs - m);
+          detailSheet.getRange(j + 1, 16).setValue(fs - ttx);
+        }
+
+        if (sm !== 0 || st !== 0) hasVariance = true;
+        if (sm !== oldSm || st !== oldSt) varianceChanged = true;
+        
+        detailSheet.getRange(j + 1, 10).setValue(sm); // col J
+        detailSheet.getRange(j + 1, 11).setValue(st); // col K
+        updatedCount++;
+      }
+    }
+    
+    
+    // Update status and sync log
+    let logSummary = '';
+    for (let i = 1; i < masterData.length; i++) {
+      if (String(masterData[i][0]) === String(masterId)) {
+        const currentStatus = String(masterData[i][7] || '');
+        const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+        
+        let warnPrefix = '';
+        if (varianceChanged) warnPrefix = '⚠️ PERINGATAN: DATA BERUBAH! ';
+        
+        logSummary = `🔄 Sinkronisasi: ${now}. ${warnPrefix}${hasVariance ? 'Ada Selisih' : 'Cocok'}.`;
+        
+        // Update Log (col K = index 10)
+        masterSheet.getRange(i + 1, 11).setValue(logSummary);
+
+        if (hasVariance && (currentStatus === 'Selesai' || currentStatus === 'Pending' || !currentStatus)) {
+          masterSheet.getRange(i + 1, 8).setValue('Menunggu Approval');
+        } else if (!hasVariance && (currentStatus === 'Menunggu Approval' || currentStatus === 'Pending' || !currentStatus)) {
+          masterSheet.getRange(i + 1, 8).setValue('Selesai');
+        }
+        break;
+      }
+    }
+    
+    return { success: true, message: logSummary + ' Berhasil sinkronisasi ' + updatedCount + ' item.', varianceChanged: varianceChanged };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+this['recalculateSingleStockControl'] = recalculateSingleStockControl;
+
+/**
+ * Bulk Recalculate variance for multiple Stock Control records
+ */
+function bulkRecalculateStockControl(ids) {
+  try {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) return { success: false, message: 'ID tidak valid' };
+    
+    const masterSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+    const masterData = masterSheet.getDataRange().getValues();
+    const detailData = detailSheet.getDataRange().getValues();
+    
+    const idSet = new Set(ids.map(String));
+    let masterUpdated = 0;
+    let detailUpdated = 0;
+    
+    // Map details by masterId
+    const detailMap = {};
+    for (let j = 1; j < detailData.length; j++) {
+      const mid = String(detailData[j][1]);
+      if (idSet.has(mid)) {
+        if (!detailMap[mid]) detailMap[mid] = [];
+        detailMap[mid].push({ rowIndex: j + 1, row: detailData[j] });
+      }
+    }
+    
+    ids.forEach(masterId => {
+      const items = detailMap[masterId] || [];
+      let hasVariance = false;
+      
+      items.forEach(item => {
+        const m = parseFloat(item.row[6]) || 0;
+        const ttx = parseFloat(item.row[7]) || 0;
+        const f = parseFloat(item.row[8]) || 0;
+        const sm = f - m;
+        const st = f - ttx;
+        
+        if (sm !== 0 || st !== 0) hasVariance = true;
+        
+        detailSheet.getRange(item.rowIndex, 10).setValue(sm);
+        detailSheet.getRange(item.rowIndex, 11).setValue(st);
+        detailUpdated++;
+      });
+      
+      // Update master status and sync log
+      for (let i = 1; i < masterData.length; i++) {
+        if (String(masterData[i][0]) === String(masterId)) {
+          const currentStatus = String(masterData[i][7] || '');
+          let newStatus = currentStatus;
+          
+          const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+          const logSummary = `🔄 Sinkronisasi: ${now}. ${hasVariance ? '⚠️ Ada Selisih' : '✅ Cocok'}.`;
+          
+          masterSheet.getRange(i + 1, 11).setValue(logSummary); // col K
+
+          if (hasVariance && (currentStatus === 'Selesai' || currentStatus === 'Pending' || !currentStatus)) {
+            newStatus = 'Menunggu Approval';
+          } else if (!hasVariance && (currentStatus === 'Menunggu Approval' || currentStatus === 'Pending' || !currentStatus)) {
+            newStatus = 'Selesai';
+          }
+          
+          if (newStatus !== currentStatus) {
+            masterSheet.getRange(i + 1, 8).setValue(newStatus);
+            masterUpdated++;
+          }
+          break;
+        }
+      }
+    });
+    
+    return { success: true, message: `Sinkronisasi selesai. ${detailUpdated} item diperbarui, ${masterUpdated} status laporan dikoreksi.` };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+this['bulkRecalculateStockControl'] = bulkRecalculateStockControl;
+
+
 
 function getKlaim() {
   try {
@@ -3296,8 +3615,8 @@ function getBookingMobil() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return { success: true, data: [] };
     
-    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 17 (termasuk biaya dan bukti pembayaran)
-    const data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 18 (termasuk pkbm)
+    const data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
     const result = [];
     
     for (let i = 0; i < data.length; i++) {
@@ -3323,17 +3642,53 @@ function getBookingMobil() {
             parkir: Number(row[10] || 0),
             tol: Number(row[11] || 0),
             bensin: Number(row[12] || 0),
-            lainLain: Number(row[13] || 0),
-            totalBiaya: Number(row[14] || 0),
-            buktiPembayaranUrl: String(row[15] || ''),
-            driverNotes: String(row[16] || '')
+            pkbm: Number(row[13] || 0),
+            lainLain: Number(row[14] || 0),
+            totalBiaya: Number(row[15] || 0),
+            buktiPembayaranUrl: String(row[16] || ''),
+            driverNotes: String(row[17] || '')
         });
     }
     return { success: true, data: result, totalOnSheet: lastRow - 1 };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, createdBy, parkir, tol, bensin, lainLain) {
+function getBookingMobilById(id) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        return {
+          success: true,
+          data: {
+            id: String(data[i][0]),
+            tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]||''),
+            pic: data[i][2],
+            jamBerangkat: data[i][3],
+            tujuan: data[i][4],
+            keterangan: data[i][5],
+            rute: data[i][6],
+            status: data[i][7],
+            createdBy: data[i][8],
+            createdAt: data[i][9],
+            parkir: data[i][10],
+            tol: data[i][11],
+            bensin: data[i][12],
+            pkbm: data[i][13],
+            lainLain: data[i][14],
+            totalBiaya: data[i][15],
+            buktiPembayaranUrl: data[i][16],
+            driverNotes: data[i][17]
+          }
+        };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, createdBy, parkir, tol, bensin, pkbm, lainLain, details) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
     const data = sheet.getDataRange().getValues();
@@ -3350,7 +3705,7 @@ function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, c
 
     const id = generateId();
     const createdAt = new Date().toISOString();
-    const totalBiaya = (Number(parkir) || 0) + (Number(tol) || 0) + (Number(bensin) || 0) + (Number(lainLain) || 0);
+    const totalBiaya = (Number(parkir) || 0) + (Number(tol) || 0) + (Number(bensin) || 0) + (Number(pkbm) || 0) + (Number(lainLain) || 0);
     
     sheet.appendRow([
       id, 
@@ -3366,18 +3721,402 @@ function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, c
       Number(parkir) || 0,
       Number(tol) || 0,
       Number(bensin) || 0,
+      Number(pkbm) || 0,
       Number(lainLain) || 0,
       totalBiaya,
-      '', // buktiPembayaranUrl - akan diupdate setelah upload file
-      ''  // driverNotes - akan diupdate oleh driver nanti
+      '', // buktiPembayaranUrl
+      ''  // driverNotes
     ]);
+
+    // Simpan Detail PO jika ada
+    if (details && Array.isArray(details)) {
+      const detailSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+      details.forEach(det => {
+        detailSheet.appendRow([
+          generateId(),
+          id,
+          det.tanggal || tanggal,
+          det.namaCustomer || '',
+          det.noPo || '',
+          Number(det.totalCartoon) || 0,
+          Number(det.parkir) || 0,
+          Number(det.tol) || 0,
+          Number(det.pkbm) || 0,
+          Number(det.lainLain) || 0,
+          det.keterangan || '',
+          '' // buktiUrls
+        ]);
+      });
+      SpreadsheetApp.flush();
+    }
     
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
 function deleteBookingMobil(id) {
-  return deleteRow(CONFIG.SHEETS.BOOKING_MOBIL, id);
+  const res = deleteRow(CONFIG.SHEETS.BOOKING_MOBIL, id);
+  if (res.success) {
+    // Hapus juga detailnya
+    try {
+      const sheetDetail = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+      const dataDetail = sheetDetail.getDataRange().getValues();
+      // Hapus dari bawah ke atas agar index tidak berantakan
+      for (let i = dataDetail.length - 1; i >= 1; i--) {
+        if (String(dataDetail[i][1]) === String(id)) {
+          sheetDetail.deleteRow(i + 1);
+        }
+      }
+    } catch(err) { console.warn('Failed to delete booking details:', err); }
+  }
+  return res;
+}
+
+function getBookingMobilDetail(bookingId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]) === String(bookingId)) {
+        const parkir = Number(data[i][6]) || 0;
+        const tol = Number(data[i][7]) || 0;
+        const pkbm = Number(data[i][8]) || 0;
+        const lainLain = Number(data[i][9]) || 0;
+        result.push({
+          id: String(data[i][0]),
+          bookingId: String(data[i][1]),
+          tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]||''),
+          namaCustomer: String(data[i][3] || ''),
+          noPo: String(data[i][4] || ''),
+          totalCartoon: Number(data[i][5]) || 0,
+          parkir: parkir,
+          tol: tol,
+          pkbm: pkbm,
+          lainLain: lainLain,
+          totalBiayaPo: parkir + tol + pkbm + lainLain,
+          keterangan: String(data[i][10] || ''),
+          buktiUrls: String(data[i][11] || '')
+        });
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function getBookingMobilDetailMaster() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      result.push({
+        id: String(data[i][0]),
+        buktiUrls: String(data[i][11] || '')
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updateBookingMobilDetailBiaya(detailId, parkir, tol, pkbm, lainLain) {
+  try {
+    const detailSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const detailData = detailSheet.getDataRange().getValues();
+    let bookingId = null;
+    let noPo = null;
+
+    // Helper: Convert any value to safe numeric (remove letters, keep only digits)
+    const sanitizeNumber = (val) => {
+      if (typeof val === 'number') return Math.max(0, val);
+      const str = String(val || '').trim();
+      if (!str) return 0;
+      // Remove all non-digit characters, keep only numbers
+      const numStr = str.replace(/[^0-9]/g, '');
+      const num = parseInt(numStr, 10);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
+
+    // Sanitize all inputs - convert any letters to 0
+    const cleanParkir = sanitizeNumber(parkir);
+    const cleanTol = sanitizeNumber(tol);
+    const cleanPkbm = sanitizeNumber(pkbm);
+    const cleanLainLain = sanitizeNumber(lainLain);
+
+    // 1. Update baris detail & extract noPo
+    for (let i = 1; i < detailData.length; i++) {
+      if (String(detailData[i][0]) === String(detailId)) {
+        bookingId = String(detailData[i][1]);
+        noPo = String(detailData[i][4] || ''); // Extract noPo for sync
+        detailSheet.getRange(i + 1, 7).setValue(cleanParkir);   // parkir
+        detailSheet.getRange(i + 1, 8).setValue(cleanTol);      // tol
+        detailSheet.getRange(i + 1, 9).setValue(cleanPkbm);     // pkbm
+        detailSheet.getRange(i + 1, 10).setValue(cleanLainLain); // lainLain
+        
+        // Update data array local agar kalkulasi total di bawah menggunakan nilai baru
+        detailData[i][6] = cleanParkir;
+        detailData[i][7] = cleanTol;
+        detailData[i][8] = cleanPkbm;
+        detailData[i][9] = cleanLainLain;
+        
+        break;
+      }
+    }
+
+    if (!bookingId) return { success: false, message: 'Detail tidak ditemukan' };
+
+    // 2. Trigger sync to ensure proper cross-sheet synchronization
+    if (noPo) {
+      syncPOToBookingMobilDetail(noPo, cleanParkir, cleanTol, cleanPkbm, cleanLainLain);
+    }
+
+    // 3. Hitung ulang total biaya untuk bookingId tersebut menggunakan array lokal yang sudah update
+    let totalDetailBiaya = 0;
+    for (let i = 1; i < detailData.length; i++) {
+      if (String(detailData[i][1]) === String(bookingId)) {
+        totalDetailBiaya += (Number(detailData[i][6]) || 0) + 
+                           (Number(detailData[i][7]) || 0) + 
+                           (Number(detailData[i][8]) || 0) + 
+                           (Number(detailData[i][9]) || 0);
+      }
+    }
+
+    // Ambil data master
+    const masterSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+    const masterData = masterSheet.getDataRange().getValues();
+    for (let i = 1; i < masterData.length; i++) {
+      if (String(masterData[i][0]) === String(bookingId)) {
+        // Biaya Driver (Master) + Biaya Detail PO
+        const parkirMaster = Number(masterData[i][10]) || 0;
+        const tolMaster = Number(masterData[i][11]) || 0;
+        const bensinMaster = Number(masterData[i][12]) || 0;
+        const pkbmMaster = Number(masterData[i][13]) || 0;
+        const lainLainMaster = Number(masterData[i][14]) || 0;
+        
+        const finalTotal = parkirMaster + tolMaster + bensinMaster + pkbmMaster + lainLainMaster + totalDetailBiaya;
+        
+        masterSheet.getRange(i + 1, 16).setValue(finalTotal); // Kolom 16 = totalBiaya
+        
+        // Force apply all pending updates to sheet so subsequent reads see the new values
+        SpreadsheetApp.flush();
+        
+        return { success: true, finalTotal: finalTotal };
+      }
+    }
+
+    SpreadsheetApp.flush();
+    return { success: true }; // Harusnya tidak sampai sini jika bookingId valid
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// Ensure installable triggers exist for automatic syncing via onEdit
+function ensureTriggers() {
+  try {
+    const current = ScriptApp.getProjectTriggers();
+    const hasOnEdit = current.some(t => t.getHandlerFunction && t.getHandlerFunction() === 'onEdit');
+    if (!hasOnEdit) {
+      const ss = getSpreadsheet();
+      ScriptApp.newTrigger('onEdit').forSpreadsheet(ss).onEdit().create();
+    }
+  } catch (e) {
+    // If triggers cannot be created (permissions), ignore silently
+  }
+}
+
+// Synchronize Parkir/Tol/PKBM/Lain-Lain values from Detail Rincian PO to BookingMobilDetail
+// Assumes that noPo in Detail Rincian PO corresponds to the same NoPo in BookingMobilDetail rows.
+// After updating detail rows, it also recomputes the master booking total cost.
+function syncPOToBookingMobilDetail(noPo, parkir, tol, pkbm, lainLain) {
+  // Log input for debugging/integration tracing
+  try {
+    Logger.log('syncPOToBookingMobilDetail called - NoPo: ' + String(noPo) + 
+      ' Parkir=' + parkir + ', Tol=' + tol + ', PKBM=' + pkbm + ', Lain=' + lainLain);
+  } catch(e) { /* ignore logging errors */ }
+  try {
+    const detailSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const detailData = detailSheet.getDataRange().getValues();
+
+    // Helper: Convert any value to safe numeric (remove letters, keep only digits)
+    const sanitizeNumber = (val) => {
+      if (typeof val === 'number') return Math.max(0, val);
+      const str = String(val || '').trim();
+      if (!str) return 0;
+      // Remove all non-digit characters, keep only numbers
+      const numStr = str.replace(/[^0-9]/g, '');
+      const num = parseInt(numStr, 10);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
+
+    // Normalize numeric inputs - convert letters to 0
+    const pParkir = sanitizeNumber(parkir);
+    const pTol = sanitizeNumber(tol);
+    const pPkbm = sanitizeNumber(pkbm);
+    const pLain = sanitizeNumber(lainLain);
+
+    // Track affected bookings for total recomputation
+    const affectedBookings = new Set();
+
+    // Update all detail rows with matching noPo
+    for (let r = 1; r < detailData.length; r++) {
+      const row = detailData[r];
+      const rowNoPo = String(row[4] || '').trim();
+      if (rowNoPo === String(noPo).trim()) {
+        // Update parkir/tol/pkbm/lainLain in detail row (columns 6-9, 0-based idx)
+        detailSheet.getRange(r + 1, 7).setValue(pParkir); // parkir
+        detailSheet.getRange(r + 1, 8).setValue(pTol);    // tol
+        detailSheet.getRange(r + 1, 9).setValue(pPkbm);   // pkbm
+        detailSheet.getRange(r + 1, 10).setValue(pLain);   // lainLain
+        // Track bookingId for master recalculation
+        const bookingId = String(row[1] || '');
+        if (bookingId) affectedBookings.add(bookingId);
+      }
+    }
+
+    // Recalculate totals for each affected booking
+    if (affectedBookings.size > 0) {
+      const masterSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
+      const masterData = masterSheet.getDataRange().getValues();
+
+      // For each affected booking, compute new total by summing detail rows and master costs
+      affectedBookings.forEach(bId => {
+        // Master costs
+        let parkirMaster = 0, tolMaster = 0, bensinMaster = 0, pkbmMaster = 0, lainMaster = 0;
+        for (let i = 1; i < masterData.length; i++) {
+          if (String(masterData[i][0]) === String(bId)) {
+            parkirMaster = Number(masterData[i][10]) || 0;   // Parkir
+            tolMaster = Number(masterData[i][11]) || 0;      // Tol
+            bensinMaster = Number(masterData[i][12]) || 0;   // Bensin
+            pkbmMaster = Number(masterData[i][13]) || 0;     // PKBM
+            lainMaster = Number(masterData[i][14]) || 0;     // Lain-Lain
+            break;
+          }
+        }
+
+        // Sum detail rows for this booking
+        let detailSum = 0;
+        for (let i = 1; i < detailData.length; i++) {
+          const dRow = detailData[i];
+          if (String(dRow[1] || '') === String(bId)) {
+            detailSum += (Number(dRow[6]) || 0) + (Number(dRow[7]) || 0) + (Number(dRow[8]) || 0) + (Number(dRow[9]) || 0);
+          }
+        }
+
+        const finalTotal = parkirMaster + tolMaster + bensinMaster + pkbmMaster + lainMaster + detailSum;
+        // Update master total (col 16)
+        for (let i = 1; i < masterData.length; i++) {
+          if (String(masterData[i][0]) === String(bId)) {
+            masterSheet.getRange(i + 1, 16).setValue(finalTotal);
+            break;
+          }
+        }
+      });
+    }
+
+    SpreadsheetApp.flush();
+    return { success: true, updatedDetailNoPo: noPo, updatedBookings: Array.from(affectedBookings) };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// OnEdit trigger: auto-sync when Parkir/Tol/PKBM/Lain-Lain changes in BookingMobilDetail
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheet = e.range.getSheet();
+    if (!sheet) return;
+    const sheetName = sheet.getName();
+    // Only act on BookingMobilDetail sheet
+    if (sheetName !== CONFIG.SHEETS.BOOKING_MOBIL_DETAIL) return;
+    const editedCol = e.range.getColumn();
+    // We monitor Parkir(7), Tol(8), PKBM(9), Lain-Lain(10)
+    if (editedCol < 7 || editedCol > 10) return;
+    const row = e.range.getRow();
+    if (row <= 1) return; // skip header
+
+    const rowValues = sheet.getRange(row, 1, 1, 12).getValues()[0];
+    const noPo = String(rowValues[4] || '').trim();
+    if (!noPo) return;
+
+    // Helper: Convert any value to safe numeric (remove letters, keep only digits)
+    const sanitizeNumber = (val) => {
+      if (typeof val === 'number') return Math.max(0, val);
+      const str = String(val || '').trim();
+      if (!str) return 0;
+      // Remove all non-digit characters, keep only numbers
+      const numStr = str.replace(/[^0-9]/g, '');
+      const num = parseInt(numStr, 10);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
+
+    // Sanitize values & re-set if they contained non-numeric characters
+    let parkir = sanitizeNumber(rowValues[6]);
+    let tol = sanitizeNumber(rowValues[7]);
+    let pkbm = sanitizeNumber(rowValues[8]);
+    let lainLain = sanitizeNumber(rowValues[9]);
+
+    // Re-set the sanitized values back to sheet if they were modified
+    if (parkir !== rowValues[6]) sheet.getRange(row, 7).setValue(parkir);
+    if (tol !== rowValues[7]) sheet.getRange(row, 8).setValue(tol);
+    if (pkbm !== rowValues[8]) sheet.getRange(row, 9).setValue(pkbm);
+    if (lainLain !== rowValues[9]) sheet.getRange(row, 10).setValue(lainLain);
+
+    syncPOToBookingMobilDetail(noPo, parkir, tol, pkbm, lainLain);
+  } catch (err) {
+    try { Logger.log('onEdit sync error: ' + err.message); } catch (_) {}
+  }
+}
+
+// Clean all invalid (non-numeric) values in BookingMobilDetail sheet
+// Replaces any letters/text with 0 to ensure data consistency
+function cleanInvalidBiayaValues() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    let cleanedCount = 0;
+
+    // Helper: Convert any value to safe numeric
+    const sanitizeNumber = (val) => {
+      if (typeof val === 'number') return Math.max(0, val);
+      const str = String(val || '').trim();
+      if (!str) return 0;
+      const numStr = str.replace(/[^0-9]/g, '');
+      const num = parseInt(numStr, 10);
+      return isNaN(num) ? 0 : Math.max(0, num);
+    };
+
+    // Clean columns 7-10 (Parkir, Tol, PKBM, Lain-Lain)
+    for (let r = 1; r < data.length; r++) {
+      for (let col = 7; col <= 10; col++) {
+        const val = data[r][col - 1];
+        const clean = sanitizeNumber(val);
+        if (clean !== val) {
+          sheet.getRange(r + 1, col).setValue(clean);
+          cleanedCount++;
+        }
+      }
+    }
+
+    SpreadsheetApp.flush();
+    Logger.log('Cleaned ' + cleanedCount + ' invalid cost values in BookingMobilDetail');
+    return { success: true, cleanedCount: cleanedCount };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function updateBookingMobilDetailBukti(detailId, urlsJson) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(detailId)) {
+        sheet.getRange(i + 1, 12).setValue(urlsJson); // buktiUrls (JSON array string)
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Detail tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 function updateBookingStatus(id, newStatus) {
@@ -3401,7 +4140,7 @@ function updateBuktiPembayaranBookingUrl(bookingId, buktiUrl) {
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(bookingId)) {
-        sheet.getRange(i + 1, 16).setValue(buktiUrl); // Kolom 16 = buktiPembayaranUrl
+        sheet.getRange(i + 1, 17).setValue(buktiUrl); // Kolom 17 = buktiPembayaranUrl
         return { success: true };
       }
     }
@@ -3424,8 +4163,8 @@ function updateDriverNotesBooking(bookingId, driverNotes) {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-// Update Biaya Booking Mobil (Parkir, Tol, Bensin, Lain-lain)
-function updateBiayaBooking(bookingId, parkir, tol, bensin, lainLain) {
+// Update Biaya Booking Mobil (Parkir, Tol, Bensin, PKBM, Lain-lain)
+function updateBiayaBooking(bookingId, parkir, tol, bensin, pkbm, lainLain) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
     const data = sheet.getDataRange().getValues();
@@ -3434,14 +4173,16 @@ function updateBiayaBooking(bookingId, parkir, tol, bensin, lainLain) {
         const p = Number(parkir) || 0;
         const t = Number(tol) || 0;
         const b = Number(bensin) || 0;
+        const pk = Number(pkbm) || 0;
         const l = Number(lainLain) || 0;
-        const total = p + t + b + l;
+        const total = p + t + b + pk + l;
         
         sheet.getRange(i + 1, 11).setValue(p);      // Kolom 11 = parkir
         sheet.getRange(i + 1, 12).setValue(t);      // Kolom 12 = tol
         sheet.getRange(i + 1, 13).setValue(b);      // Kolom 13 = bensin
-        sheet.getRange(i + 1, 14).setValue(l);      // Kolom 14 = lainLain
-        sheet.getRange(i + 1, 15).setValue(total);  // Kolom 15 = totalBiaya
+        sheet.getRange(i + 1, 14).setValue(pk);     // Kolom 14 = pkbm
+        sheet.getRange(i + 1, 15).setValue(l);      // Kolom 15 = lainLain
+        sheet.getRange(i + 1, 16).setValue(total);  // Kolom 16 = totalBiaya
         return { success: true, totalBiaya: total };
       }
     }
@@ -5108,33 +5849,4 @@ function updateInventoryMonitoring(id, areaPosisi, keterangan) {
     sheet.appendRow([generateId(), areaPosisi, keterangan, now]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
-}
-
-/**
- * API Bridge for Vercel/External Hosting
- * Mengizinkan aplikasi frontend di luar Google (seperti Vercel) memanggil fungsi di kode.gs
- */
-function doPost(e) {
-  try {
-    const params = JSON.parse(e.postData.contents);
-    const funcName = (params.func || "").trim();
-    const args = params.args || [];
-    
-    // Cari fungsi di global scope (globalThis atau this)
-    const targetScope = typeof globalThis !== 'undefined' ? globalThis : this;
-    const func = targetScope[funcName];
-
-    if (typeof func === 'function') {
-      const result = func.apply(null, args);
-      return ContentService.createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-    } else {
-      throw new Error('Fungsi "' + funcName + '" tidak ditemukan atau tidak dapat diakses di server (check global scope).');
-    }
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({
-      success: false,
-      message: 'API Error: ' + err.message
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
 }
