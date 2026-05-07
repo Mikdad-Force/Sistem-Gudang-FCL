@@ -4,7 +4,8 @@
 // ============================================================
 
 const CONFIG = {
-  SPREADSHEET_ID: '1lde5La49rhI5NElJNtpaGP7ZMFcS9n28ZNRy6YyhU3s', // <-- GANTI INI DENGAN ID DARI URL SHEET ANDA
+  SPREADSHEET_ID: '1lde5La49rhI5NElJNtpaGP7ZMFcS9n28ZNRy6YyhU3s', // Database utama aplikasi
+  DISTRIBUTOR_QUEUE_SPREADSHEET_ID: '1Plj0hVoGrKVTceePK1ax4q3SObCyhuo5lcL0y8LronE', // Spreadsheet khusus Antrian Distributor
   SHEETS: {
     USERS: 'Users',
     KAS_GUDANG: 'KasGudang',
@@ -24,6 +25,7 @@ const CONFIG = {
     SURAT_JALAN_KELUAR_DETAIL: 'SuratJalanKeluarDetail',
     ORDER: 'Order',
     ORDER_DETAIL: 'OrderDetail',
+    DISTRIBUTOR_QUEUE: 'Antrian Distributor',
     RETUR: 'Retur',
     RETUR_DETAIL: 'ReturDetail',
     STOCK_CONTROL: 'Stock Control',
@@ -53,12 +55,39 @@ const CONFIG = {
   BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo'  // Folder untuk Bukti Pembayaran Booking Mobil
 };
 
+const DISTRIBUTOR_QUEUE_HEADERS = [
+  'Order queue time',
+  'PIC Sales',
+  'Nama Distributor',
+  'alamat',
+  'No. HP',
+  'PO number',
+  'No Mabang',
+  'Metode Pengiriman',
+  'Ongkir dibayar oleh',
+  'Note',
+  'Time',
+  'Status',
+  'Jumlah Dus',
+  'Total Pcs',
+  'PACKER',
+  'Validation',
+  'Tanggal selesai packing',
+  'Ship date',
+  'Status Mabang',
+  'GDRIVE',
+  'Delivery Bill',
+  'nomor resi',
+  'Bukti Pengiriman'
+];
+
 // ============================================================
 // ENTRY POINT
 // ============================================================
 function doGet(e) {
   // Trigger update untuk mengatasi kolom kosong (title/judul Header) - DINONAKTIFKAN untuk performa
   // try { ForceUpdateAllHeaders(); } catch(err) {}
+  try { setupDistributorQueueDatabase(); } catch (err) {}
 
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
@@ -102,8 +131,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR, ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking','kategori','noResi']);
+  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty','lokasi']);
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL, ['id', 'tanggal', 'pic', 'area', 'kategori', 'alasan', 'karyawan', 'status', 'createdBy', 'createdAt']);
@@ -221,6 +250,33 @@ function getSheet(sheetName) {
   const ss = getSpreadsheet();
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) { setupDatabase(); sheet = ss.getSheetByName(sheetName); }
+  return sheet;
+}
+
+function getDistributorQueueSpreadsheet() {
+  return SpreadsheetApp.openById(CONFIG.DISTRIBUTOR_QUEUE_SPREADSHEET_ID);
+}
+
+function setupDistributorQueueDatabase() {
+  const ss = getDistributorQueueSpreadsheet();
+  setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE, DISTRIBUTOR_QUEUE_HEADERS);
+  return { success: true, url: ss.getUrl(), spreadsheetId: ss.getId() };
+}
+
+function getDistributorQueueSheet() {
+  const ss = getDistributorQueueSpreadsheet();
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.DISTRIBUTOR_QUEUE);
+
+  if (!sheet) {
+    setupDistributorQueueDatabase();
+    sheet = ss.getSheetByName(CONFIG.SHEETS.DISTRIBUTOR_QUEUE);
+  }
+
+  if (!sheet) {
+    throw new Error('Sheet Antrian Distributor gagal dibuat di spreadsheet distributor.');
+  }
+
+  setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE, DISTRIBUTOR_QUEUE_HEADERS);
   return sheet;
 }
 
@@ -2272,6 +2328,505 @@ function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
 // ============================================================
 // ORDER & RETUR
 // ============================================================
+function parseDistributorQueueDate(value) {
+  if (!value) return null;
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value)) return new Date(value.getTime());
+
+  const str = String(value).trim();
+  if (!str) return null;
+
+  let match = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (match) {
+    return new Date(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]),
+      Number(match[4] || 0),
+      Number(match[5] || 0),
+      Number(match[6] || 0)
+    );
+  }
+
+  match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (match) {
+    return new Date(
+      Number(match[3]),
+      Number(match[2]) - 1,
+      Number(match[1]),
+      Number(match[4] || 0),
+      Number(match[5] || 0),
+      Number(match[6] || 0)
+    );
+  }
+
+  const parsed = new Date(str);
+  return isNaN(parsed) ? null : parsed;
+}
+
+function startOfDayLocal(dateObj) {
+  return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+}
+
+function addDaysLocal(dateObj, days) {
+  const next = new Date(dateObj.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function diffDaysLocal(baseDate, compareDate) {
+  const ms = startOfDayLocal(compareDate).getTime() - startOfDayLocal(baseDate).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+function isSameDayLocal(dateA, dateB) {
+  return startOfDayLocal(dateA).getTime() === startOfDayLocal(dateB).getTime();
+}
+
+function getStartOfWeekLocal(dateObj) {
+  const current = startOfDayLocal(dateObj);
+  const day = current.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Senin sebagai awal minggu
+  current.setDate(current.getDate() + diff);
+  return current;
+}
+
+function isWithinCurrentWeekLocal(targetDate, referenceDate) {
+  const weekStart = getStartOfWeekLocal(referenceDate);
+  const weekEnd = addDaysLocal(weekStart, 6);
+  const target = startOfDayLocal(targetDate);
+  return target.getTime() >= weekStart.getTime() && target.getTime() <= weekEnd.getTime();
+}
+
+function isWithinCurrentMonthLocal(targetDate, referenceDate) {
+  return targetDate.getFullYear() === referenceDate.getFullYear() && targetDate.getMonth() === referenceDate.getMonth();
+}
+
+function formatDistributorQueueDate(value, withTime) {
+  const dateObj = parseDistributorQueueDate(value);
+  if (!dateObj) return String(value || '');
+  return Utilities.formatDate(dateObj, Session.getScriptTimeZone() || 'Asia/Jakarta', withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
+}
+
+function evaluateDistributorQueueSLA(item) {
+  const slaSettings = getDistributorQueueSLASettings().data || { dueDays: 1, ruleDescription: 'SLA H+1 dari Order queue time' };
+  const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
+  if (!orderDate) {
+    return {
+      status: 'Tanggal order kosong',
+      isLate: false,
+      lateDays: 0,
+      dueDate: '',
+      completionDate: '',
+      completionSource: '',
+      ruleDescription: slaSettings.ruleDescription
+    };
+  }
+
+  const dueDate = addDaysLocal(startOfDayLocal(orderDate), Number(slaSettings.dueDays || 1));
+  const packingDate = parseDistributorQueueDate(item.tanggalSelesaiPacking);
+  const completionDate = packingDate;
+  const today = startOfDayLocal(new Date());
+
+  let isLate = false;
+  let lateDays = 0;
+  let status = 'Pending';
+  let completionSource = '';
+
+  if (completionDate) {
+    const finalDate = startOfDayLocal(completionDate);
+    isLate = finalDate.getTime() > dueDate.getTime();
+    lateDays = isLate ? diffDaysLocal(dueDate, finalDate) : 0;
+    status = isLate ? 'Late' : 'On Time';
+    completionSource = 'Tanggal selesai packing';
+  } else if (today.getTime() > dueDate.getTime()) {
+    isLate = true;
+    lateDays = diffDaysLocal(dueDate, today);
+    status = 'Late';
+  }
+
+  return {
+    status: status,
+    isLate: isLate,
+    lateDays: lateDays,
+    dueDate: formatDistributorQueueDate(dueDate, false),
+    completionDate: completionDate ? formatDistributorQueueDate(completionDate, false) : '',
+    completionSource: completionSource,
+    ruleDescription: slaSettings.ruleDescription
+  };
+}
+
+function getDistributorQueueSLASettings() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data = sheet.getDataRange().getValues();
+    const settings = {
+      dueDays: 1,
+      ruleDescription: 'SLA H+1 dari Order queue time'
+    };
+    for (let i = 1; i < data.length; i++) {
+      const key = String(data[i][0] || '').trim();
+      const value = data[i][1];
+      if (!key) continue;
+      if (key === 'distributorQueueSlaDays') settings.dueDays = parseInt(value, 10) || 1;
+      if (key === 'distributorQueueSlaRule') settings.ruleDescription = String(value || settings.ruleDescription);
+    }
+    return { success: true, data: settings };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getDistributorQueueLateNotesMap() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data = sheet.getDataRange().getValues();
+    const map = {};
+    for (let i = 1; i < data.length; i++) {
+      const key = String(data[i][0] || '').trim();
+      const value = String(data[i][1] || '');
+      if (key.indexOf('distributorQueueLateNote:') === 0) {
+        map[key.replace('distributorQueueLateNote:', '')] = value;
+      }
+    }
+    return map;
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveDistributorQueueSLASettings(settings) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    const upsert = (key, val) => {
+      let found = false;
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0] || '') === key) {
+          sheet.getRange(i + 1, 2).setValue(val);
+          sheet.getRange(i + 1, 3).setValue(now);
+          found = true;
+          break;
+        }
+      }
+      if (!found) sheet.appendRow([key, val, now]);
+    };
+    upsert('distributorQueueSlaDays', Number(settings.dueDays) || 1);
+    upsert('distributorQueueSlaRule', String(settings.ruleDescription || 'SLA H+1 dari Order queue time'));
+    return { success: true, message: 'Aturan SLA berhasil disimpan.' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function saveDistributorQueueLateNote(poNumber, rowNumber, note) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    const key = poNumber ? 'distributorQueueLateNote:' + String(poNumber).trim() : 'distributorQueueLateNoteRow:' + String(rowNumber);
+    let found = false;
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0] || '') === key) {
+        sheet.getRange(i + 1, 2).setValue(note || '');
+        sheet.getRange(i + 1, 3).setValue(now);
+        found = true;
+        break;
+      }
+    }
+    if (!found) sheet.appendRow([key, note || '', now]);
+    return { success: true, message: 'Catatan late berhasil disimpan.' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function mapDistributorQueueRow(row, rowNumber) {
+  const item = {
+    rowNumber: rowNumber,
+    orderQueueTime: formatDistributorQueueDate(row[0], false),
+    picSales: String(row[1] || ''),
+    namaDistributor: String(row[2] || ''),
+    alamat: String(row[3] || ''),
+    noHp: String(row[4] || ''),
+    poNumber: String(row[5] || ''),
+    noMabang: String(row[6] || ''),
+    metodePengiriman: String(row[7] || ''),
+    ongkirDibayarOleh: String(row[8] || ''),
+    note: String(row[9] || ''),
+    timeWib: formatDistributorQueueDate(row[10], true),
+    statusGudang: String(row[11] || ''),
+    jumlahDus: String(row[12] || ''),
+    totalPcs: String(row[13] || ''),
+    packer: String(row[14] || ''),
+    validation: String(row[15] || ''),
+    tanggalSelesaiPacking: formatDistributorQueueDate(row[16], false),
+    shipDate: formatDistributorQueueDate(row[17], false),
+    statusMabang: String(row[18] || ''),
+    gdrive: String(row[19] || ''),
+    deliveryBill: String(row[20] || ''),
+    nomorResi: String(row[21] || ''),
+    buktiPengiriman: String(row[22] || '')
+  };
+  item.sla = evaluateDistributorQueueSLA(item);
+  return item;
+}
+
+function buildDistributorQueueRowValues(payload) {
+  return [
+    payload.orderQueueTime || '',
+    payload.picSales || '',
+    payload.namaDistributor || '',
+    payload.alamat || '',
+    payload.noHp || '',
+    payload.poNumber || '',
+    payload.noMabang || '',
+    payload.metodePengiriman || '',
+    payload.ongkirDibayarOleh || '',
+    payload.note || '',
+    payload.timeWib || '',
+    payload.statusGudang || '',
+    payload.jumlahDus || '',
+    payload.totalPcs || '',
+    payload.packer || '',
+    payload.validation || '',
+    payload.tanggalSelesaiPacking || '',
+    payload.shipDate || '',
+    payload.statusMabang || '',
+    payload.gdrive || '',
+    payload.deliveryBill || '',
+    payload.nomorResi || '',
+    payload.buktiPengiriman || ''
+  ];
+}
+
+
+// ============================================================
+// STATUS HELPERS - Antrian Distributor Column L
+// ============================================================
+function normalizeStatus(s) {
+  // Lowercase, trim, remove extra spaces
+  return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function isStatusTerkirim(s) {
+  var n = normalizeStatus(s).replace(/\s/g, '');
+  return n === 'terkirim' || n.includes('terkirim') || n.includes('shipped') || n.includes('dikirim') || n.includes('sent');
+}
+
+function isStatusReadyPickup(s) {
+  var n = normalizeStatus(s).replace(/\s/g, '');
+  // Matches: "Ready Pickup", "Ready To Pickup", "Ready", "Pickup", "Siap", "Siap Pickup", etc.
+  return n === 'readypickup' || n === 'ready' || n === 'pickup' ||
+         n.includes('readypickup') || n.includes('readytopickup') ||
+         n.includes('ready') || n.includes('pickup') || n.includes('siap');
+}
+
+// Debug: call this from Apps Script editor to test column L values
+function debugDistributorQueueStatus() {
+  var sheet = getDistributorQueueSheet();
+  var data = sheet.getDataRange().getValues();
+  var results = [];
+  for (var i = 1; i < data.length && i <= 20; i++) {
+    var row = data[i];
+    if (row.join('').trim() === '') continue;
+    var raw = String(row[11] || '');
+    results.push({
+      row: i + 1,
+      poNumber: String(row[5] || ''),
+      statusRaw: raw,
+      statusNorm: normalizeStatus(raw),
+      isTerkirim: isStatusTerkirim(raw),
+      isReadyPickup: isStatusReadyPickup(raw)
+    });
+  }
+  Logger.log(JSON.stringify(results, null, 2));
+  return results;
+}
+
+// Fast dashboard-only endpoint (no SLA evaluation, no note map) for quick first paint
+function getDistributorQueueDashboardFast() {
+  try {
+    const sheet = getDistributorQueueSheet();
+    const data = sheet.getDataRange().getValues();
+    var total = 0, terkirim = 0, readyPickup = 0, selesai = 0,
+        belumSelesai = 0, belumDikerjakan = 0, late = 0;
+    var today = startOfDayLocal(new Date());
+    var poHariIni = 0, poMingguIni = 0, poBulanIni = 0;
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (row.join('').trim() === '') continue;
+      total++;
+
+      var statusGudang = String(row[11] || '').toLowerCase().trim();
+      var shipDate     = row[17] ? String(row[17]).trim() : '';
+      var packingDate  = row[16] ? String(row[16]).trim() : '';
+      var nomorResi    = String(row[21] || '').trim();
+      var orderDate    = parseDistributorQueueDate(row[0]) || parseDistributorQueueDate(row[10]);
+
+      // totalTerkirim from Status column L
+      if (isStatusTerkirim(statusGudang)) terkirim++;
+      // totalReadyToPickup from Status column L
+      if (isStatusReadyPickup(statusGudang)) readyPickup++;
+
+      // selesai / belumSelesai / belumDikerjakan
+      if (shipDate || packingDate) {
+        selesai++;
+      } else {
+        var sNorm = statusGudang.replace(/\s+/g, '');
+        // Belum Dikerjakan: kolom L kosong
+        if (statusGudang === '') {
+          belumDikerjakan++;
+        // Belum Selesai: kolom L = Picking
+        } else if (sNorm.includes('picking')) {
+          belumSelesai++;
+        }
+        // lainnya (ready, terkirim, dll) tidak dihitung di sini
+      }
+
+      // PO counts
+      if (orderDate) {
+        if (isSameDayLocal(orderDate, today)) poHariIni++;
+        if (isWithinCurrentWeekLocal(orderDate, today)) poMingguIni++;
+        if (isWithinCurrentMonthLocal(orderDate, today)) poBulanIni++;
+      }
+    }
+
+    return {
+      success: true,
+      dashboard: {
+        total: total,
+        selesai: selesai,
+        belumSelesai: belumSelesai,
+        belumDikerjakan: belumDikerjakan,
+        late: 0, // will be filled by full load
+        totalTerkirim: terkirim,
+        totalReadyToPickup: readyPickup,
+        poKeluarHariIni: poHariIni,
+        poKeluarMingguIni: poMingguIni,
+        poKeluarBulanIni: poBulanIni,
+        lateItems: [],
+        pending: 0,
+        onTime: 0,
+        dueToday: 0
+      }
+    };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getDistributorQueueData() {
+  try {
+    const sheet = getDistributorQueueSheet();
+    const data = sheet.getDataRange().getValues();
+    const rows = [];
+    const today = startOfDayLocal(new Date());
+    const noteMap = getDistributorQueueLateNotesMap();
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const item = mapDistributorQueueRow(data[i], i + 1);
+      item.catatanLate = noteMap[item.poNumber] || noteMap['row:' + item.rowNumber] || '';
+      rows.push(item);
+    }
+
+    rows.sort(function(a, b) {
+      const dateA = parseDistributorQueueDate(a.orderQueueTime) || new Date(0);
+      const dateB = parseDistributorQueueDate(b.orderQueueTime) || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    const completedCount = rows.filter(function(item) {
+      return !!(item.shipDate || item.tanggalSelesaiPacking);
+    }).length;
+
+    // Belum Selesai: Status kolom L = "Picking" (sedang dikerjakan)
+    const inProgressCount = rows.filter(function(item) {
+      var s = String(item.statusGudang || '').toLowerCase().replace(/\s+/g, '');
+      return s.includes('picking');
+    }).length;
+
+    // Belum Dikerjakan: Status kolom L kosong
+    const notStartedCount = rows.filter(function(item) {
+      return String(item.statusGudang || '').trim() === '';
+    }).length;
+
+    const poKeluarHariIni = rows.filter(function(item) {
+      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
+      return orderDate ? isSameDayLocal(orderDate, today) : false;
+    }).length;
+
+    const poKeluarMingguIni = rows.filter(function(item) {
+      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
+      return orderDate ? isWithinCurrentWeekLocal(orderDate, today) : false;
+    }).length;
+
+    const poKeluarBulanIni = rows.filter(function(item) {
+      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
+      return orderDate ? isWithinCurrentMonthLocal(orderDate, today) : false;
+    }).length;
+
+    const dashboard = {
+      total: rows.length,
+      selesai: completedCount,
+      belumSelesai: inProgressCount,
+      belumDikerjakan: notStartedCount,
+      poKeluarHariIni: poKeluarHariIni,
+      poKeluarMingguIni: poKeluarMingguIni,
+      poKeluarBulanIni: poKeluarBulanIni,
+      totalTerkirim: rows.filter(function(item) {
+        return isStatusTerkirim(String(item.statusGudang || '').toLowerCase().trim());
+      }).length,
+      totalReadyToPickup: rows.filter(function(item) {
+        return isStatusReadyPickup(String(item.statusGudang || '').toLowerCase().trim());
+      }).length,
+      pending: rows.filter(function(item) { return item.sla.status === 'Pending'; }).length,
+      onTime: rows.filter(function(item) { return item.sla.status === 'On Time'; }).length,
+      late: rows.filter(function(item) { return item.sla.isLate; }).length,
+      dueToday: rows.filter(function(item) {
+        return item.sla.dueDate && item.sla.dueDate === formatDistributorQueueDate(new Date(), false) && !item.sla.completionDate;
+      }).length,
+      lateItems: rows.filter(function(item) { return item.sla.isLate; })
+    };
+
+    return { success: true, data: rows, dashboard: dashboard };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function saveDistributorQueue(payload, updatedBy) {
+  try {
+    const parsed = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+    const rowValues = buildDistributorQueueRowValues(parsed);
+    const sheet = getDistributorQueueSheet();
+    const rowNumber = Number(parsed.rowNumber || 0);
+
+    if (rowNumber > 1 && rowNumber <= sheet.getLastRow()) {
+      sheet.getRange(rowNumber, 1, 1, DISTRIBUTOR_QUEUE_HEADERS.length).setValues([rowValues]);
+    } else {
+      sheet.appendRow(rowValues);
+    }
+
+    SpreadsheetApp.flush();
+    return {
+      success: true,
+      message: rowNumber > 1 ? 'Antrian distributor berhasil diperbarui.' : 'Antrian distributor berhasil ditambahkan.',
+      updatedBy: updatedBy || ''
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getLateShipmentDashboard() {
+  const result = getDistributorQueueData();
+  if (!result.success) return result;
+  return { success: true, dashboard: result.dashboard };
+}
+
 function getOrders() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ORDER); const data = sheet.getDataRange().getValues(); const result = [];
