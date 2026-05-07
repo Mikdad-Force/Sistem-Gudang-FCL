@@ -3811,6 +3811,8 @@
               Barang</div>
             <div class="nav-item" onclick="showPage('order')" data-i18n="order"><span class="icon">🛒</span> Orderan
             </div>
+            <div class="nav-item" onclick="showPage('antrianDistributor')"><span class="icon">🚚</span> Antrian Distributor
+            </div>
             <div class="nav-item" onclick="showPage('stockOpname')" data-i18n="stockOpname"><span class="icon">⚖️</span>
               Stock Opname</div>
             <div class="nav-item" onclick="showPage('analisis')" data-i18n="analisis"><span class="icon">📉</span>
@@ -5543,6 +5545,297 @@
             </div>
           </div>
 
+          <div class="page" id="page-antrianDistributor" style="display:none;">
+            <div class="header-container animate-fade mb-4">
+              <div>
+                <h1 style="color:var(--text-main); font-weight:800; font-family:'Outfit';">Antrian Distributor</h1>
+                <p style="color:var(--text-muted); font-size:14px;">Sinkron langsung ke spreadsheet distributor dan memantau keterlambatan shipment H+1.</p>
+              </div>
+              <div id="dqHeaderActions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" onclick="openModal('modalExportDQ')">📥 Export Excel</button>
+                <button class="btn btn-ghost" onclick="toggleFormCard()">📝 Tampilkan Form</button>
+                <button class="btn btn-ghost" onclick="resetDistributorQueueForm()">Reset Form</button>
+                <button class="btn btn-primary" onclick="loadDistributorQueue()">🔄 Refresh</button>
+              </div>
+            </div>
+
+            <!-- Dashboard Layout: Chart Kiri, Stats Kanan -->
+            <div class="row mb-4">
+              <!-- Chart Section (Kiri) -->
+              <div class="col-md-4">
+                <div class="card" id="dqChartCard" style="height:100%;">
+                  <div class="card-header">
+                    <h4 style="font-size:15px;">📊 Grafik Status</h4>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleChartType()" style="padding:4px 10px; font-size:11px;">🔄 Ubah</button>
+                  </div>
+                  <div style="padding:20px;">
+                    <canvas id="dqChart" style="max-height:280px;"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stats Grid (Kanan) -->
+              <div class="col-md-8">
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px;">
+                  <div class="stat-card">
+                    <div class="stat-label">Total Antrian</div>
+                    <div class="stat-value" id="dqStatTotal">0</div>
+                  </div>
+                  <div class="stat-card green">
+                    <div class="stat-label">PO Selesai</div>
+                    <div class="stat-value green" id="dqStatSelesai">0</div>
+                  </div>
+                  <div class="stat-card amber">
+                    <div class="stat-label">PO Belum Selesai</div>
+                    <div class="stat-value amber" id="dqStatBelumSelesai">0</div>
+                  </div>
+                  <div class="stat-card blue">
+                    <div class="stat-label">PO Belum Dikerjakan</div>
+                    <div class="stat-value blue" id="dqStatBelumDikerjakan">0</div>
+                  </div>
+                  <div class="stat-card red">
+                    <div class="stat-label">Late Shipment</div>
+                    <div class="stat-value red" id="dqStatLate">0</div>
+                  </div>
+                  <div class="stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border-color: rgba(16, 185, 129, 0.3);">
+                    <div class="stat-label">PO Terkirim</div>
+                    <div class="stat-value" style="color: var(--green);" id="dqStatTerkirim">0</div>
+                    <i class="bi bi-truck stat-icon" style="color: var(--green);"></i>
+                  </div>
+                  <div class="stat-card" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.05)); border-color: rgba(14, 165, 233, 0.3);">
+                    <div class="stat-label">Ready Pickup</div>
+                    <div class="stat-value" style="color: var(--teal);" id="dqStatReadyPickup">0</div>
+                    <i class="bi bi-box-seam stat-icon" style="color: var(--teal);"></i>
+                  </div>
+                  <div class="stat-card teal">
+                    <div class="stat-label">PO Hari Ini</div>
+                    <div class="stat-value teal" id="dqStatPoHariIni">0</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-label">PO Minggu Ini</div>
+                    <div class="stat-value" id="dqStatPoMingguIni">0</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-label">PO Bulan Ini</div>
+                    <div class="stat-value" id="dqStatPoBulanIni">0</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== 3 STATUS TABLE CARDS ===== -->
+            <div class="row mb-4" id="dqStatusCardsRow">
+
+              <!-- Card 1: PO Belum Dikerjakan -->
+              <div class="col-md-4 mb-3">
+                <div class="card" style="border-color: rgba(14,165,233,0.35); height:100%;">
+                  <div class="card-header" style="background:rgba(14,165,233,0.08); border-bottom:1px solid rgba(14,165,233,0.2); padding:14px 18px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:18px;">📋</span>
+                      <div>
+                        <h4 style="font-size:14px; margin:0; color:var(--teal);">PO Belum Dikerjakan</h4>
+                        <small style="color:var(--text-muted); font-size:11px;">Belum ada progress sama sekali</small>
+                      </div>
+                      <span class="badge" style="background:var(--teal); color:#fff; margin-left:auto;" id="dqCardBadgeBelumDikerjakan">0</span>
+                    </div>
+                  </div>
+                  <div style="overflow-y:auto; max-height:280px;">
+                    <table class="table" style="margin:0; font-size:12px;">
+                      <thead>
+                        <tr>
+                          <th style="padding:8px 12px; font-size:10px;">Distributor</th>
+                          <th style="padding:8px 12px; font-size:10px;">PO Number</th>
+                          <th style="padding:8px 12px; font-size:10px; text-align:right;">Total Pcs</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dqTableBelumDikerjakan">
+                        <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: PO Belum Selesai -->
+              <div class="col-md-4 mb-3">
+                <div class="card" style="border-color: rgba(245,158,11,0.35); height:100%;">
+                  <div class="card-header" style="background:rgba(245,158,11,0.08); border-bottom:1px solid rgba(245,158,11,0.2); padding:14px 18px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:18px;">⏳</span>
+                      <div>
+                        <h4 style="font-size:14px; margin:0; color:var(--accent);">PO Belum Selesai</h4>
+                        <small style="color:var(--text-muted); font-size:11px;">Sedang dalam proses packing</small>
+                      </div>
+                      <span class="badge" style="background:var(--accent); color:#000; margin-left:auto;" id="dqCardBadgeBelumSelesai">0</span>
+                    </div>
+                  </div>
+                  <div style="overflow-y:auto; max-height:280px;">
+                    <table class="table" style="margin:0; font-size:12px;">
+                      <thead>
+                        <tr>
+                          <th style="padding:8px 12px; font-size:10px;">Distributor</th>
+                          <th style="padding:8px 12px; font-size:10px;">PO Number</th>
+                          <th style="padding:8px 12px; font-size:10px; text-align:right;">Total Pcs</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dqTableBelumSelesai">
+                        <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: PO Ready Pickup -->
+              <div class="col-md-4 mb-3">
+                <div class="card" style="border-color: rgba(16,185,129,0.35); height:100%;">
+                  <div class="card-header" style="background:rgba(16,185,129,0.08); border-bottom:1px solid rgba(16,185,129,0.2); padding:14px 18px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:18px;">📦</span>
+                      <div>
+                        <h4 style="font-size:14px; margin:0; color:var(--green);">PO Ready Pickup</h4>
+                        <small style="color:var(--text-muted); font-size:11px;">Siap dijemput ekspedisi</small>
+                      </div>
+                      <span class="badge" style="background:var(--green); color:#fff; margin-left:auto;" id="dqCardBadgeReadyPickup">0</span>
+                    </div>
+                  </div>
+                  <div style="overflow-y:auto; max-height:280px;">
+                    <table class="table" style="margin:0; font-size:12px;">
+                      <thead>
+                        <tr>
+                          <th style="padding:8px 12px; font-size:10px;">Distributor</th>
+                          <th style="padding:8px 12px; font-size:10px;">PO Number</th>
+                          <th style="padding:8px 12px; font-size:10px; text-align:right;">Total Pcs</th>
+                          <th style="padding:8px 12px; font-size:10px; text-align:right;">Jumlah Dus</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dqTableReadyPickup">
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Memuat...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <!-- ===== END STATUS TABLE CARDS ===== -->
+
+            <div class="card mb-4" id="dqFormCard" style="display:none;">
+              <div class="card-header">
+                <h4>Form Antrian Distributor</h4>
+                <div class="badge bg-teal" id="dqFormMode">Mode Baru</div>
+              </div>
+              <div style="padding:20px;">
+                <input type="hidden" id="dqEditRow">
+                <div class="row g-3 mb-3">
+                  <div class="col-md-3"><label class="form-label">Order queue time</label><input type="date" class="form-control" id="dqOrderQueueTime"></div>
+                  <div class="col-md-3"><label class="form-label">PIC Sales</label><input type="text" class="form-control" id="dqPicSales" placeholder="Nama PIC sales"></div>
+                  <div class="col-md-3"><label class="form-label">Nama Distributor</label><input type="text" class="form-control" id="dqNamaDistributor" placeholder="Nama distributor"></div>
+                  <div class="col-md-3"><label class="form-label">No. HP</label><input type="text" class="form-control" id="dqNoHp" placeholder="08xxxxxxxxxx"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6"><label class="form-label">alamat</label><input type="text" class="form-control" id="dqAlamat" placeholder="Alamat lengkap distributor"></div>
+                  <div class="col-md-2"><label class="form-label">PO number</label><input type="text" class="form-control" id="dqPoNumber" placeholder="Nomor PO"></div>
+                  <div class="col-md-2"><label class="form-label">No Mabang</label><input type="text" class="form-control" id="dqNoMabang" placeholder="No Mabang"></div>
+                  <div class="col-md-2"><label class="form-label">Time</label><input type="datetime-local" class="form-control" id="dqTimeWib"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-3"><label class="form-label">Metode Pengiriman</label><input type="text" class="form-control" id="dqMetodePengiriman" placeholder="Ekspedisi / armada"></div>
+                  <div class="col-md-3"><label class="form-label">Ongkir dibayar oleh</label><input type="text" class="form-control" id="dqOngkirDibayarOleh" placeholder="Distributor / FCL"></div>
+                  <div class="col-md-3"><label class="form-label">Status Gudang</label><input type="text" class="form-control" id="dqStatusGudang" placeholder="Pending / Packing / Selesai"></div>
+                  <div class="col-md-3"><label class="form-label">Jumlah Dus</label><input type="number" class="form-control" id="dqJumlahDus" min="0" placeholder="0"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-3"><label class="form-label">Total Pcs</label><input type="number" class="form-control" id="dqTotalPcs" min="0" placeholder="0"></div>
+                  <div class="col-md-3"><label class="form-label">PACKER</label><input type="text" class="form-control" id="dqPacker" placeholder="Nama packer"></div>
+                  <div class="col-md-3"><label class="form-label">Validation</label><input type="text" class="form-control" id="dqValidation" placeholder="OK / Recheck"></div>
+                  <div class="col-md-3"><label class="form-label">Status Mabang</label><input type="text" class="form-control" id="dqStatusMabang" placeholder="Status mabang"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4"><label class="form-label">Tanggal selesai packing</label><input type="date" class="form-control" id="dqTanggalSelesaiPacking"></div>
+                  <div class="col-md-4"><label class="form-label">Ship date</label><input type="date" class="form-control" id="dqShipDate"></div>
+                  <div class="col-md-4"><label class="form-label">nomor resi</label><input type="text" class="form-control" id="dqNomorResi" placeholder="Nomor resi pengiriman"></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4"><label class="form-label">GDRIVE</label><input type="url" class="form-control" id="dqGdrive" placeholder="https://drive.google.com/..."></div>
+                  <div class="col-md-4"><label class="form-label">Delivery Bill</label><input type="url" class="form-control" id="dqDeliveryBill" placeholder="https://..."></div>
+                  <div class="col-md-4"><label class="form-label">Bukti Pengiriman</label><input type="url" class="form-control" id="dqBuktiPengiriman" placeholder="https://..."></div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-12"><label class="form-label">Note</label><textarea class="form-control" id="dqNote" rows="3" placeholder="Catatan sales / gudang"></textarea></div>
+                </div>
+                <div class="modal-footer" style="padding:0; margin-top:0;">
+                  <button class="btn btn-ghost" onclick="resetDistributorQueueForm()">Bersihkan</button>
+                  <button class="btn btn-primary" id="btnSaveDistributorQueue" onclick="submitDistributorQueue()">💾 Simpan ke Spreadsheet</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4" id="dqLateCard">
+              <div class="card-header">
+                <h4>Dashboard Late Shipment H+1</h4>
+                <span class="badge bg-danger" id="dqLateBadge">0 Late</span>
+                <button class="btn btn-primary btn-sm" onclick="openEditSLAModal()" title="Edit SLA Rules" style="float:right;">⚙️ Edit SLA Rules</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table table-hover align-middle">
+                  <thead>
+                    <tr>
+                      <th>PO Number</th>
+                      <th>Distributor</th>
+                      <th>Order Queue</th>
+                      <th>Tanggal selesai packing</th>
+                      <th>Status SLA</th>
+                      <th>Terlambat</th>
+                      <th>Catatan Kenapa Late</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dqLateTable"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h4>Data Antrian Distributor</h4>
+                <span style="font-size:12px; color:var(--text-muted);">Kolom mengikuti template Google Spreadsheet</span>
+              </div>
+              <div class="table-wrap">
+                <table class="table table-hover align-middle" style="min-width:2600px;">
+                  <thead>
+                    <tr>
+                      <th>Order queue time</th>
+                      <th>PIC Sales</th>
+                      <th>Nama Distributor</th>
+                      <th>alamat</th>
+                      <th>No. HP</th>
+                      <th>PO number</th>
+                      <th>No Mabang</th>
+                      <th>Metode Pengiriman</th>
+                      <th>Ongkir dibayar oleh</th>
+                      <th>Note</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                      <th>Jumlah Dus</th>
+                      <th>Total Pcs</th>
+                      <th>PACKER</th>
+                      <th>Validation</th>
+                      <th>Tanggal selesai packing</th>
+                      <th>Ship date</th>
+                      <th>Status Mabang</th>
+                      <th>GDRIVE</th>
+                      <th>Delivery Bill</th>
+                      <th>nomor resi</th>
+                      <th>Bukti Pengiriman</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dqTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
 
           <div class="page" id="page-bookingMobil">
             <div class="card mb-4">
@@ -5931,6 +6224,91 @@
           </div>
 
 
+
+          <!-- ===================== MODAL EXPORT ANTRIAN DISTRIBUTOR ===================== -->
+          <div class="modal-overlay" id="modalExportDQ">
+            <div class="custom-modal" style="width:460px;">
+              <button class="modal-close" onclick="closeModal('modalExportDQ')">✕</button>
+              <h3>📥 Export Antrian Distributor</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Pilih bulan dan tahun untuk mengekspor data. Baris <span style="color:var(--red);font-weight:700;">Late Shipment</span> akan ditandai merah di Excel.</p>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label">Bulan</label>
+                  <select class="form-select" id="dqExportMonth">
+                    <option value="1">Januari</option>
+                    <option value="2">Februari</option>
+                    <option value="3">Maret</option>
+                    <option value="4">April</option>
+                    <option value="5">Mei</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">Agustus</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Tahun</label>
+                  <input type="number" class="form-control" id="dqExportYear" min="2020" max="2099" placeholder="2025">
+                </div>
+              </div>
+              <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:8px; padding:12px; margin-bottom:16px; font-size:12px; color:var(--text-muted);">
+                <strong style="color:var(--accent);">ℹ️ Info:</strong> Export berdasarkan kolom <em>Order Queue Time</em>. Baris Late Shipment akan berwarna merah di Excel.
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalExportDQ')">Batal</button>
+                <button class="btn btn-success" id="btnDoExportDQ" onclick="doExportDistributorQueue()">📥 Export Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================== MODAL EDIT SLA RULES ===================== -->
+          <div class="modal-overlay" id="modalEditSLARules">
+            <div class="custom-modal" style="width:480px;">
+              <button class="modal-close" onclick="closeModal('modalEditSLARules')">✕</button>
+              <h3>⚙️ Edit SLA Rules</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Atur batas hari SLA untuk Antrian Distributor. Default: H+1 dari Order Queue Time.</p>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Batas Hari SLA (H+?)</label>
+                  <input type="number" class="form-control" id="slaInputDueDays" min="1" max="30" value="1" placeholder="1">
+                  <small class="text-muted">Contoh: 1 = H+1, 2 = H+2</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Deskripsi Aturan</label>
+                  <input type="text" class="form-control" id="slaInputRuleDesc" placeholder="SLA H+1 dari Order queue time">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalEditSLARules')">Batal</button>
+                <button class="btn btn-primary" id="btnSaveSLARules" onclick="saveSLARules()">💾 Simpan SLA</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================== MODAL EDIT CATATAN LATE ===================== -->
+          <div class="modal-overlay" id="modalEditCatatanLate">
+            <div class="custom-modal" style="width:480px;">
+              <button class="modal-close" onclick="closeModal('modalEditCatatanLate')">✕</button>
+              <h3>📝 Update Catatan Kenapa Late</h3>
+              <input type="hidden" id="catatanLateRowNumber">
+              <input type="hidden" id="catatanLatePoNumber">
+              <div class="mb-3">
+                <label class="form-label">PO Number</label>
+                <input type="text" class="form-control" id="catatanLatePoDisplay" readonly style="background:var(--input-bg); opacity:0.7;">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Catatan Kenapa Late</label>
+                <textarea class="form-control" id="catatanLateText" rows="4" placeholder="Tuliskan alasan keterlambatan shipment..."></textarea>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalEditCatatanLate')">Batal</button>
+                <button class="btn btn-primary" id="btnSaveCatatanLate" onclick="saveCatatanLate()">💾 Simpan Catatan</button>
+              </div>
+            </div>
+          </div>
 
           <div class="modal-overlay" id="modalExportLembur">
             <div class="custom-modal" style="width:400px;"><button class="modal-close"
@@ -7422,6 +7800,11 @@
                   <label class="form-label"><input type="checkbox" value="outbound"> Outbound</label>
                   <label class="form-label"><input type="checkbox" value="retur"> Retur</label>
                   <label class="form-label"><input type="checkbox" value="order"> Orderan</label>
+                  <label class="form-label"><input type="checkbox" value="lihatAntrianDistributor"> Lihat Antrian Distributor</label>
+                  <label class="form-label"><input type="checkbox" value="editAntrianDistributor"> Tambah/Edit Antrian Distributor</label>
+                  <label class="form-label"><input type="checkbox" value="editSLARule"> ⏱️ Edit SLA &amp; Aturan Late</label>
+                  <label class="form-label"><input type="checkbox" value="lihatDashboardLateShipment"> Lihat Dashboard Late Shipment</label>
+                  <label class="form-label"><input type="checkbox" value="antrianDistributor"> Antrian Distributor (Legacy)</label>
                   <label class="form-label"><input type="checkbox" value="analisis"> Analisis Stok</label>
                   <label class="form-label"><input type="checkbox" value="assetWarehouse"> Asset Warehouse</label>
                   <label class="form-label"><input type="checkbox" value="stockOpname"> Stock Opname</label>
@@ -10208,7 +10591,71 @@
     const resetForm = ids => ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     function escHtml(str) { if (!str) return ''; return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
+    function ensureDistributorQueueSheet(silent = true) {
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res || !res.success) {
+            const msg = res ? res.message : 'Gagal menyiapkan sheet Antrian Distributor';
+            console.error(msg);
+            if (!silent && typeof toast === 'function') toast(msg, 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          console.error('Setup Antrian Distributor gagal:', err);
+          if (!silent && typeof toast === 'function') toast('Setup Antrian Distributor gagal: ' + err, 'error');
+        })
+        .setupDistributorQueueDatabase();
+    }
+
+    function getCurrentUserPermissions() {
+      if (!currentUser) return [];
+      try { return JSON.parse(currentUser.permissions || '[]'); } catch (e) { return []; }
+    }
+
+    function canViewDistributorQueue() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      const perms = getCurrentUserPermissions();
+      return perms.includes('lihatAntrianDistributor') || perms.includes('editAntrianDistributor') || perms.includes('lihatDashboardLateShipment') || perms.includes('antrianDistributor');
+    }
+
+    function canEditDistributorQueue() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      const perms = getCurrentUserPermissions();
+      return perms.includes('editAntrianDistributor') || perms.includes('antrianDistributor');
+    }
+
+    function canViewLateShipmentDashboard() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      const perms = getCurrentUserPermissions();
+      return perms.includes('lihatDashboardLateShipment') || perms.includes('antrianDistributor');
+    }
+
+    function canEditSLARule() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      const perms = getCurrentUserPermissions();
+      return perms.includes('editSLARule');
+    }
+
+    function applyDistributorQueuePermissions() {
+      const formCard = document.getElementById('dqFormCard');
+      const lateCard = document.getElementById('dqLateCard');
+      const headerActions = document.getElementById('dqHeaderActions');
+      const actionHeader = document.getElementById('dqActionHeader');
+      const canEdit = canEditDistributorQueue();
+      const canViewLate = canViewLateShipmentDashboard();
+
+      if (formCard) formCard.style.display = canEdit ? 'block' : 'none';
+      if (lateCard) lateCard.style.display = canViewLate ? 'block' : 'none';
+      if (headerActions) headerActions.style.display = canEdit ? 'flex' : 'none';
+      if (actionHeader) actionHeader.textContent = canEdit ? 'Aksi' : 'Info';
+    }
+
     window.onload = function () {
+      ensureDistributorQueueSheet(true);
       const ls = document.getElementById('loadingScreen');
       const lp = document.getElementById('loginPage');
       const ap = document.getElementById('app');
@@ -10266,6 +10713,7 @@
 
 
     function initApp() {
+      ensureDistributorQueueSheet(true);
       // Remove redundant attendance loading from startup - causes app to hang
       // These will be loaded after menu is displayed
       
@@ -10301,6 +10749,7 @@
             const pName = match[1];
             // Visibility Check
             let isVisible = allowedMenus.includes(pName);
+            if (pName === 'antrianDistributor') isVisible = canViewDistributorQueue();
             if (pName === 'users' && canManageUsers) isVisible = true;
             if (pName === 'approval') isVisible = isPimpinan; // Strictly role-based
 
@@ -10399,6 +10848,7 @@
         if (res.success) {
           currentUser = res.user;
           sessionStorage.setItem('fcl_user', JSON.stringify(currentUser));
+          ensureDistributorQueueSheet(true);
           initApp();
         }
         else { document.getElementById('loginError').style.display = 'block'; document.getElementById('loginError').textContent = '⚠️ ' + res.message; }
@@ -10457,7 +10907,7 @@
       organisasi: '🏗️ Struktur Organisasi', sop: '📋 SOP Gudang',
       users: '⚙️ Manajemen User', stock: '📦 Stock Barang', stockOpname: '⚖️ Stock Opname', packingList: '📋 Dokumen INBOUND',
       inbound: '📥 Inbound Barang', outbound: '✂️ Pemotongan Stok',
-      retur: '↩️ Retur Barang', order: '🛒 Orderan', analisis: '📈 Analisis Pemakaian Stok',
+      retur: '↩️ Retur Barang', order: '🛒 Orderan', antrianDistributor: '🚚 Antrian Distributor', analisis: '📈 Analisis Pemakaian Stok',
       assetWarehouse: '🏪 Asset Warehouse',
       bookingMobil: '🚗 Booking Mobil',
       approval: '✅ Pusat Approval'
@@ -10467,7 +10917,7 @@
       karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
       handover: loadStockControl, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
-      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
+      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, antrianDistributor: loadDistributorQueue, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
       approval: loadCentralizedApprovals, approvalCenter: renderApprovalCenter
     };
 
@@ -10488,6 +10938,9 @@
         let allowedMenus = []; if (currentUser.permissions) { try { allowedMenus = JSON.parse(currentUser.permissions); } catch (e) { } }
         if (role !== 'admin' && !isHR && !isViceSPV && !allowedMenus.includes('kelolaUser')) return toast('Akses dilarang', 'error');
       }
+      if (name === 'antrianDistributor' && !canViewDistributorQueue()) {
+        return toast('Akses Antrian Distributor dilarang', 'error');
+      }
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       const pg = document.getElementById('page-' + name);
@@ -10507,10 +10960,11 @@
           laporanKerja: '📝', grafikLaporan: '📈', handover: '📦', klaim: '⚠️', tugasProject: '📋',
           ijin: '✉️', lembur: '⏱️', pengajuanAsset: '📦', organisasi: '🏗️', sop: '📋',
           users: '⚙️', stock: '📦', stockOpname: '⚖️', packingList: '📋', inbound: '📥',
-          outbound: '✂️', retur: '↩️', order: '🛒', analisis: '📈', bookingMobil: '🚗'
+          outbound: '✂️', retur: '↩️', order: '🛒', antrianDistributor: '🚚', analisis: '📈', bookingMobil: '🚗'
         };
         const icon = pageIcons[name] || '📄';
-        titleEl.textContent = icon + ' ' + getLangText(name);
+        const titleText = name === 'antrianDistributor' ? 'Antrian Distributor' : getLangText(name);
+        titleEl.textContent = icon + ' ' + titleText;
       }
 
       if (pageLoaders[name]) pageLoaders[name]();
@@ -14056,13 +14510,13 @@
       // checks.forEach(c => c.checked = false); // Opsional: Hapus komentar jika ingin reset total tiap ganti role
 
       if (r === 'HR') {
-        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
+        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor'].forEach(set);
       } else if (r === 'Supervisor') {
-        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
+        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
       } else if (r === 'Vice Supervisor') {
-        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'bookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
+        ['dashboard', 'kasGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
       } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
-        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan'].forEach(set);
+        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan'].forEach(set);
       }
     }
     function toggleCustomRole() { const s = v('uRole'); document.getElementById('uRoleCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
@@ -15396,6 +15850,799 @@
         document.getElementById('panelOrderHistory').style.display = 'block';
         document.getElementById('tabOrdHistory').classList.add('active');
       }
+    }
+
+    let distributorQueueData = [];
+
+    function queueLinkHtml(url, label) {
+      if (!url) return '-';
+      const safeUrl = escHtml(url);
+      return `<a href="${safeUrl}" target="_blank">${label || 'Buka Link'}</a>`;
+    }
+
+    function queueCell(value) {
+      return escHtml(value || '-');
+    }
+
+    function queueSlaBadge(sla) {
+      if (!sla) return '<span class="badge bg-secondary">-</span>';
+      if (sla.isLate) return `<span class="badge bg-danger">Late${sla.lateDays ? ' +' + sla.lateDays + ' hari' : ''}</span>`;
+      if (sla.status === 'On Time') return '<span class="badge bg-success">On Time</span>';
+      if (sla.status === 'Pending') return '<span class="badge bg-warning text-dark">Pending</span>';
+      return `<span class="badge bg-secondary">${queueCell(sla.status)}</span>`;
+    }
+
+    let dqChartInstance = null;
+    let dqChartType = 'doughnut';
+
+    function toggleChartType() {
+      dqChartType = dqChartType === 'doughnut' ? 'bar' : 'doughnut';
+      if (window._lastDqDash) renderDistributorQueueChart(window._lastDqDash);
+    }
+
+    function toggleFormCard() {
+      const card = document.getElementById('dqFormCard');
+      if (!card) return;
+      const isHidden = card.style.display === 'none' || card.style.display === '';
+      card.style.display = isHidden ? 'block' : 'none';
+      const btn = document.querySelector('[onclick="toggleFormCard()"]');
+      if (btn) btn.textContent = isHidden ? '✖ Tutup Form' : '📝 Tampilkan Form';
+      if (isHidden) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderDistributorQueueChart(dash) {
+      window._lastDqDash = dash;
+      const ctx = document.getElementById('dqChart');
+      if (!ctx) return;
+
+      const labels = ['PO Selesai', 'Belum Selesai', 'Belum Dikerjakan', 'Late', 'Terkirim', 'Ready to Pickup'];
+      const values = [
+        dash.selesai || 0,
+        dash.belumSelesai || 0,
+        dash.belumDikerjakan || 0,
+        dash.late || 0,
+        dash.totalTerkirim || 0,
+        dash.totalReadyToPickup || 0
+      ];
+      const colors = [
+        'rgba(16, 185, 129, 0.85)',
+        'rgba(245, 158, 11, 0.85)',
+        'rgba(148, 163, 184, 0.85)',
+        'rgba(239, 68, 68, 0.85)',
+        'rgba(16, 185, 129, 0.6)',
+        'rgba(14, 165, 233, 0.85)'
+      ];
+      const borderColors = [
+        'rgba(16, 185, 129, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(148, 163, 184, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(16, 185, 129, 1)',
+        'rgba(14, 165, 233, 1)'
+      ];
+
+      if (dqChartInstance) { dqChartInstance.destroy(); dqChartInstance = null; }
+
+      const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+      if (dqChartType === 'doughnut') {
+        dqChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: values,
+              backgroundColor: colors,
+              borderColor: borderColors,
+              borderWidth: 2,
+              hoverOffset: 12
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '62%',
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  color: textColor,
+                  font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' },
+                  padding: 16,
+                  usePointStyle: true,
+                  pointStyleWidth: 10
+                }
+              },
+              tooltip: {
+                backgroundColor: isDark ? '#0f2040' : '#fff',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: textColor,
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: {
+                  label: function(ctx) {
+                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = total > 0 ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+                    return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        dqChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Jumlah PO',
+              data: values,
+              backgroundColor: colors,
+              borderColor: borderColors,
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: isDark ? '#0f2040' : '#fff',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: textColor,
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                borderWidth: 1,
+                padding: 12
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 12 } },
+                grid: { color: gridColor }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 12 }, stepSize: 1 },
+                grid: { color: gridColor }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function openExportDQModal() {
+      const now = new Date();
+      setVal('dqExportMonth', now.getMonth() + 1);
+      setVal('dqExportYear', now.getFullYear());
+      openModal('modalExportDQ');
+    }
+
+    function doExportDistributorQueue() {
+      const month = parseInt(v('dqExportMonth'), 10);
+      const year  = parseInt(v('dqExportYear'),  10);
+      if (!month || !year || year < 2020) return toast('Pilih bulan dan tahun yang valid', 'error');
+
+      const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const monthLabel = monthNames[month - 1];
+
+      // Filter data by order queue time month/year
+      const filtered = (distributorQueueData || []).filter(item => {
+        const raw = item.orderQueueTime || item.timeWib || '';
+        if (!raw || raw === '-') return false;
+        const d = new Date(raw);
+        if (isNaN(d)) return false;
+        return d.getMonth() + 1 === month && d.getFullYear() === year;
+      });
+
+      if (!filtered.length) {
+        return toast(`Tidak ada data untuk ${monthLabel} ${year}`, 'info');
+      }
+
+      const btn = document.getElementById('btnDoExportDQ');
+      btn.disabled = true;
+      btn.textContent = '⏳ Memproses...';
+
+      try {
+        // ── Headers ──
+        const headers = [
+          'Order Queue Time', 'PIC Sales', 'Nama Distributor', 'Alamat', 'No. HP',
+          'PO Number', 'No Mabang', 'Metode Pengiriman', 'Ongkir Dibayar Oleh', 'Note',
+          'Time', 'Status Gudang', 'Jumlah Dus', 'Total Pcs', 'Packer', 'Validation',
+          'Tgl Selesai Packing', 'Ship Date', 'Status Mabang', 'GDrive', 'Delivery Bill',
+          'Nomor Resi', 'Bukti Pengiriman', 'Status SLA', 'Terlambat (Hari)', 'Catatan Late'
+        ];
+
+        // ── Build rows ──
+        const rows = filtered.map(item => {
+          const sla = item.sla || {};
+          return [
+            item.orderQueueTime || '',
+            item.picSales || '',
+            item.namaDistributor || '',
+            item.alamat || '',
+            item.noHp || '',
+            item.poNumber || '',
+            item.noMabang || '',
+            item.metodePengiriman || '',
+            item.ongkirDibayarOleh || '',
+            item.note || '',
+            item.timeWib || '',
+            item.statusGudang || '',
+            item.jumlahDus || '',
+            item.totalPcs || '',
+            item.packer || '',
+            item.validation || '',
+            item.tanggalSelesaiPacking || '',
+            item.shipDate || '',
+            item.statusMabang || '',
+            item.gdrive || '',
+            item.deliveryBill || '',
+            item.nomorResi || '',
+            item.buktiPengiriman || '',
+            sla.status || '',
+            sla.lateDays || 0,
+            item.catatanLate || ''
+          ];
+        });
+
+        // ── Build workbook with XLSX ──
+        const wb = XLSX.utils.book_new();
+        const wsData = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // ── Column widths ──
+        ws['!cols'] = [
+          {wch:16},{wch:14},{wch:22},{wch:28},{wch:14},
+          {wch:14},{wch:14},{wch:18},{wch:18},{wch:24},
+          {wch:16},{wch:16},{wch:12},{wch:12},{wch:14},{wch:12},
+          {wch:18},{wch:14},{wch:16},{wch:28},{wch:28},
+          {wch:18},{wch:28},{wch:12},{wch:16},{wch:30}
+        ];
+
+        // ── Style header row (bold, dark bg, white text) ──
+        const headerStyle = {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+          fill: { fgColor: { rgb: '1A3A5C' } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border: {
+            top:    { style: 'thin', color: { rgb: 'FFFFFF' } },
+            bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+            left:   { style: 'thin', color: { rgb: 'FFFFFF' } },
+            right:  { style: 'thin', color: { rgb: 'FFFFFF' } }
+          }
+        };
+
+        // ── Style for normal data rows ──
+        const normalStyle = {
+          font: { sz: 10 },
+          alignment: { vertical: 'center', wrapText: false },
+          border: {
+            top:    { style: 'thin', color: { rgb: 'DDDDDD' } },
+            bottom: { style: 'thin', color: { rgb: 'DDDDDD' } },
+            left:   { style: 'thin', color: { rgb: 'DDDDDD' } },
+            right:  { style: 'thin', color: { rgb: 'DDDDDD' } }
+          }
+        };
+
+        // ── Style for LATE rows (red bg, white text) ──
+        const lateStyle = {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
+          fill: { fgColor: { rgb: 'C0392B' } },
+          alignment: { vertical: 'center', wrapText: false },
+          border: {
+            top:    { style: 'thin', color: { rgb: 'FFFFFF' } },
+            bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+            left:   { style: 'thin', color: { rgb: 'FFFFFF' } },
+            right:  { style: 'thin', color: { rgb: 'FFFFFF' } }
+          }
+        };
+
+        // ── Style for LATE status cell (brighter red) ──
+        const lateStatusStyle = {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
+          fill: { fgColor: { rgb: 'E74C3C' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top:    { style: 'thin', color: { rgb: 'FFFFFF' } },
+            bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+            left:   { style: 'thin', color: { rgb: 'FFFFFF' } },
+            right:  { style: 'thin', color: { rgb: 'FFFFFF' } }
+          }
+        };
+
+        const colCount = headers.length;
+        const encodeCell = (r, c) => XLSX.utils.encode_cell({ r, c });
+
+        // Apply header styles
+        for (let c = 0; c < colCount; c++) {
+          const cellRef = encodeCell(0, c);
+          if (ws[cellRef]) ws[cellRef].s = headerStyle;
+        }
+
+        // Apply row styles
+        filtered.forEach((item, rowIdx) => {
+          const isLate = item.sla && item.sla.isLate;
+          const excelRow = rowIdx + 1; // +1 for header
+          for (let c = 0; c < colCount; c++) {
+            const cellRef = encodeCell(excelRow, c);
+            if (!ws[cellRef]) ws[cellRef] = { v: '', t: 's' };
+            // Status SLA column (index 23) gets special style
+            if (isLate && c === 23) {
+              ws[cellRef].s = lateStatusStyle;
+            } else if (isLate) {
+              ws[cellRef].s = lateStyle;
+            } else {
+              ws[cellRef].s = normalStyle;
+            }
+          }
+        });
+
+        // Freeze header row
+        ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+        XLSX.utils.book_append_sheet(wb, ws, `${monthLabel} ${year}`);
+
+        // ── Summary sheet ──
+        const lateCount  = filtered.filter(i => i.sla && i.sla.isLate).length;
+        const onTimeCount = filtered.filter(i => i.sla && i.sla.status === 'On Time').length;
+        const terkirim   = filtered.filter(i => i.shipDate && String(i.shipDate).trim() !== '').length;
+        const readyPickup = filtered.filter(i => i.nomorResi && String(i.nomorResi).trim() !== '' && !(i.shipDate && String(i.shipDate).trim() !== '')).length;
+
+        const summaryData = [
+          ['RINGKASAN ANTRIAN DISTRIBUTOR'],
+          [`Periode: ${monthLabel} ${year}`],
+          [''],
+          ['Keterangan', 'Jumlah'],
+          ['Total PO', filtered.length],
+          ['PO Selesai (Ship Date terisi)', terkirim],
+          ['Ready to Pickup (Resi ada, belum Ship)', readyPickup],
+          ['On Time', onTimeCount],
+          ['Late Shipment', lateCount],
+          ['', ''],
+          ['Dibuat pada', new Date().toLocaleString('id-ID')]
+        ];
+
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        wsSummary['!cols'] = [{wch:36},{wch:16}];
+
+        // Style summary title
+        if (wsSummary['A1']) wsSummary['A1'].s = { font: { bold: true, sz: 14, color: { rgb: '1A3A5C' } } };
+        if (wsSummary['A4']) wsSummary['A4'].s = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1A3A5C' } } };
+        if (wsSummary['B4']) wsSummary['B4'].s = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1A3A5C' } } };
+        // Late row red
+        if (wsSummary['A9']) wsSummary['A9'].s = { font: { bold: true, color: { rgb: 'C0392B' } } };
+        if (wsSummary['B9']) wsSummary['B9'].s = { font: { bold: true, color: { rgb: 'C0392B' } } };
+
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
+
+        const filename = `Antrian_Distributor_${monthLabel}_${year}.xlsx`;
+        XLSX.writeFile(wb, filename, { bookType: 'xlsx', cellStyles: true });
+
+        toast(`Export berhasil: ${filtered.length} data (${lateCount} late)`, 'success');
+        closeModal('modalExportDQ');
+      } catch(err) {
+        toast('Gagal export: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📥 Export Excel';
+      }
+    }
+
+    function renderDistributorQueueStatusCards(data) {
+      if (!data || !data.length) return;
+
+      // ── Classify rows ──
+      const belumDikerjakan = [];
+      const belumSelesai    = [];
+      const readyPickup     = [];
+
+      data.forEach(function(item) {
+        const statusRaw  = String(item.statusGudang || '').trim();
+        const statusNorm = statusRaw.toLowerCase().replace(/\s+/g, '');
+
+        // PO Belum Dikerjakan: kolom L kosong
+        if (statusRaw === '') {
+          belumDikerjakan.push(item);
+          return;
+        }
+
+        // PO Ready Pickup: kolom L mengandung ready/pickup/siap
+        if (statusNorm.includes('ready') || statusNorm.includes('pickup') || statusNorm.includes('siap')) {
+          readyPickup.push(item);
+          return;
+        }
+
+        // PO Belum Selesai: kolom L = "Picking" (atau mengandung "picking")
+        if (statusNorm.includes('picking')) {
+          belumSelesai.push(item);
+          return;
+        }
+
+        // Status lain (Terkirim, Selesai, dll) — tidak masuk ke 3 card ini
+      });
+
+      // ── Render helper ──
+      function renderRows(tbodyId, badgeId, rows, accentColor) {
+        const tbody = document.getElementById(tbodyId);
+        const badge = document.getElementById(badgeId);
+        if (!tbody) return;
+        if (badge) badge.textContent = rows.length;
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada data</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.map(function(item) {
+          const dist = escHtml(item.namaDistributor || '-');
+          const po   = escHtml(item.poNumber || '-');
+          const pcs  = item.totalPcs ? Number(item.totalPcs).toLocaleString('id-ID') : '-';
+          return `<tr style="cursor:pointer;" onclick="editDistributorQueue(${item.rowNumber})" title="Klik untuk edit">
+            <td style="padding:8px 12px; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              <strong style="font-size:12px;">${dist}</strong>
+            </td>
+            <td style="padding:8px 12px;">
+              <span style="font-size:11px; background:rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:6px; padding:2px 8px;">${po}</span>
+            </td>
+            <td style="padding:8px 12px; text-align:right; font-weight:700; color:${accentColor}; font-size:13px;">${pcs}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      renderRows('dqTableBelumDikerjakan', 'dqCardBadgeBelumDikerjakan', belumDikerjakan, 'var(--teal)');
+      renderRows('dqTableBelumSelesai',    'dqCardBadgeBelumSelesai',    belumSelesai,    'var(--accent)');
+
+      // Ready Pickup — custom render with Jumlah Dus column
+      (function() {
+        const tbody = document.getElementById('dqTableReadyPickup');
+        const badge = document.getElementById('dqCardBadgeReadyPickup');
+        if (!tbody) return;
+        if (badge) badge.textContent = readyPickup.length;
+        if (!readyPickup.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px; font-size:12px;">Tidak ada data</td></tr>';
+          return;
+        }
+        tbody.innerHTML = readyPickup.map(function(item) {
+          const dist = escHtml(item.namaDistributor || '-');
+          const po   = escHtml(item.poNumber || '-');
+          const pcs  = item.totalPcs  ? Number(item.totalPcs).toLocaleString('id-ID')  : '-';
+          const dus  = item.jumlahDus ? Number(item.jumlahDus).toLocaleString('id-ID') : '-';
+          return `<tr style="cursor:pointer;" onclick="editDistributorQueue(${item.rowNumber})" title="Klik untuk edit">
+            <td style="padding:8px 12px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              <strong style="font-size:12px;">${dist}</strong>
+            </td>
+            <td style="padding:8px 12px;">
+              <span style="font-size:11px; background:rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:6px; padding:2px 8px;">${po}</span>
+            </td>
+            <td style="padding:8px 12px; text-align:right; font-weight:700; color:var(--green); font-size:13px;">${pcs}</td>
+            <td style="padding:8px 12px; text-align:right; font-weight:700; color:var(--teal); font-size:13px;">${dus}</td>
+          </tr>`;
+        }).join('');
+      })();
+
+      // ── Sync stat cards dengan jumlah dari tabel card (sumber kebenaran tunggal) ──
+      setVal('dqStatBelumDikerjakan', belumDikerjakan.length);
+      setVal('dqStatBelumSelesai',    belumSelesai.length);
+      setVal('dqStatReadyPickup',     readyPickup.length);
+    }
+
+    function openEditSLAModal() {
+      if (!canEditSLARule()) return toast('Anda tidak punya hak edit SLA Rules', 'error');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success && res.data) {
+            setVal('slaInputDueDays', res.data.dueDays || 1);
+            setVal('slaInputRuleDesc', res.data.ruleDescription || 'SLA H+1 dari Order queue time');
+          }
+          openModal('modalEditSLARules');
+        })
+        .withFailureHandler(function(err) {
+          setVal('slaInputDueDays', 1);
+          setVal('slaInputRuleDesc', 'SLA H+1 dari Order queue time');
+          openModal('modalEditSLARules');
+        })
+        .getDistributorQueueSLASettings();
+    }
+
+    function saveSLARules() {
+      if (!canEditSLARule()) return toast('Anda tidak punya hak edit SLA Rules', 'error');
+      var dueDays = parseInt(v('slaInputDueDays'), 10);
+      var ruleDescription = v('slaInputRuleDesc').trim();
+      if (!dueDays || dueDays < 1) return toast('Batas hari SLA harus minimal 1', 'error');
+      if (!ruleDescription) return toast('Deskripsi aturan tidak boleh kosong', 'error');
+      var btn = document.getElementById('btnSaveSLARules');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = '💾 Simpan SLA';
+          if (!res || !res.success) return toast(res ? res.message : 'Gagal menyimpan SLA', 'error');
+          toast(res.message || 'SLA Rules berhasil disimpan', 'success');
+          closeModal('modalEditSLARules');
+          loadDistributorQueue();
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = '💾 Simpan SLA';
+          toast('Gagal menyimpan SLA: ' + err, 'error');
+        })
+        .saveDistributorQueueSLASettings({ dueDays: dueDays, ruleDescription: ruleDescription });
+    }
+
+    function openEditLateCatatanModal(rowNumber) {
+      if (!canEditSLARule()) return toast('Anda tidak punya hak update catatan late', 'error');
+      var item = distributorQueueData.find(function(d) { return Number(d.rowNumber) === Number(rowNumber); });
+      if (!item) return toast('Data antrian tidak ditemukan', 'error');
+      setVal('catatanLateRowNumber', rowNumber);
+      setVal('catatanLatePoNumber', item.poNumber || '');
+      setVal('catatanLatePoDisplay', item.poNumber || '-');
+      setVal('catatanLateText', item.catatanLate || '');
+      openModal('modalEditCatatanLate');
+    }
+
+    function saveCatatanLate() {
+      if (!canEditSLARule()) return toast('Anda tidak punya hak update catatan late', 'error');
+      var rowNumber = v('catatanLateRowNumber');
+      var poNumber = v('catatanLatePoNumber');
+      var note = v('catatanLateText').trim();
+      if (!rowNumber) return toast('Data tidak valid', 'error');
+      var btn = document.getElementById('btnSaveCatatanLate');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.textContent = '💾 Simpan Catatan';
+          if (!res || !res.success) return toast(res ? res.message : 'Gagal menyimpan catatan', 'error');
+          toast(res.message || 'Catatan berhasil disimpan', 'success');
+          closeModal('modalEditCatatanLate');
+          loadDistributorQueue();
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.textContent = '💾 Simpan Catatan';
+          toast('Gagal menyimpan catatan: ' + err, 'error');
+        })
+        .saveDistributorQueueLateNote(poNumber, rowNumber, note);
+    }
+
+    function toLocalDateValue(date) {
+      if (!date) return '';
+      const dt = new Date(date);
+      if (isNaN(dt)) return '';
+      return dt.toISOString().slice(0, 10);
+    }
+
+    function toLocalDateTimeValue(date) {
+      if (!date) return '';
+      const dt = new Date(date);
+      if (isNaN(dt)) return '';
+      const offsetMs = dt.getTimezoneOffset() * 60000;
+      return new Date(dt.getTime() - offsetMs).toISOString().slice(0, 16);
+    }
+
+    function resetDistributorQueueForm() {
+      if (!canEditDistributorQueue()) return;
+      [
+        'dqEditRow', 'dqPicSales', 'dqNamaDistributor', 'dqAlamat', 'dqNoHp', 'dqPoNumber', 'dqNoMabang',
+        'dqMetodePengiriman', 'dqOngkirDibayarOleh', 'dqNote', 'dqStatusGudang', 'dqJumlahDus',
+        'dqTotalPcs', 'dqPacker', 'dqValidation', 'dqStatusMabang', 'dqGdrive', 'dqDeliveryBill',
+        'dqNomorResi', 'dqBuktiPengiriman', 'dqTanggalSelesaiPacking', 'dqShipDate'
+      ].forEach(id => setVal(id, ''));
+      setVal('dqOrderQueueTime', toLocalDateValue(new Date()));
+      setVal('dqTimeWib', toLocalDateTimeValue(new Date()));
+      const mode = document.getElementById('dqFormMode');
+      if (mode) mode.textContent = 'Mode Baru';
+    }
+
+    function fillDistributorQueueForm(item) {
+      if (!canEditDistributorQueue()) return;
+      setVal('dqEditRow', item.rowNumber || '');
+      setVal('dqOrderQueueTime', item.orderQueueTime || '');
+      setVal('dqPicSales', item.picSales || '');
+      setVal('dqNamaDistributor', item.namaDistributor || '');
+      setVal('dqAlamat', item.alamat || '');
+      setVal('dqNoHp', item.noHp || '');
+      setVal('dqPoNumber', item.poNumber || '');
+      setVal('dqNoMabang', item.noMabang || '');
+      setVal('dqMetodePengiriman', item.metodePengiriman || '');
+      setVal('dqOngkirDibayarOleh', item.ongkirDibayarOleh || '');
+      setVal('dqNote', item.note || '');
+      setVal('dqTimeWib', item.timeWib ? item.timeWib.replace(' ', 'T').slice(0, 16) : '');
+      setVal('dqStatusGudang', item.statusGudang || '');
+      setVal('dqJumlahDus', item.jumlahDus || '');
+      setVal('dqTotalPcs', item.totalPcs || '');
+      setVal('dqPacker', item.packer || '');
+      setVal('dqValidation', item.validation || '');
+      setVal('dqTanggalSelesaiPacking', item.tanggalSelesaiPacking || '');
+      setVal('dqShipDate', item.shipDate || '');
+      setVal('dqStatusMabang', item.statusMabang || '');
+      setVal('dqGdrive', item.gdrive || '');
+      setVal('dqDeliveryBill', item.deliveryBill || '');
+      setVal('dqNomorResi', item.nomorResi || '');
+      setVal('dqBuktiPengiriman', item.buktiPengiriman || '');
+      const mode = document.getElementById('dqFormMode');
+      if (mode) mode.textContent = 'Mode Edit';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function editDistributorQueue(rowNumber) {
+      if (!canEditDistributorQueue()) return toast('Anda tidak punya hak tambah/edit Antrian Distributor', 'error');
+      const item = distributorQueueData.find(d => Number(d.rowNumber) === Number(rowNumber));
+      if (!item) return toast('Data antrian tidak ditemukan', 'error');
+      fillDistributorQueueForm(item);
+    }
+
+    function renderDistributorQueueDashboard(dashboard) {
+      applyDistributorQueuePermissions();
+      const dash = dashboard || {};
+      setVal('dqStatTotal', dash.total || 0);
+      setVal('dqStatSelesai', dash.selesai || 0);
+      setVal('dqStatBelumSelesai', dash.belumSelesai || 0);
+      setVal('dqStatBelumDikerjakan', dash.belumDikerjakan || 0);
+      setVal('dqStatLate', dash.late || 0);
+      setVal('dqStatTerkirim', dash.totalTerkirim || 0);
+      setVal('dqStatReadyPickup', dash.totalReadyToPickup || 0);
+      setVal('dqStatPoHariIni', dash.poKeluarHariIni || 0);
+      setVal('dqStatPoMingguIni', dash.poKeluarMingguIni || 0);
+      setVal('dqStatPoBulanIni', dash.poKeluarBulanIni || 0);
+      setVal('dqLateBadge', `${dash.late || 0} Late`);
+      renderDistributorQueueChart(dash);
+
+      const lateBody = document.getElementById('dqLateTable');
+      if (!lateBody) return;
+      if (!canViewLateShipmentDashboard()) {
+        lateBody.innerHTML = '<tr><td colspan="8" class="empty-state">Anda tidak punya hak melihat Dashboard Late Shipment</td></tr>';
+        return;
+      }
+
+      const items = (dash.lateItems || []).slice(0, 30);
+      if (!items.length) {
+        lateBody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada shipment yang melewati SLA H+1</td></tr>';
+        return;
+      }
+
+      lateBody.innerHTML = items.map(item => `
+        <tr>
+          <td><strong>${queueCell(item.poNumber)}</strong></td>
+          <td>${queueCell(item.namaDistributor)}</td>
+          <td>${queueCell(item.orderQueueTime)}</td>
+          <td>${queueCell(item.tanggalSelesaiPacking || '-')}</td>
+          <td>${queueSlaBadge(item.sla)}</td>
+          <td><strong style="color:var(--red);">${item.sla?.lateDays || 0} hari</strong></td>
+          <td><small>${queueCell(item.catatanLate || '-')}</small></td>
+          <td>${canEditSLARule() ? `<button class="btn btn-ghost btn-sm" onclick="openEditLateCatatanModal(${item.rowNumber})">📝 Edit Catatan</button>` : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderDistributorQueueTable() {
+      const body = document.getElementById('dqTableBody');
+      if (!body) return;
+
+      if (!distributorQueueData.length) {
+        body.innerHTML = '<tr><td colspan="23" class="empty-state">Belum ada data antrian distributor</td></tr>';
+        return;
+      }
+
+      body.innerHTML = distributorQueueData.map(item => `
+        <tr>
+          <td>${queueCell(item.orderQueueTime)}</td>
+          <td>${queueCell(item.picSales)}</td>
+          <td><strong>${queueCell(item.namaDistributor)}</strong></td>
+          <td>${queueCell(item.alamat)}</td>
+          <td>${queueCell(item.noHp)}</td>
+          <td><strong>${queueCell(item.poNumber)}</strong></td>
+          <td>${queueCell(item.noMabang)}</td>
+          <td>${queueCell(item.metodePengiriman)}</td>
+          <td>${queueCell(item.ongkirDibayarOleh)}</td>
+          <td>${queueCell(item.note)}</td>
+          <td>${queueCell(item.timeWib)}</td>
+          <td>${queueCell(item.statusGudang)}</td>
+          <td>${queueCell(item.jumlahDus)}</td>
+          <td>${queueCell(item.totalPcs)}</td>
+          <td>${queueCell(item.packer)}</td>
+          <td>${queueCell(item.validation)}</td>
+          <td>${queueCell(item.tanggalSelesaiPacking)}</td>
+          <td>${queueCell(item.shipDate)}</td>
+          <td>${queueCell(item.statusMabang)}</td>
+          <td>${queueLinkHtml(item.gdrive, 'GDrive')}</td>
+          <td>${queueLinkHtml(item.deliveryBill, 'Delivery Bill')}</td>
+          <td>${queueCell(item.nomorResi)}</td>
+          <td>${queueLinkHtml(item.buktiPengiriman, 'Bukti')}</td>
+        </tr>
+      `).join('');
+    }
+
+    function loadDistributorQueue() {
+      if (!canViewDistributorQueue()) return toast('Anda tidak punya hak melihat Antrian Distributor', 'error');
+
+      // ── Phase 1: Fast dashboard (instant stats + chart) ──
+      google.script.run
+        .withSuccessHandler(function(fastRes) {
+          if (fastRes && fastRes.success && fastRes.dashboard) {
+            renderDistributorQueueDashboard(fastRes.dashboard);
+          }
+        })
+        .withFailureHandler(function() {})
+        .getDistributorQueueDashboardFast();
+
+      // ── Phase 2: Full data (table + SLA + late items) ──
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res || !res.success) {
+            toast(res ? res.message : 'Gagal memuat antrian distributor', 'error');
+            return;
+          }
+          distributorQueueData = res.data || [];
+          renderDistributorQueueDashboard(res.dashboard || {});
+          renderDistributorQueueStatusCards(distributorQueueData);
+          renderDistributorQueueTable();
+          const orderField = document.getElementById('dqOrderQueueTime');
+          if (orderField && !orderField.value) resetDistributorQueueForm();
+        })
+        .withFailureHandler(function(err) {
+          toast('Gagal memuat antrian distributor: ' + err, 'error');
+        })
+        .getDistributorQueueData();
+    }
+
+    function submitDistributorQueue() {
+      if (!canEditDistributorQueue()) return toast('Anda tidak punya hak tambah/edit Antrian Distributor', 'error');
+      const payload = {
+        rowNumber: v('dqEditRow'),
+        orderQueueTime: v('dqOrderQueueTime'),
+        picSales: v('dqPicSales'),
+        namaDistributor: v('dqNamaDistributor'),
+        alamat: v('dqAlamat'),
+        noHp: v('dqNoHp'),
+        poNumber: v('dqPoNumber'),
+        noMabang: v('dqNoMabang'),
+        metodePengiriman: v('dqMetodePengiriman'),
+        ongkirDibayarOleh: v('dqOngkirDibayarOleh'),
+        note: v('dqNote'),
+        timeWib: v('dqTimeWib'),
+        statusGudang: v('dqStatusGudang'),
+        jumlahDus: v('dqJumlahDus'),
+        totalPcs: v('dqTotalPcs'),
+        packer: v('dqPacker'),
+        validation: v('dqValidation'),
+        tanggalSelesaiPacking: v('dqTanggalSelesaiPacking'),
+        shipDate: v('dqShipDate'),
+        statusMabang: v('dqStatusMabang'),
+        gdrive: v('dqGdrive'),
+        deliveryBill: v('dqDeliveryBill'),
+        nomorResi: v('dqNomorResi'),
+        buktiPengiriman: v('dqBuktiPengiriman')
+      };
+
+      if (!payload.orderQueueTime || !payload.namaDistributor || !payload.poNumber) {
+        return toast('Order queue time, Nama Distributor, dan PO number wajib diisi', 'error');
+      }
+
+      const btn = document.getElementById('btnSaveDistributorQueue');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false;
+        btn.textContent = '💾 Simpan ke Spreadsheet';
+        if (!res || !res.success) return toast(res ? res.message : 'Gagal menyimpan antrian distributor', 'error');
+        toast(res.message || 'Antrian distributor berhasil disimpan', 'success');
+        resetDistributorQueueForm();
+        loadDistributorQueue();
+      }).withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = '💾 Simpan ke Spreadsheet';
+        toast('Gagal menyimpan antrian distributor: ' + err, 'error');
+      }).saveDistributorQueue(JSON.stringify(payload), currentUser ? currentUser.username : '');
     }
 
     function downloadOrderTemplate() {
@@ -17399,6 +18646,13 @@
     window.openModal = function (id) {
       originalOpenModal(id);
       if (id === 'modalLaporanKerja') updateLapFields();
+      if (id === 'modalExportDQ') {
+        const now = new Date();
+        const monthSel = document.getElementById('dqExportMonth');
+        const yearInp  = document.getElementById('dqExportYear');
+        if (monthSel) monthSel.value = now.getMonth() + 1;
+        if (yearInp)  yearInp.value  = now.getFullYear();
+      }
     };
 
     window.closeModal = function (id) {
