@@ -3823,6 +3823,7 @@
             </div>
 
             <div class="nav-section" id="navAdmin" style="display:none" data-i18n="admin">Admin</div>
+            <div class="nav-item" id="navReturnDistributor" onclick="showPage('returnDistributor')" style="display:none"><span class="icon">🔄</span> Return Distributor</div>
             <div class="nav-item" id="navUsers" onclick="showPage('users')" style="display:none"
               data-i18n="manajemenUser"><span class="icon">⚙️</span> Manajemen User</div>
           </nav>
@@ -5259,6 +5260,112 @@
             </div>
           </div>
 
+          <!-- ===== PAGE: RETURN DISTRIBUTOR ===== -->
+            <div class="page" id="page-returnDistributor">
+            <!-- Stats Row -->
+            <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px;">
+              <div class="stat-card teal">
+                <div class="stat-label">Total Return</div>
+                <div class="stat-value teal" id="rdStatTotal">0</div>
+                <div class="stat-icon">🔄</div>
+              </div>
+              <div class="stat-card red">
+                <div class="stat-label">Return Penarikan</div>
+                <div class="stat-value red" id="rdStatPenarikan">0</div>
+                <div class="stat-icon">⚠️</div>
+              </div>
+              <div class="stat-card amber">
+                <div class="stat-label">Return Buy Back</div>
+                <div class="stat-value amber" id="rdStatBuyBack">0</div>
+                <div class="stat-icon">💰</div>
+              </div>
+              <div class="stat-card green">
+                <div class="stat-label">Return Normal / Exp</div>
+                <div class="stat-value green" id="rdStatNormal">0</div>
+                <div class="stat-icon">✅</div>
+              </div>
+              <div class="stat-card" style="border-color:rgba(139,92,246,0.3);">
+                <div class="stat-label">Return BPOM</div>
+                <div class="stat-value" style="color:#8b5cf6;" id="rdStatBPOM">0</div>
+                <div class="stat-icon">🏛️</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+                <h4>🔄 Return Distributor</h4>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <select class="form-select" id="rdFilterJenis" style="width:160px;padding:8px 12px;font-size:13px;" onchange="filterReturnDistributor()">
+                    <option value="">Semua Jenis</option>
+                    <option value="Normal">✅ Normal</option>
+                    <option value="Exp Date">📅 Exp Date</option>
+                    <option value="Penarikan">⚠️ Penarikan</option>
+                    <option value="Buy Back">💰 Buy Back</option>
+                    <option value="Sample">🧪 Sample</option>
+                    <option value="BPOM">🏛️ BPOM</option>
+                  </select>
+                  <select class="form-select" id="rdFilterKategori" style="width:175px;padding:8px 12px;font-size:13px;" onchange="filterReturnDistributor()">
+                    <option value="">Semua Kategori SKU</option>
+                    <option value="Return Penarikan">⚠️ Return Penarikan</option>
+                    <option value="Return Buy Back">💰 Return Buy Back</option>
+                    <option value="Return Normal">✅ Return Normal</option>
+                    <option value="Return Exp Date">📅 Return Exp Date</option>
+                    <option value="Return BPOM">🏛️ Return BPOM</option>
+                  </select>
+                  <input type="text" class="form-control" id="rdSearch" placeholder="🔍 Cari Distributor / SKU / Batch..." style="width:230px;padding:8px 12px;font-size:13px;" oninput="filterReturnDistributor()">
+                  <!-- Toggle view -->
+                  <div style="display:flex;gap:4px;background:var(--input-bg);border:1px solid var(--border-color);border-radius:8px;padding:3px;">
+                    <button id="rdViewCard" class="btn btn-sm" style="padding:5px 10px;background:var(--accent);color:#000;font-weight:700;border-radius:6px;" onclick="setRDView('card')" title="Tampilan Card">⊞</button>
+                    <button id="rdViewTable" class="btn btn-sm" style="padding:5px 10px;background:transparent;color:var(--text-muted);border-radius:6px;" onclick="setRDView('table')" title="Tampilan Tabel">☰</button>
+                  </div>
+                  <!-- Export Dropdown -->
+                  <div style="position:relative;" id="rdExportWrap">
+                    <button class="btn btn-ghost btn-sm" onclick="toggleRDExportMenu()" style="display:flex;align-items:center;gap:5px;">
+                      📤 Export <span style="font-size:10px;">▾</span>
+                    </button>
+                    <div id="rdExportMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg-panel);border:1px solid var(--border-light);border-radius:10px;width:210px;box-shadow:0 8px 24px rgba(0,0,0,0.25);z-index:200;overflow:hidden;">
+                      <div style="padding:8px 14px 6px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Pilih Export</div>
+                      <div class="lang-item" onclick="openRDExportModal('selected')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;">
+                        <span>☑️</span><span>Export Return Terpilih</span>
+                      </div>
+                      <div class="lang-item" onclick="openRDExportModal('all')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;">
+                        <span>📦</span><span>Export Semua Return</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn btn-sm" style="background:rgba(14,165,233,0.12);color:var(--teal);border:1px solid rgba(14,165,233,0.25);" onclick="openReturnDistributorSettings()">⚙️ Setting</button>
+                  <button class="btn btn-primary btn-sm" onclick="openReturnDistributorModal()">+ Tambah Return</button>
+                </div>
+              </div>
+
+              <!-- Card View -->
+              <div id="rdCardView" style="padding:16px;">
+                <div id="rdCardContainer"></div>
+              </div>
+
+              <!-- Table View -->
+              <div id="rdTableView" style="display:none;">
+                <div class="table-wrap">
+                  <table class="table table-hover table-striped align-middle mt-2">
+                    <thead>
+                      <tr>
+                        <th>Distributor</th>
+                        <th>No. Return / Tanggal</th>
+                        <th style="text-align:center;">Jenis Return</th>
+                        <th style="text-align:center;">Total SKU</th>
+                        <th style="text-align:center;">Total Qty</th>
+                        <th>Keterangan</th>
+                        <th style="text-align:right;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableReturnDistributor"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- ===== END PAGE: RETURN DISTRIBUTOR ===== -->
+
           <div class="page" id="page-stock">
             <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
               <div class="stat-card teal">
@@ -5552,6 +5659,7 @@
                 <p style="color:var(--text-muted); font-size:14px;">Sinkron langsung ke spreadsheet distributor dan memantau keterlambatan shipment H+1.</p>
               </div>
               <div id="dqHeaderActions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-success btn-sm" onclick="openPrintSuratJalanModal()">🖨️ Print Surat Jalan</button>
                 <button class="btn btn-success btn-sm" onclick="openModal('modalExportDQ')">📥 Export Excel</button>
                 <button class="btn btn-ghost" onclick="toggleFormCard()">📝 Tampilkan Form</button>
                 <button class="btn btn-ghost" onclick="resetDistributorQueueForm()">Reset Form</button>
@@ -6260,6 +6368,63 @@
               <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeModal('modalExportDQ')">Batal</button>
                 <button class="btn btn-success" id="btnDoExportDQ" onclick="doExportDistributorQueue()">📥 Export Excel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===================== MODAL PRINT SURAT JALAN ===================== -->
+          <div class="modal-overlay" id="modalPrintSuratJalan">
+            <div class="custom-modal" style="width:min(900px,95vw); max-height:90vh; overflow-y:auto;">
+              <button class="modal-close" onclick="closeModal('modalPrintSuratJalan')">✕</button>
+              <h3>🖨️ Print Surat Jalan</h3>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Pilih PO yang statusnya <strong style="color:var(--teal);">Ready Pickup</strong> untuk dicetak dalam 1 Surat Jalan.</p>
+
+              <!-- Tanggal Surat Jalan -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label">Tanggal Surat Jalan <span style="color:var(--red)">*</span></label>
+                  <input type="date" class="form-control" id="sjTanggal">
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">Keterangan Tambahan</label>
+                  <input type="text" class="form-control" id="sjKeterangan" placeholder="Opsional">
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div style="background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.2); border-radius:8px; padding:12px; margin-bottom:16px; font-size:12px;">
+                <strong style="color:var(--teal);">ℹ️ Info:</strong> Centang PO yang ingin dimasukkan ke Surat Jalan. Total Koli dan Total PO akan dihitung otomatis.
+              </div>
+
+              <!-- Daftar PO Ready Pickup -->
+              <div style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                  <h4 style="font-size:14px; margin:0;">Pilih PO (Ready Pickup)</h4>
+                  <div style="display:flex; gap:8px;">
+                    <button class="btn btn-ghost btn-sm" onclick="sjSelectAll()" style="padding:4px 10px; font-size:11px;">☑️ Pilih Semua</button>
+                    <button class="btn btn-ghost btn-sm" onclick="sjDeselectAll()" style="padding:4px 10px; font-size:11px;">⬜ Batal Semua</button>
+                  </div>
+                </div>
+                <div id="sjPOList" style="max-height:400px; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+                  <!-- Will be populated by JavaScript -->
+                </div>
+              </div>
+
+              <!-- Summary -->
+              <div style="background:var(--bg-panel-light); border:1px solid var(--border-color); border-radius:8px; padding:14px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Total yang Dipilih:</div>
+                    <div style="font-size:20px; font-weight:800; color:var(--teal);">
+                      <span id="sjTotalPO">0</span> PO · <span id="sjTotalKoli">0</span> Koli
+                    </div>
+                  </div>
+                  <button class="btn btn-primary" onclick="printSuratJalan()" id="btnPrintSJ">🖨️ Print Surat Jalan</button>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalPrintSuratJalan')">Tutup</button>
               </div>
             </div>
           </div>
@@ -7799,6 +7964,7 @@
                   <label class="form-label"><input type="checkbox" value="inbound"> Inbound</label>
                   <label class="form-label"><input type="checkbox" value="outbound"> Outbound</label>
                   <label class="form-label"><input type="checkbox" value="retur"> Retur</label>
+                  <label class="form-label"><input type="checkbox" value="returnDistributor"> 🔄 Return Distributor</label>
                   <label class="form-label"><input type="checkbox" value="order"> Orderan</label>
                   <label class="form-label"><input type="checkbox" value="lihatAntrianDistributor"> Lihat Antrian Distributor</label>
                   <label class="form-label"><input type="checkbox" value="editAntrianDistributor"> Tambah/Edit Antrian Distributor</label>
@@ -10751,6 +10917,7 @@
             let isVisible = allowedMenus.includes(pName);
             if (pName === 'antrianDistributor') isVisible = canViewDistributorQueue();
             if (pName === 'users' && canManageUsers) isVisible = true;
+            if (pName === 'returnDistributor' && (role === 'admin' || allowedMenus.includes('returnDistributor'))) isVisible = true;
             if (pName === 'approval') isVisible = isPimpinan; // Strictly role-based
 
             if (isVisible) {
@@ -10764,13 +10931,18 @@
         document.querySelectorAll('.nav-section').forEach(sec => {
           let nextEl = sec.nextElementSibling; let hasVis = false;
           while (nextEl && !nextEl.classList.contains('nav-section')) { if (nextEl.style.display !== 'none') { hasVis = true; break; } nextEl = nextEl.nextElementSibling; }
-          if (sec.id === 'navAdmin') { if (canManageUsers) sec.style.display = 'block'; else sec.style.display = 'none'; }
+          if (sec.id === 'navAdmin') { if (canManageUsers || role === 'admin' || allowedMenus.includes('returnDistributor')) sec.style.display = 'block'; else sec.style.display = 'none'; }
           else if (!hasVis) sec.style.display = 'none';
           else sec.style.display = 'block';
         });
         if (canManageUsers) {
           document.getElementById('navAdmin').style.display = 'block';
           document.getElementById('navUsers').style.display = 'flex';
+        }
+        const canViewReturnDist = role === 'admin' || allowedMenus.includes('returnDistributor');
+        if (canViewReturnDist) {
+          document.getElementById('navAdmin').style.display = 'block';
+          document.getElementById('navReturnDistributor').style.display = 'flex';
         }
         if (isPimpinan) {
           document.getElementById('navCentralApproval').style.display = 'flex';
@@ -10779,6 +10951,7 @@
       } else {
         document.getElementById('navAdmin').style.display = 'block';
         document.getElementById('navUsers').style.display = 'flex';
+        document.getElementById('navReturnDistributor').style.display = 'flex';
         document.getElementById('navCentralApproval').style.display = 'flex';
         showPage('dashboard');
       }
@@ -10918,6 +11091,7 @@
       handover: loadStockControl, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
       organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, antrianDistributor: loadDistributorQueue, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
+      returnDistributor: loadReturnDistributor,
       approval: loadCentralizedApprovals, approvalCenter: renderApprovalCenter
     };
 
@@ -15198,6 +15372,1442 @@
     }
     function submitRetur() { const t = v('retTanggal'), a = v('retAlasan'), s = v('retSumber'), k = v('retKet'), items = collectItems('retItems', 'retur'); if (!t || !s || !items) return toast('Lengkapi data', 'error'); const btn = document.querySelector('#modalRetur .btn-teal'); btn.disabled = true; google.script.run.withSuccessHandler(res => { btn.disabled = false; if (res.success) { toast('Berhasil'); closeModal('modalRetur'); loadRetur(); loadStock(); document.getElementById('retItems').innerHTML = ''; resetForm(['retSumber', 'retKet']); } else toast(res.message, 'error') }).addRetur(t, s, a, k, JSON.stringify(items), currentUser.username); }
 
+    // ===== RETURN DISTRIBUTOR =====
+    let returnDistributorData = [];
+    let rdSettingsPenarikan = [];
+    let rdSettingsBuyback = [];
+    let rdSettingsBPOM = [];
+    let rdItemRows = []; // array of {sku, batch, qty, expDate, kategoriReturn, keterangan}
+    let rdDetailCache = {}; // { returnId: [detail items] }
+
+    // ---- Helpers ----
+    function rdDetectKategori(sku, batch) {
+      // Pastikan sku dan batch adalah string
+      const s = String(sku||'').trim().toLowerCase(), b = String(batch||'').trim().toLowerCase();
+      if (!s) return 'Return Normal';
+      const matchItem = (x) => {
+        // Pastikan x.sku dan x.batch adalah string
+        const xs = String(x.sku||'').toLowerCase(), xb = String(x.batch||'').toLowerCase();
+        return xs === s && (xb === 'all' || xb === b);
+      };
+      if (rdSettingsPenarikan.some(matchItem)) return 'Return Penarikan';
+      if (rdSettingsBuyback.some(matchItem))   return 'Return Buy Back';
+      if (rdSettingsBPOM.some(matchItem))      return 'Return BPOM';
+      return 'Return Normal';
+    }
+
+    // Format Rupiah untuk Return Distributor
+    function formatRupiahInput(el) {
+      let raw = el.value.replace(/[^\d]/g, '');
+      if (!raw) { el.value = ''; return; }
+      el.value = parseInt(raw, 10).toLocaleString('id-ID');
+    }
+
+    function getRupiahValue(id) {
+      const raw = v(id);
+      return parseFloat(String(raw).replace(/[^\d]/g, '')) || 0;
+    }
+
+    function formatRupiah(n) {
+      return 'Rp ' + (parseFloat(n) || 0).toLocaleString('id-ID');
+    }
+
+    function rdKatBadgeInline(kat) {
+      const map = {
+        'Return Penarikan': 'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);',
+        'Return Buy Back':  'background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.4);',
+        'Return Normal':    'background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);',
+        'Return Exp Date':  'background:rgba(14,165,233,0.12);color:#0ea5e9;border:1px solid rgba(14,165,233,0.3);',
+        'Return BPOM':      'background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);'
+      };
+      const style = map[kat] || 'background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);';
+      const icons = {'Return Penarikan':'⚠️','Return Buy Back':'💰','Return Normal':'✅','Return Exp Date':'📅','Return BPOM':'🏛️'};
+      return `<span style="${style}padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">${icons[kat]||''} ${kat||'-'}</span>`;
+    }
+
+    // ---- Render item rows in modal ----
+    function renderRDItemRows() {
+      const tbody = document.getElementById('rdItemsBody');
+      if (!tbody) return; // modal belum terbuka
+      if (!rdItemRows.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:28px;font-size:13px;">
+          Belum ada item. Klik <strong>+ Tambah Baris</strong> atau <strong>Impor Excel</strong>.
+        </td></tr>`;
+        const countEl = document.getElementById('rdItemCount');
+        if (countEl) countEl.textContent = '0';
+        return;
+      }
+      const countEl = document.getElementById('rdItemCount');
+      if (countEl) countEl.textContent = rdItemRows.length;
+
+      tbody.innerHTML = rdItemRows.map((row, idx) => {
+        const katOpts = ['Return Normal','Return Exp Date','Return Penarikan','Return Buy Back','Return BPOM']
+          .map(k => `<option value="${k}" ${row.kategoriReturn===k?'selected':''}>${k}</option>`).join('');
+        const isFlagged = (row.kategoriReturn==='Return Penarikan'||row.kategoriReturn==='Return Buy Back'||row.kategoriReturn==='Return BPOM');
+        const flagBorder = isFlagged ? 'border-color:rgba(245,158,11,0.6);' : '';
+        const flagBg    = isFlagged ? 'background:rgba(245,158,11,0.05);' : '';
+        const rowBg     = isFlagged ? 'background:rgba(245,158,11,0.02);' : '';
+        // Lebar input otomatis mengikuti konten (min 8ch)
+        const skuW  = Math.max(8,  (row.sku||'Kode SKU').length  + 2) + 'ch';
+        const batW  = Math.max(8,  (row.batch||'No. Batch').length + 2) + 'ch';
+        const qtyW  = Math.max(4,  String(row.qty||'0').length   + 2) + 'ch';
+        const ketW  = Math.max(10, (row.keterangan||'Opsional').length + 2) + 'ch';
+        return `<tr id="rdRow_${idx}" style="border-bottom:1px solid var(--border-color);${rowBg}">
+          <td style="padding:8px 8px;color:var(--text-muted);font-size:12px;text-align:center;white-space:nowrap;">${idx+1}</td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <input type="text" class="form-control form-control-sm"
+              id="rdSku_${idx}"
+              value="${(row.sku||'').replace(/"/g,'&quot;')}"
+              placeholder="Kode SKU"
+              style="${flagBorder}${flagBg}width:${skuW};min-width:100px;transition:width 0.1s;"
+              oninput="rdItemRows[${idx}].sku=this.value; this.style.width=Math.max(8,this.value.length+2)+'ch'"
+              onblur="rdRowFieldChange(${idx},'sku',this.value)">
+          </td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <input type="text" class="form-control form-control-sm"
+              id="rdBatch_${idx}"
+              value="${(row.batch||'').replace(/"/g,'&quot;')}"
+              placeholder="No. Batch"
+              style="${flagBorder}${flagBg}width:${batW};min-width:90px;transition:width 0.1s;"
+              oninput="rdItemRows[${idx}].batch=this.value; this.style.width=Math.max(8,this.value.length+2)+'ch'"
+              onblur="rdRowFieldChange(${idx},'batch',this.value)">
+          </td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <input type="number" class="form-control form-control-sm"
+              id="rdQtyRow_${idx}"
+              value="${row.qty||''}"
+              placeholder="0" min="1"
+              style="text-align:center;width:${qtyW};min-width:60px;transition:width 0.1s;"
+              oninput="rdItemRows[${idx}].qty=this.value; this.style.width=Math.max(4,this.value.length+2)+'ch'">
+          </td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <input type="date" class="form-control form-control-sm"
+              id="rdExp_${idx}"
+              value="${row.expDate||''}"
+              style="min-width:138px;"
+              oninput="rdItemRows[${idx}].expDate=this.value">
+          </td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <select class="form-select form-select-sm"
+              id="rdKat_${idx}"
+              style="min-width:158px;"
+              onchange="rdRowFieldChange(${idx},'kategoriReturn',this.value)">
+              ${katOpts}
+            </select>
+          </td>
+          <td style="padding:5px 5px;white-space:nowrap;">
+            <input type="text" class="form-control form-control-sm"
+              id="rdKet_${idx}"
+              value="${(row.keterangan||'').replace(/"/g,'&quot;')}"
+              placeholder="Opsional"
+              style="width:${ketW};min-width:100px;transition:width 0.1s;"
+              oninput="rdItemRows[${idx}].keterangan=this.value; this.style.width=Math.max(10,this.value.length+2)+'ch'">
+          </td>
+          <td style="padding:5px 5px;text-align:center;white-space:nowrap;">
+            <button class="btn btn-danger btn-sm" style="padding:3px 8px;" onclick="removeRDItemRow(${idx})">🗑️</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Dipanggil saat onblur — untuk auto-detect kategori setelah selesai ketik
+    function rdRowFieldChange(idx, field, val) {
+      if (!rdItemRows[idx]) return;
+      rdItemRows[idx][field] = val;
+      if (field === 'sku' || field === 'batch') {
+        const detected = rdDetectKategori(rdItemRows[idx].sku, rdItemRows[idx].batch);
+        if (detected !== rdItemRows[idx].kategoriReturn) {
+          rdItemRows[idx].kategoriReturn = detected;
+          const sel = document.getElementById(`rdKat_${idx}`);
+          if (sel) sel.value = detected;
+          const isFlagged = (detected==='Return Penarikan'||detected==='Return Buy Back'||detected==='Return BPOM');
+          const tr = document.getElementById(`rdRow_${idx}`);
+          if (tr) tr.style.background = isFlagged ? 'rgba(245,158,11,0.02)' : '';
+          const skuEl = document.getElementById(`rdSku_${idx}`);
+          const batEl = document.getElementById(`rdBatch_${idx}`);
+          const border = isFlagged ? 'rgba(245,158,11,0.6)' : '';
+          const bg     = isFlagged ? 'rgba(245,158,11,0.05)' : '';
+          if (skuEl) { skuEl.style.borderColor = border; skuEl.style.background = bg; }
+          if (batEl) { batEl.style.borderColor = border; batEl.style.background = bg; }
+        }
+      }
+    }
+
+    function addRDItemRow(prefill) {
+      rdItemRows.push({
+        sku:           prefill ? (prefill.sku||'')            : '',
+        batch:         prefill ? (prefill.batch||'')          : '',
+        qty:           prefill ? (prefill.qty||'')            : '',
+        expDate:       prefill ? (prefill.expDate||'')        : '',
+        kategoriReturn:prefill ? (prefill.kategoriReturn||'Return Normal') : 'Return Normal',
+        keterangan:    prefill ? (prefill.keterangan||'')     : ''
+      });
+      renderRDItemRows();
+      // Fokus ke input SKU baris terakhir (pakai id yang benar)
+      setTimeout(() => {
+        const lastIdx = rdItemRows.length - 1;
+        const el = document.getElementById(`rdSku_${lastIdx}`);
+        if (el) { el.focus(); el.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+      }, 60);
+    }
+
+    function removeRDItemRow(idx) {
+      rdItemRows.splice(idx, 1);
+      renderRDItemRows();
+    }
+
+    // ---- Download Template Excel ----
+    function downloadRDTemplate() {
+      const headers = ['Tanggal (YYYY-MM-DD)', 'Nama Distributor', 'SKU', 'Batch', 'Qty', 'Exp Date (YYYY-MM-DD)', 'Kategori Return', 'Keterangan'];
+      const sample = [
+        ['2025-01-15', 'PT Distributor Maju', 'SKU-001', 'BATCH-A1', 10, '2025-12-31', 'Return Normal',   'Contoh keterangan'],
+        ['2025-01-15', 'PT Distributor Maju', 'SKU-002', 'BATCH-B2', 5,  '2025-06-30', 'Return Exp Date', ''],
+        ['2025-01-15', 'PT Distributor Maju', 'SKU-003', 'BATCH-C3', 3,  '',           'Return Penarikan', 'Produk ditarik'],
+        ['2025-01-15', 'PT Distributor Maju', 'SKU-004', 'BATCH-D4', 8,  '',           'Return Buy Back',  'Buy back program'],
+        ['2025-01-15', 'PT Distributor Maju', 'SKU-005', 'BATCH-E5', 2,  '',           'Return BPOM',      'Penarikan BPOM'],
+      ];
+      const note = [['CATATAN: Kolom Kategori Return diisi salah satu: Return Normal / Return Exp Date / Return Penarikan / Return Buy Back / Return BPOM']];
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...sample, [], ...note]);
+      ws['!cols'] = [22,22,14,14,8,20,18,24].map(w => ({wch:w}));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Template Return Distributor');
+      XLSX.writeFile(wb, 'Template_ReturnDistributor.xlsx');
+    }
+
+    // ---- Import Excel ----
+    function handleImportRDExcel(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+          if (rows.length < 2) return toast('File kosong atau tidak ada data', 'error');
+
+          const headerRow = rows[0].map(h => String(h||'').toLowerCase().trim());
+          const colIdx = {
+            tanggal:     headerRow.findIndex(h => h.includes('tanggal')),
+            distributor: headerRow.findIndex(h => h.includes('distributor') || h.includes('nama')),
+            sku:         headerRow.findIndex(h => h === 'sku' || h.includes('sku')),
+            batch:       headerRow.findIndex(h => h.includes('batch')),
+            qty:         headerRow.findIndex(h => h === 'qty' || h.includes('qty') || h.includes('jumlah')),
+            expDate:     headerRow.findIndex(h => h.includes('exp')),
+            kategori:    headerRow.findIndex(h => h.includes('kategori')),
+            keterangan:  headerRow.findIndex(h => h.includes('keterangan') || h.includes('catatan'))
+          };
+
+          let imported = 0, skipped = 0;
+          let firstTanggal = '', firstDistributor = '';
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.every(c => c === '')) continue;
+
+            const tanggal    = colIdx.tanggal >= 0     ? formatExcelDate(row[colIdx.tanggal]) : '';
+            const distributor= colIdx.distributor >= 0 ? String(row[colIdx.distributor]||'').trim() : '';
+            const sku        = colIdx.sku >= 0         ? String(row[colIdx.sku]||'').trim() : '';
+            const batch      = colIdx.batch >= 0       ? String(row[colIdx.batch]||'').trim() : '';
+            const qty        = colIdx.qty >= 0         ? String(row[colIdx.qty]||'').trim() : '';
+            const expDate    = colIdx.expDate >= 0     ? formatExcelDate(row[colIdx.expDate]) : '';
+            const kategoriRaw= colIdx.kategori >= 0    ? String(row[colIdx.kategori]||'').trim() : '';
+            const keterangan = colIdx.keterangan >= 0  ? String(row[colIdx.keterangan]||'').trim() : '';
+
+            if (!sku || !batch) { skipped++; continue; }
+
+            if (!firstTanggal && tanggal) firstTanggal = tanggal;
+            if (!firstDistributor && distributor) firstDistributor = distributor;
+
+            const validKat = ['Return Normal','Return Exp Date','Return Penarikan','Return Buy Back','Return BPOM'];
+            // Pastikan kategoriRaw adalah string sebelum toLowerCase
+            const kategori = validKat.find(k => k.toLowerCase() === String(kategoriRaw).toLowerCase()) || rdDetectKategori(sku, batch);
+
+            rdItemRows.push({ sku, batch, qty, expDate, kategoriReturn: kategori, keterangan });
+            imported++;
+          }
+
+          if (firstTanggal && !v('rdTanggal')) setVal('rdTanggal', firstTanggal);
+          if (firstDistributor && !v('rdNamaDistributor')) setVal('rdNamaDistributor', firstDistributor);
+
+          renderRDItemRows();
+          toast(`✅ ${imported} baris berhasil diimpor${skipped ? `, ${skipped} baris dilewati (SKU/Batch kosong)` : ''}`, 'success');
+        } catch(err) {
+          toast('Gagal membaca file: ' + err.message, 'error');
+        }
+        input.value = '';
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    function formatExcelDate(val) {
+      if (!val) return '';
+      if (val instanceof Date) {
+        const y = val.getFullYear(), m = String(val.getMonth()+1).padStart(2,'0'), d = String(val.getDate()).padStart(2,'0');
+        return `${y}-${m}-${d}`;
+      }
+      const s = String(val).trim();
+      // Format DD/MM/YYYY
+      const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+      // Format YYYY-MM-DD sudah benar
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      return '';
+    }
+
+    function loadReturnDistributor() {
+      // Load settings + PIC Sales bersamaan
+      google.script.run.withSuccessHandler(sRes => {
+        if (sRes && sRes.success) {
+          rdSettingsPenarikan = sRes.data.penarikan || [];
+          rdSettingsBuyback   = sRes.data.buyback   || [];
+          rdSettingsBPOM      = sRes.data.bpom       || [];
+        }
+      }).withFailureHandler(err => {
+        console.error('Error loading Return Distributor Settings:', err);
+        toast('Gagal memuat pengaturan Return Distributor: ' + err, 'error');
+      }).getReturnDistributorSettings();
+
+      google.script.run.withSuccessHandler(pRes => {
+        if (pRes && pRes.success) {
+          rdPICSalesList = pRes.data || [];
+          rdRefreshPICSalesDropdown();
+        }
+      }).withFailureHandler(err => {
+        console.error('Error loading PIC Sales:', err);
+        toast('Gagal memuat PIC Sales: ' + err, 'error');
+      }).getReturnDistributorPICSales();
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res || !res.success) { 
+          console.error('Error in getReturnDistributor response:', res);
+          toast(res ? res.message : 'Gagal memuat data Return Distributor', 'error'); 
+          return; 
+        }
+        console.log('✅ Return Distributor data loaded:', res.data.length, 'items');
+        if (res.data.length > 0) {
+          console.log('Sample data:', res.data[0]);
+        }
+        returnDistributorData = res.data || [];
+        rdDetailCache = {};
+        filterReturnDistributor();
+        updateRDStats();
+      }).withFailureHandler(err => {
+        console.error('Error calling getReturnDistributor:', err);
+        toast('Gagal memuat data Return Distributor: ' + err, 'error');
+        returnDistributorData = [];
+        filterReturnDistributor();
+        updateRDStats();
+      }).getReturnDistributor();
+    }
+
+    let rdPICSalesList = [];
+
+    // ---- PIC Sales helpers ----
+    function rdRefreshPICSalesDropdown() {
+      const sel = document.getElementById('rdPICSalesSelect');
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">-- Pilih PIC Sales --</option>';
+      rdPICSalesList.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+      if (cur) sel.value = cur;
+    }
+
+    function rdOnPICSalesSelect() {
+      const sel = document.getElementById('rdPICSalesSelect');
+      const inp = document.getElementById('rdPICSales');
+      if (sel && inp && sel.value) inp.value = sel.value;
+    }
+
+    // ---- Setting PIC Sales ----
+    function openRDPICSalesSettings() {
+      renderRDPICSalesTable();
+      openModal('modalRDPICSales');
+    }
+
+    function renderRDPICSalesTable() {
+      const tb = document.getElementById('rdPICSalesTable');
+      if (!rdPICSalesList.length) {
+        tb.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada PIC Sales</td></tr>';
+        return;
+      }
+      tb.innerHTML = rdPICSalesList.map((name, idx) => `
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:8px 12px;color:var(--text-muted);font-size:12px;">${idx+1}</td>
+          <td style="padding:8px 12px;font-weight:600;">${name}</td>
+          <td style="padding:8px 12px;text-align:right;">
+            <button class="btn btn-danger btn-sm" style="padding:2px 8px;" onclick="removeRDPICSales(${idx})">🗑️</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function addRDPICSales() {
+      const inp = document.getElementById('rdNewPICSales');
+      const name = (inp.value || '').trim();
+      if (!name) return toast('Isi nama PIC Sales', 'error');
+      if (rdPICSalesList.some(x => x.toLowerCase() === name.toLowerCase()))
+        return toast('Nama sudah ada di daftar', 'error');
+      rdPICSalesList.push(name);
+      renderRDPICSalesTable();
+      inp.value = '';
+      inp.focus();
+    }
+
+    function removeRDPICSales(idx) {
+      rdPICSalesList.splice(idx, 1);
+      renderRDPICSalesTable();
+    }
+
+    function saveRDPICSales() {
+      const btn = document.getElementById('btnSaveRDPICSales');
+      btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Simpan';
+        if (res.success) {
+          rdRefreshPICSalesDropdown();
+          toast('Daftar PIC Sales berhasil disimpan');
+          closeModal('modalRDPICSales');
+        } else toast(res.message, 'error');
+      }).saveReturnDistributorPICSales(rdPICSalesList);
+    }
+
+    let rdCurrentView = 'card'; // 'card' | 'table'
+
+    function setRDView(view) {
+      rdCurrentView = view;
+      document.getElementById('rdCardView').style.display  = view === 'card'  ? 'block' : 'none';
+      document.getElementById('rdTableView').style.display = view === 'table' ? 'block' : 'none';
+      const btnCard  = document.getElementById('rdViewCard');
+      const btnTable = document.getElementById('rdViewTable');
+      btnCard.style.cssText  = view === 'card'
+        ? 'padding:5px 10px;background:var(--accent);color:#000;font-weight:700;border-radius:6px;'
+        : 'padding:5px 10px;background:transparent;color:var(--text-muted);border-radius:6px;';
+      btnTable.style.cssText = view === 'table'
+        ? 'padding:5px 10px;background:var(--accent);color:#000;font-weight:700;border-radius:6px;'
+        : 'padding:5px 10px;background:transparent;color:var(--text-muted);border-radius:6px;';
+      filterReturnDistributor();
+    }
+
+    function updateRDStats() {
+      const d = returnDistributorData;
+      document.getElementById('rdStatTotal').textContent = d.length;
+      // Hitung dari jenisReturn header (lebih akurat & cepat)
+      let cP=0, cB=0, cN=0, cBPOM=0;
+      d.forEach(h => {
+        // Pastikan jenisReturn adalah string sebelum toLowerCase
+        const j = String(h.jenisReturn || '').toLowerCase();
+        if (j === 'penarikan') cP++;
+        else if (j === 'buy back') cB++;
+        else if (j === 'bpom') cBPOM++;
+        else cN++; // Normal, Exp Date, Sample, kosong
+      });
+      document.getElementById('rdStatPenarikan').textContent = cP;
+      document.getElementById('rdStatBuyBack').textContent   = cB;
+      document.getElementById('rdStatNormal').textContent    = cN;
+      document.getElementById('rdStatBPOM').textContent      = cBPOM;
+    }
+
+    function filterReturnDistributor() {
+      const q    = (v('rdSearch') || '').toLowerCase().trim();
+      const kat  = v('rdFilterKategori') || '';
+      const jenis= v('rdFilterJenis') || '';
+      const filtered = returnDistributorData.filter(d => {
+        // Pastikan semua field adalah string
+        const namaDistributor = String(d.namaDistributor || '');
+        const noReturn = String(d.noReturn || '');
+        
+        const matchQ = !q || namaDistributor.toLowerCase().includes(q) ||
+          noReturn.toLowerCase().includes(q);
+        const matchJenis = !jenis || (d.jenisReturn||'') === jenis;
+        // Filter kategori SKU: cek di detail cache
+        let matchKat = !kat;
+        if (kat && rdDetailCache[d.id]) {
+          matchKat = rdDetailCache[d.id].some(x => x.kategoriReturn === kat);
+        } else if (kat) matchKat = true;
+        return matchQ && matchJenis && matchKat;
+      });
+      if (rdCurrentView === 'card') renderRDCardView(filtered);
+      else renderRDTableView(filtered);
+    }
+
+    // ---- Inisial avatar distributor ----
+    function rdDistributorAvatar(nama) {
+      // Pastikan nama adalah string
+      const namaStr = String(nama || 'D').trim();
+      const words = namaStr.split(/\s+/);
+      const initials = words.length >= 2
+        ? (words[0][0] + words[1][0]).toUpperCase()
+        : namaStr.substring(0,2).toUpperCase();
+      // Warna konsisten berdasarkan nama
+      const colors = ['#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+      let hash = 0;
+      for (let i = 0; i < namaStr.length; i++) hash = namaStr.charCodeAt(i) + ((hash<<5)-hash);
+      const color = colors[Math.abs(hash) % colors.length];
+      return { initials, color };
+    }
+
+    // ---- Card View: 1 card per transaksi ----
+    function renderRDCardView(filtered) {
+      const container = document.getElementById('rdCardContainer');
+      if (!filtered.length) {
+        container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);">
+          <div style="font-size:40px;margin-bottom:12px;">📭</div>
+          <div style="font-size:14px;">Tidak ada data return</div>
+        </div>`;
+        return;
+      }
+      const sorted = [...filtered].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+      container.innerHTML = sorted.map((h, gi) => {
+        // Validasi dan konversi data ke string
+        const namaDistributor = String(h.namaDistributor || 'Unknown');
+        const noReturn = String(h.noReturn || '-');
+        const tanggal = h.tanggal || '';
+        const jenisReturn = String(h.jenisReturn || '');
+        const createdBy = String(h.createdBy || '-');
+        const picSales = h.picSales ? String(h.picSales) : '';
+        const noMabang = h.noMabang ? String(h.noMabang) : '';
+        const noResi = h.noResi ? String(h.noResi) : '';
+        const hargaOngkir = Number(h.hargaOngkir) || 0;
+        const totalSKU = h.totalSKU || 0;
+        const totalQty = h.totalQty || 0;
+        const keterangan = h.keterangan ? String(h.keterangan) : '';
+        
+        const av = rdDistributorAvatar(namaDistributor);
+        const det = rdDetailCache[h.id] || [];
+        const cP = det.filter(x=>x.kategoriReturn==='Return Penarikan').length;
+        const cB = det.filter(x=>x.kategoriReturn==='Return Buy Back').length;
+        const cN = det.filter(x=>x.kategoriReturn==='Return Normal').length;
+        const cE = det.filter(x=>x.kategoriReturn==='Return Exp Date').length;
+        const cBPOM = det.filter(x=>x.kategoriReturn==='Return BPOM').length;
+        const hasFlagged = cP > 0 || cB > 0 || cBPOM > 0;
+        const borderColor = cP > 0 ? 'rgba(239,68,68,0.4)' : cBPOM > 0 ? 'rgba(139,92,246,0.4)' : cB > 0 ? 'rgba(245,158,11,0.4)' : 'var(--border-color)';
+        const summaryTags = [
+          cP    ? `<span style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠️ ${cP} Penarikan</span>` : '',
+          cB    ? `<span style="background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">💰 ${cB} Buy Back</span>` : '',
+          cBPOM ? `<span style="background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">🏛️ ${cBPOM} BPOM</span>` : '',
+          cN    ? `<span style="background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✅ ${cN} Normal</span>` : '',
+          cE    ? `<span style="background:rgba(14,165,233,0.12);color:var(--teal);border:1px solid rgba(14,165,233,0.3);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">📅 ${cE} Exp</span>` : ''
+        ].filter(Boolean).join('');
+
+        // Detail rows (jika sudah di-cache)
+        const detailContent = det.length > 0 ? `
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:var(--bg-panel);">
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">SKU</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Batch</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;text-align:center;">Qty</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Exp Date</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Kategori</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>${det.map(item => {
+              const expW = item.expDate && (new Date(item.expDate)-new Date())/86400000<=30 ? 'color:var(--red);font-weight:700;' : '';
+              return `<tr style="border-bottom:1px solid var(--border-color);">
+                <td style="padding:8px 12px;"><code style="background:var(--input-bg);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;">${item.sku||'-'}</code></td>
+                <td style="padding:8px 12px;">${item.batch||'-'}</td>
+                <td style="padding:8px 12px;text-align:center;"><span style="background:var(--bg-panel-light);border:1px solid var(--border-color);padding:2px 10px;border-radius:8px;font-weight:800;">${item.qty||'-'}</span></td>
+                <td style="padding:8px 12px;${expW}">${item.expDate ? formatDate(item.expDate) : '-'}</td>
+                <td style="padding:8px 12px;">${getRDKategoriBadge(item.kategoriReturn)}</td>
+                <td style="padding:8px 12px;color:var(--text-muted);font-size:12px;">${item.keterangan||'-'}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>` : `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">⏳ Klik "Lihat Detail" untuk memuat SKU</div>`;
+
+        return `<div style="border:1px solid ${borderColor};border-radius:12px;margin-bottom:12px;overflow:hidden;" id="rdCard_${gi}">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-panel-light);">
+            <div style="width:44px;height:44px;border-radius:12px;background:${av.color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">${av.initials}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:15px;font-weight:700;color:var(--text-main);">${namaDistributor}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;">
+                <span>🔖 <strong style="color:var(--teal);">${noReturn}</strong></span>
+                <span>📅 ${formatDate(tanggal)}</span>
+                <span>👤 ${createdBy}</span>
+                ${picSales ? `<span>🧑‍💼 <strong>${picSales}</strong></span>` : ''}
+                ${noMabang ? `<span>📋 Mabang: <strong>${noMabang}</strong></span>` : ''}
+                ${noResi ? `<span>📦 Resi: <strong>${noResi}</strong></span>` : ''}
+                ${hargaOngkir > 0 ? `<span>💰 Ongkir: <strong>${formatRupiah(hargaOngkir)}</strong></span>` : ''}
+                <span>📦 <strong>${totalSKU}</strong> SKU</span>
+                <span>🔢 Total Qty: <strong>${totalQty}</strong></span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;">
+              ${jenisReturn ? getRDJenisBadge(jenisReturn) : ''}
+              ${summaryTags}
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="btn btn-sm" style="background:rgba(14,165,233,0.1);color:var(--teal);border:1px solid rgba(14,165,233,0.25);padding:5px 12px;font-size:12px;"
+                onclick="rdToggleDetail('${h.id}',${gi})">📋 Detail</button>
+              <button class="btn btn-ghost btn-sm" style="padding:5px 10px;" onclick="editReturnDistributor('${h.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" style="padding:5px 10px;" onclick="delReturnDistributor('${h.id}')">🗑️</button>
+            </div>
+          </div>
+          <div id="rdCardDetail_${gi}" style="display:none;">${detailContent}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function rdToggleDetail(returnId, gi) {
+      const panel = document.getElementById(`rdCardDetail_${gi}`);
+      if (!panel) return;
+      const isOpen = panel.style.display !== 'none';
+      if (isOpen) { panel.style.display = 'none'; return; }
+      // Jika belum ada cache, load dulu
+      if (!rdDetailCache[returnId]) {
+        panel.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);">⏳ Memuat detail...</div>`;
+        panel.style.display = 'block';
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) {
+            rdDetailCache[returnId] = res.data || [];
+            renderRDDetailPanel(panel, res.data || []);
+          } else {
+            panel.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">Gagal memuat detail</div>`;
+          }
+        }).getReturnDistributorDetail(returnId);
+      } else {
+        renderRDDetailPanel(panel, rdDetailCache[returnId]);
+        panel.style.display = 'block';
+      }
+    }
+
+    function renderRDDetailPanel(panel, det) {
+      if (!det.length) {
+        panel.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);">Tidak ada detail SKU</div>`;
+        return;
+      }
+      panel.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:var(--bg-panel);">
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">#</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">SKU</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Batch</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;text-align:center;">Qty</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Exp Date</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Kategori</th>
+            <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;">Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>${det.map((item, i) => {
+          const expW = item.expDate && (new Date(item.expDate)-new Date())/86400000<=30 ? 'color:var(--red);font-weight:700;' : '';
+          return `<tr style="border-bottom:1px solid var(--border-color);">
+            <td style="padding:8px 12px;color:var(--text-muted);font-size:12px;">${i+1}</td>
+            <td style="padding:8px 12px;"><code style="background:var(--input-bg);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;">${item.sku||'-'}</code></td>
+            <td style="padding:8px 12px;">${item.batch||'-'}</td>
+            <td style="padding:8px 12px;text-align:center;"><span style="background:var(--bg-panel-light);border:1px solid var(--border-color);padding:2px 10px;border-radius:8px;font-weight:800;">${item.qty||'-'}</span></td>
+            <td style="padding:8px 12px;${expW}">${item.expDate ? formatDate(item.expDate) : '-'}</td>
+            <td style="padding:8px 12px;">${getRDKategoriBadge(item.kategoriReturn)}</td>
+            <td style="padding:8px 12px;color:var(--text-muted);font-size:12px;">${item.keterangan||'-'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    }
+
+    // ---- Table View (flat header) ----
+    function renderRDTableView(filtered) {
+      const tb = document.getElementById('tableReturnDistributor');
+      if (!filtered.length) {
+        tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px;">Tidak ada data</td></tr>';
+        return;
+      }
+      const sorted = [...filtered].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+      tb.innerHTML = sorted.map(h => {
+        // Validasi dan konversi data ke string
+        const namaDistributor = String(h.namaDistributor || 'Unknown');
+        const noReturn = String(h.noReturn || '-');
+        const tanggal = h.tanggal || '';
+        const jenisReturn = String(h.jenisReturn || '');
+        const createdBy = String(h.createdBy || '');
+        const picSales = h.picSales ? String(h.picSales) : '';
+        const noMabang = h.noMabang ? String(h.noMabang) : '';
+        const noResi = h.noResi ? String(h.noResi) : '';
+        const hargaOngkir = Number(h.hargaOngkir) || 0;
+        const totalSKU = h.totalSKU || 0;
+        const totalQty = h.totalQty || 0;
+        const keterangan = h.keterangan ? String(h.keterangan) : '';
+        
+        const av      = rdDistributorAvatar(namaDistributor);
+        const noRet   = noReturn.replace(/'/g,"\\'");
+        const namaDist= namaDistributor.replace(/'/g,"\\'");
+        return `<tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:${av.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;">${av.initials}</div>
+              <div>
+                <div style="font-weight:700;font-size:13px;">${namaDistributor}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${createdBy}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <code style="background:var(--input-bg);padding:2px 8px;border-radius:6px;font-size:12px;color:var(--teal);font-weight:700;">${noReturn}</code>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${formatDate(tanggal)}</div>
+            ${picSales ? `<div style="font-size:11px;color:var(--text-muted);">🧑‍💼 ${picSales}</div>` : ''}
+            ${noMabang ? `<div style="font-size:11px;color:var(--text-muted);">📋 ${noMabang}</div>` : ''}
+            ${noResi ? `<div style="font-size:11px;color:var(--text-muted);">📦 ${noResi}</div>` : ''}
+            ${hargaOngkir > 0 ? `<div style="font-size:11px;color:var(--text-muted);">💰 ${formatRupiah(hargaOngkir)}</div>` : ''}
+          </td>
+          <td style="text-align:center;">${getRDJenisBadge(jenisReturn)}</td>
+          <td style="text-align:center;font-weight:700;">${totalSKU}</td>
+          <td style="text-align:center;font-weight:700;">${totalQty}</td>
+          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${keterangan}">${keterangan||'-'}</td>
+          <td style="text-align:right;white-space:nowrap;">
+            <button class="btn btn-sm" style="background:rgba(14,165,233,0.1);color:var(--teal);border:1px solid rgba(14,165,233,0.25);padding:4px 10px;font-size:12px;"
+              onclick="openRDDetailModal('${h.id}','${noRet}','${namaDist}','${tanggal}','${jenisReturn}')">📋 Detail</button>
+            <button class="btn btn-ghost btn-sm" onclick="editReturnDistributor('${h.id}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="delReturnDistributor('${h.id}')">🗑️</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function getRDKategoriBadge(kat) {
+      const map = {
+        'Return Penarikan': '<span style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">⚠️ Penarikan</span>',
+        'Return Buy Back': '<span style="background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">💰 Buy Back</span>',
+        'Return Normal': '<span style="background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">✅ Normal</span>',
+        'Return Exp Date': '<span style="background:rgba(14,165,233,0.12);color:var(--teal);border:1px solid rgba(14,165,233,0.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">📅 Exp Date</span>',
+        'Return BPOM': '<span style="background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">🏛️ BPOM</span>'
+      };
+      return map[kat] || `<span style="background:var(--input-bg);color:var(--text-muted);padding:3px 10px;border-radius:20px;font-size:12px;">${kat || '-'}</span>`;
+    }
+
+    function openReturnDistributorModal() {
+      setVal('rdId', '');
+      setVal('rdEditMode', '0');
+      document.getElementById('rdModalTitle').textContent = '🔄 Tambah Return Distributor';
+      const today = new Date().toISOString().split('T')[0];
+      setVal('rdTanggal', today);
+      setVal('rdNamaDistributor', '');
+      setVal('rdJenisReturn', '');
+      setVal('rdPICSales', '');
+      setVal('rdNoMabang', '');
+      setVal('rdHargaOngkir', '');
+      setVal('rdNoResi', '');
+      setVal('rdKeteranganHeader', '');
+      const sel = document.getElementById('rdPICSalesSelect');
+      if (sel) sel.value = '';
+      document.getElementById('rdJenisReturnError').style.display = 'none';
+      document.getElementById('rdMultiItemWrap').style.display  = 'block';
+      document.getElementById('rdEditSingleWrap').style.display = 'none';
+      document.getElementById('btnSaveRD').textContent = '💾 Simpan Semua';
+      rdItemRows = [];
+      // Buka modal dulu, baru render (agar rdItemsBody sudah ada di DOM)
+      openModal('modalReturnDistributor');
+      setTimeout(() => {
+        renderRDItemRows();
+        addRDItemRow();
+      }, 30);
+    }
+
+    function editReturnDistributor(id) {
+      const h = returnDistributorData.find(x => x.id === id);
+      if (!h) return;
+
+      // Set semua field header
+      setVal('rdId', h.id);
+      setVal('rdEditMode', '1');
+      document.getElementById('rdModalTitle').textContent = `✏️ Edit Return — ${h.noReturn||''}`;
+      setVal('rdTanggal', h.tanggal || '');
+      setVal('rdNamaDistributor', h.namaDistributor || '');
+      setVal('rdJenisReturn', h.jenisReturn || '');
+      setVal('rdPICSales', h.picSales || '');
+      setVal('rdNoMabang', h.noMabang || '');
+      const hargaOngkirEl = document.getElementById('rdHargaOngkir');
+      if (hargaOngkirEl) {
+        hargaOngkirEl.value = h.hargaOngkir > 0 ? Number(h.hargaOngkir).toLocaleString('id-ID') : '';
+      }
+      setVal('rdNoResi', h.noResi || '');
+      setVal('rdKeteranganHeader', h.keterangan || '');
+      const sel = document.getElementById('rdPICSalesSelect');
+      if (sel) sel.value = rdPICSalesList.includes(h.picSales) ? h.picSales : '';
+      document.getElementById('rdJenisReturnError').style.display = 'none';
+      document.getElementById('rdMultiItemWrap').style.display  = 'block';
+      document.getElementById('rdEditSingleWrap').style.display = 'none';
+      document.getElementById('btnSaveRD').textContent = '💾 Simpan';
+      rdItemRows = [];
+
+      // Buka modal
+      openModal('modalReturnDistributor');
+
+      const applyItems = (items) => {
+        if (items && items.length > 0) {
+          rdItemRows = items.map(x => ({
+            sku:            x.sku||'',
+            batch:          x.batch||'',
+            qty:            x.qty||'',
+            expDate:        x.expDate||'',
+            kategoriReturn: x.kategoriReturn||'Return Normal',
+            keterangan:     x.keterangan||''
+          }));
+          renderRDItemRows();
+        } else {
+          // Tidak ada detail — beri 1 baris kosong
+          rdItemRows = [];
+          renderRDItemRows();
+          addRDItemRow();
+        }
+      };
+
+      // Jika sudah ada di cache, langsung tampilkan
+      if (rdDetailCache[id]) {
+        applyItems(rdDetailCache[id]);
+        return;
+      }
+
+      // Fetch dari server
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            rdDetailCache[id] = res.data || [];
+            applyItems(res.data || []);
+          } else {
+            toast('Gagal memuat detail: ' + (res ? res.message : 'Error'), 'error');
+            rdItemRows = [];
+            renderRDItemRows();
+            addRDItemRow();
+          }
+        })
+        .withFailureHandler(() => {
+          toast('Koneksi gagal saat memuat detail SKU', 'error');
+          rdItemRows = [];
+          renderRDItemRows();
+          addRDItemRow();
+        })
+        .getReturnDistributorDetail(id);
+    }
+
+    function openRDDetailModal(returnId, noReturn, namaDistributor, tanggal, jenisReturn) {
+      document.getElementById('rdDetailModalTitle').textContent = `📋 Detail Return — ${noReturn}`;
+      const h = returnDistributorData.find(x => x.id === returnId) || {};
+      document.getElementById('rdDetailModalSub').innerHTML =
+        `${namaDistributor} &nbsp;·&nbsp; ${formatDate(tanggal)}` +
+        (jenisReturn ? ` &nbsp;·&nbsp; ${getRDJenisBadge(jenisReturn)}` : '') +
+        (h.picSales  ? ` &nbsp;·&nbsp; <span style="font-size:12px;">🧑‍💼 <strong>${h.picSales}</strong></span>` : '') +
+        (h.noMabang  ? ` &nbsp;·&nbsp; <span style="font-size:12px;">📋 Mabang: <strong>${h.noMabang}</strong></span>` : '');
+      document.getElementById('rdDetailModalBody').innerHTML    = `<div style="text-align:center;padding:30px;color:var(--text-muted);">⏳ Memuat detail...</div>`;
+      openModal('modalRDDetail');
+      if (rdDetailCache[returnId]) {
+        renderRDDetailPanel(document.getElementById('rdDetailModalBody'), rdDetailCache[returnId]);
+      } else {
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) {
+            rdDetailCache[returnId] = res.data || [];
+            renderRDDetailPanel(document.getElementById('rdDetailModalBody'), res.data || []);
+          } else {
+            document.getElementById('rdDetailModalBody').innerHTML = `<div style="text-align:center;padding:30px;color:var(--red);">Gagal memuat detail</div>`;
+          }
+        }).getReturnDistributorDetail(returnId);
+      }
+    }
+
+    function getRDJenisBadge(jenis) {
+      const map = {
+        'Normal':    { bg:'rgba(16,185,129,0.12)',  color:'var(--green)',  border:'rgba(16,185,129,0.3)',  icon:'✅' },
+        'Exp Date':  { bg:'rgba(14,165,233,0.12)',  color:'var(--teal)',   border:'rgba(14,165,233,0.3)',  icon:'📅' },
+        'Penarikan': { bg:'rgba(239,68,68,0.12)',   color:'var(--red)',    border:'rgba(239,68,68,0.3)',   icon:'⚠️' },
+        'Buy Back':  { bg:'rgba(245,158,11,0.12)',  color:'var(--accent)', border:'rgba(245,158,11,0.3)',  icon:'💰' },
+        'Sample':    { bg:'rgba(249,115,22,0.12)',  color:'#f97316',       border:'rgba(249,115,22,0.3)',  icon:'🧪' },
+        'BPOM':      { bg:'rgba(139,92,246,0.12)',  color:'#8b5cf6',       border:'rgba(139,92,246,0.3)',  icon:'🏛️' }
+      };
+      const s = map[jenis];
+      if (!s) return `<span style="background:var(--input-bg);color:var(--text-muted);padding:3px 10px;border-radius:20px;font-size:12px;">${jenis||'-'}</span>`;
+      return `<span style="background:${s.bg};color:${s.color};border:1px solid ${s.border};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">${s.icon} ${jenis}</span>`;
+    }
+
+    function rdOnJenisReturnChange() {
+      const val = v('rdJenisReturn');
+      const errEl = document.getElementById('rdJenisReturnError');
+      if (val) {
+        errEl.style.display = 'none';
+        // Highlight select sesuai jenis
+        const sel = document.getElementById('rdJenisReturn');
+        const colors = {
+          'Normal':    'rgba(16,185,129,0.08)',
+          'Exp Date':  'rgba(14,165,233,0.08)',
+          'Penarikan': 'rgba(239,68,68,0.08)',
+          'Buy Back':  'rgba(245,158,11,0.08)',
+          'Sample':    'rgba(249,115,22,0.08)',
+          'BPOM':      'rgba(139,92,246,0.08)'
+        };
+        sel.style.background = colors[val] || '';
+      }
+    }
+
+    function submitReturnDistributor() {
+      const tanggal         = v('rdTanggal');
+      const namaDistributor = v('rdNamaDistributor');
+      const jenisReturn     = v('rdJenisReturn');
+      const picSales        = (v('rdPICSales') || '').trim();
+      const noMabang        = (v('rdNoMabang') || '').trim();
+      const hargaOngkir     = getRupiahValue('rdHargaOngkir');
+      const noResi          = (v('rdNoResi') || '').trim();
+      const keterangan      = (v('rdKeteranganHeader') || '').trim();
+      const editMode        = v('rdEditMode') === '1';
+
+      if (!tanggal || !namaDistributor) return toast('Lengkapi Tanggal dan Nama Distributor', 'error');
+      if (!jenisReturn) {
+        document.getElementById('rdJenisReturnError').style.display = 'block';
+        document.getElementById('rdJenisReturn').focus();
+        return toast('Jenis Return wajib dipilih', 'error');
+      }
+      document.getElementById('rdJenisReturnError').style.display = 'none';
+      const btn = document.getElementById('btnSaveRD');
+      btn.disabled = true;
+
+      // Sync DOM → array
+      rdItemRows.forEach((row, idx) => {
+        const skuEl = document.getElementById(`rdSku_${idx}`);
+        const batEl = document.getElementById(`rdBatch_${idx}`);
+        const qtyEl = document.getElementById(`rdQtyRow_${idx}`);
+        const expEl = document.getElementById(`rdExp_${idx}`);
+        const ketEl = document.getElementById(`rdKet_${idx}`);
+        const katEl = document.getElementById(`rdKat_${idx}`);
+        if (skuEl) row.sku            = skuEl.value;
+        if (batEl) row.batch          = batEl.value;
+        if (qtyEl) row.qty            = qtyEl.value;
+        if (expEl) row.expDate        = expEl.value;
+        if (ketEl) row.keterangan     = ketEl.value;
+        if (katEl) row.kategoriReturn = katEl.value;
+      });
+
+      const validRows = rdItemRows.filter(r => r.sku && r.batch);
+      if (!validRows.length) { btn.disabled = false; return toast('Minimal 1 baris SKU dan Batch harus diisi', 'error'); }
+
+      const rec = {
+        id:              editMode ? v('rdId') : null,
+        tanggal, namaDistributor, jenisReturn,
+        picSales, noMabang, hargaOngkir, noResi, keterangan,
+        createdBy:       currentUser.username,
+        items:           validRows
+      };
+
+      btn.textContent = `⏳ Menyimpan ${validRows.length} item...`;
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = editMode ? '💾 Simpan' : '💾 Simpan Semua';
+        if (res.success) {
+          toast(`✅ ${res.saved} SKU berhasil disimpan (${res.noReturn||''})`);
+          if (res.id) delete rdDetailCache[res.id];
+          closeModal('modalReturnDistributor');
+          loadReturnDistributor();
+        } else toast(res.message, 'error');
+      }).saveReturnDistributor(rec);
+    }
+
+    function delReturnDistributor(id) {
+      if (!confirm('Hapus transaksi return ini beserta semua detail SKU-nya?')) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          delete rdDetailCache[id];
+          toast('Dihapus');
+          loadReturnDistributor();
+        } else toast(res.message, 'error');
+      }).deleteReturnDistributor(id);
+    }
+
+    function checkRDSKUFlag() {
+      const sku = (v('rdSKU') || '').trim();
+      const batch = (v('rdBatch') || '').trim();
+      const badge = document.getElementById('rdKategoriBadge');
+      if (!sku || !batch) { badge.style.display = 'none'; return; }
+      const detected = rdDetectKategori(sku, batch);
+      if (detected === 'Return Penarikan') {
+        badge.innerHTML = '<span style="background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.4);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⚠️ SKU ini terdaftar sebagai PENARIKAN — kategori otomatis diubah</span>';
+        badge.style.display = 'block';
+        setVal('rdKategoriReturn', 'Return Penarikan');
+      } else if (detected === 'Return Buy Back') {
+        badge.innerHTML = '<span style="background:rgba(245,158,11,0.15);color:var(--accent);border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">💰 SKU ini terdaftar sebagai BUY BACK — kategori otomatis diubah</span>';
+        badge.style.display = 'block';
+        setVal('rdKategoriReturn', 'Return Buy Back');
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // ============================================================
+    // EXPORT RETURN DISTRIBUTOR
+    // ============================================================
+    let rdExportMode = 'all'; // 'all' | 'selected'
+
+    function toggleRDExportMenu() {
+      const menu = document.getElementById('rdExportMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      // Tutup saat klik di luar
+      setTimeout(() => {
+        const close = (e) => {
+          if (!document.getElementById('rdExportWrap').contains(e.target)) {
+            menu.style.display = 'none';
+            document.removeEventListener('click', close);
+          }
+        };
+        document.addEventListener('click', close);
+      }, 10);
+    }
+
+    function openRDExportModal(mode) {
+      document.getElementById('rdExportMenu').style.display = 'none';
+      rdExportMode = mode;
+      const infoEl = document.getElementById('rdExportModeInfo');
+      const selectWrap = document.getElementById('rdExportSelectWrap');
+
+      if (mode === 'all') {
+        infoEl.innerHTML = `<div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--teal);">
+          📦 Akan mengexport <strong>${returnDistributorData.length}</strong> transaksi return beserta semua detail SKU-nya.
+        </div>`;
+        selectWrap.style.display = 'none';
+      } else {
+        infoEl.innerHTML = `<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--accent);">
+          ☑️ Pilih transaksi return yang ingin di-export. Detail SKU semua item terpilih akan ikut ter-export.
+        </div>`;
+        selectWrap.style.display = 'block';
+        renderRDExportList();
+      }
+      openModal('modalRDExport');
+    }
+
+    function renderRDExportList() {
+      const tb = document.getElementById('rdExportList');
+      const sorted = [...returnDistributorData].sort((a,b) => new Date(b.tanggal)-new Date(a.tanggal));
+      tb.innerHTML = sorted.map(h => {
+        const av = rdDistributorAvatar(h.namaDistributor);
+        return `<tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:8px 12px;text-align:center;">
+            <input type="checkbox" class="rdExportCheck" value="${h.id}" onchange="updateRDExportCount()">
+          </td>
+          <td style="padding:8px 12px;"><code style="background:var(--input-bg);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--teal);font-weight:700;">${h.noReturn||'-'}</code></td>
+          <td style="padding:8px 12px;font-size:13px;">${formatDate(h.tanggal)}</td>
+          <td style="padding:8px 12px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:26px;height:26px;border-radius:6px;background:${av.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">${av.initials}</div>
+              <span style="font-size:13px;font-weight:600;">${h.namaDistributor}</span>
+            </div>
+          </td>
+          <td style="padding:8px 12px;text-align:center;font-weight:700;">${h.totalSKU||0}</td>
+          <td style="padding:8px 12px;text-align:center;font-weight:700;">${h.totalQty||0}</td>
+        </tr>`;
+      }).join('');
+      updateRDExportCount();
+    }
+
+    function rdExportSelectAll(checked) {
+      document.querySelectorAll('.rdExportCheck').forEach(cb => cb.checked = checked);
+      const allCb = document.getElementById('rdExportCheckAll');
+      if (allCb) allCb.checked = checked;
+      updateRDExportCount();
+    }
+
+    function updateRDExportCount() {
+      const checked = document.querySelectorAll('.rdExportCheck:checked').length;
+      const total   = document.querySelectorAll('.rdExportCheck').length;
+      document.getElementById('rdExportSelectedCount').textContent = `${checked} dari ${total} transaksi dipilih`;
+      const allCb = document.getElementById('rdExportCheckAll');
+      if (allCb) allCb.checked = checked === total && total > 0;
+    }
+
+    function doRDExport() {
+      const btn = document.getElementById('btnDoRDExport');
+      const format = document.querySelector('input[name="rdExportFormat"]:checked')?.value || 'xlsx';
+
+      // Tentukan list header yang akan di-export
+      let headers;
+      if (rdExportMode === 'all') {
+        headers = returnDistributorData;
+      } else {
+        const selectedIds = new Set([...document.querySelectorAll('.rdExportCheck:checked')].map(cb => cb.value));
+        headers = returnDistributorData.filter(h => selectedIds.has(h.id));
+      }
+      if (!headers.length) return toast('Pilih minimal 1 transaksi return', 'error');
+
+      btn.disabled = true; btn.textContent = '⏳ Memuat detail...';
+
+      // Ambil semua detail yang belum di-cache
+      const needFetch = headers.filter(h => !rdDetailCache[h.id]);
+      let fetched = 0;
+
+      const proceed = () => {
+        btn.disabled = false; btn.textContent = '📤 Export Sekarang';
+        // Susun data flat: 1 baris per SKU
+        const rows = [];
+        headers.forEach(h => {
+          const det = rdDetailCache[h.id] || [];
+          const base = {
+            noReturn: h.noReturn, tanggal: h.tanggal,
+            namaDistributor: h.namaDistributor, jenisReturn: h.jenisReturn||'',
+            picSales: h.picSales||'', noMabang: h.noMabang||'',
+            hargaOngkir: h.hargaOngkir||0, noResi: h.noResi||''
+          };
+          if (det.length === 0) {
+            rows.push({ ...base, sku:'-', batch:'-', qty:'-', expDate:'-',
+              kategoriReturn:'-', keterangan: h.keterangan||'', createdBy: h.createdBy });
+          } else {
+            det.forEach(item => {
+              rows.push({ ...base, sku: item.sku, batch: item.batch,
+                qty: item.qty||'', expDate: item.expDate||'',
+                kategoriReturn: item.kategoriReturn, keterangan: item.keterangan||'',
+                createdBy: h.createdBy });
+            });
+          }
+        });
+
+        if (format === 'csv') {
+          doRDExportCSV(rows);
+        } else {
+          doRDExportXLSX(rows, headers);
+        }
+        closeModal('modalRDExport');
+      };
+
+      if (needFetch.length === 0) { proceed(); return; }
+
+      // Fetch detail yang belum ada di cache
+      needFetch.forEach(h => {
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) rdDetailCache[h.id] = res.data || [];
+          fetched++;
+          if (fetched === needFetch.length) proceed();
+        }).getReturnDistributorDetail(h.id);
+      });
+    }
+
+    function doRDExportCSV(rows) {
+      const cols = ['No Return','Tanggal','Nama Distributor','Jenis Return','PIC Sales','No Mabang','Harga Ongkir','No Resi','SKU','Batch','Qty','Exp Date','Kategori Return','Keterangan','Dibuat Oleh'];
+      let csv = cols.map(c => `"${c}"`).join(',') + '\n';
+      rows.forEach(r => {
+        csv += [r.noReturn, r.tanggal, r.namaDistributor, r.jenisReturn,
+                r.picSales, r.noMabang, r.hargaOngkir||0, r.noResi||'', r.sku, r.batch, r.qty,
+                r.expDate, r.kategoriReturn, r.keterangan, r.createdBy]
+          .map(x => `"${(x||'').toString().replace(/"/g,'""')}"`)
+          .join(',') + '\n';
+      });
+      const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ReturnDistributor_' + new Date().toISOString().split('T')[0] + '.csv';
+      a.click();
+    }
+
+    function doRDExportXLSX(rows, headers) {
+      const wb = XLSX.utils.book_new();
+
+      // ---- Sheet 1: Detail Lengkap ----
+      const detailHeader = ['No Return','Tanggal','Nama Distributor','Jenis Return','PIC Sales','No Mabang','Harga Ongkir','No Resi','SKU','Batch','Qty','Exp Date','Kategori Return','Keterangan','Dibuat Oleh'];
+      const detailData = rows.map(r => [
+        r.noReturn, r.tanggal, r.namaDistributor, r.jenisReturn||'',
+        r.picSales||'', r.noMabang||'', r.hargaOngkir||0, r.noResi||'', r.sku, r.batch,
+        r.qty !== '' && r.qty !== '-' ? (parseFloat(r.qty)||r.qty) : r.qty,
+        r.expDate, r.kategoriReturn, r.keterangan, r.createdBy
+      ]);
+      const wsDetail = XLSX.utils.aoa_to_sheet([detailHeader, ...detailData]);
+      wsDetail['!cols'] = [14,12,22,12,14,12,12,14,14,14,8,12,18,22,16].map(w => ({wch:w}));
+      wsDetail['!freeze'] = {xSplit:0, ySplit:1};
+      XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail Return');
+
+      // ---- Sheet 2: Ringkasan per Transaksi ----
+      const summaryHeader = ['No Return','Tanggal','Nama Distributor','Jenis Return','PIC Sales','No Mabang','Harga Ongkir','No Resi','Total SKU','Total Qty','Keterangan','Dibuat Oleh'];
+      const summaryData = headers.map(h => [
+        h.noReturn, h.tanggal, h.namaDistributor, h.jenisReturn||'',
+        h.picSales||'', h.noMabang||'', h.hargaOngkir||0, h.noResi||'',
+        parseInt(h.totalSKU)||0, parseFloat(h.totalQty)||0,
+        h.keterangan||'', h.createdBy||''
+      ]);
+      const wsSummary = XLSX.utils.aoa_to_sheet([summaryHeader, ...summaryData]);
+      wsSummary['!cols'] = [14,12,22,12,14,12,12,14,10,10,22,16].map(w => ({wch:w}));
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Ringkasan');
+
+      const fname = `ReturnDistributor_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fname);
+      toast(`✅ Export berhasil: ${rows.length} baris detail, ${headers.length} transaksi`, 'success');
+    }
+
+    // Legacy (tetap ada untuk backward compat)
+    function exportReturnDistributor() { openRDExportModal('all'); }
+
+    // ---- Settings SKU Bermasalah ----
+    function openReturnDistributorSettings() {
+      // Buka modal dulu dengan data yang sudah ada di cache
+      renderRDSettingTable('penarikan');
+      renderRDSettingTable('buyback');
+      renderRDSettingTable('bpom');
+      switchRDSettingTab('penarikan');
+      openModal('modalRDSettings');
+
+      // Refresh data dari server di background
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            rdSettingsPenarikan = res.data.penarikan || [];
+            rdSettingsBuyback   = res.data.buyback   || [];
+            rdSettingsBPOM      = res.data.bpom       || [];
+            renderRDSettingTable('penarikan');
+            renderRDSettingTable('buyback');
+            renderRDSettingTable('bpom');
+          }
+        })
+        .withFailureHandler(err => {
+          console.warn('Gagal load settings SKU:', err);
+        })
+        .getReturnDistributorSettings();
+    }
+
+    function switchRDSettingTab(tab) {
+      const isPenarikan = tab === 'penarikan';
+      const isBuyback   = tab === 'buyback';
+      const isBPOM      = tab === 'bpom';
+      const isSync      = tab === 'sync';
+      document.getElementById('rdSettingPanelPenarikan').style.display = isPenarikan ? 'block' : 'none';
+      document.getElementById('rdSettingPanelBuyback').style.display   = isBuyback   ? 'block' : 'none';
+      document.getElementById('rdSettingPanelBPOM').style.display      = isBPOM      ? 'block' : 'none';
+      document.getElementById('rdSettingPanelSync').style.display      = isSync      ? 'block' : 'none';
+      const styles = {
+        penarikan: 'background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);font-weight:700;',
+        buyback:   'background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);font-weight:700;',
+        bpom:      'background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);font-weight:700;',
+        sync:      'background:rgba(14,165,233,0.12);color:var(--teal);border:1px solid rgba(14,165,233,0.3);font-weight:700;',
+        off:       'background:var(--input-bg);color:var(--text-muted);border:1px solid var(--border-color);'
+      };
+      document.getElementById('rdSettingTabPenarikan').style.cssText = isPenarikan ? styles.penarikan : styles.off;
+      document.getElementById('rdSettingTabBuyback').style.cssText   = isBuyback   ? styles.buyback   : styles.off;
+      document.getElementById('rdSettingTabBPOM').style.cssText      = isBPOM      ? styles.bpom      : styles.off;
+      document.getElementById('rdSettingTabSync').style.cssText      = isSync      ? styles.sync      : styles.off;
+      if (isSync) renderRDSyncTable();
+    }
+
+    // Hitung berapa kali SKU+Batch muncul di data return
+    function rdCountInReturn(sku, batch) {
+      if (!returnDistributorData || !returnDistributorData.length) return 0;
+      // Pastikan sku dan batch adalah string
+      const s = String(sku||'').toLowerCase(), b = String(batch||'').toLowerCase();
+      // Hitung dari detail cache semua transaksi
+      let count = 0;
+      returnDistributorData.forEach(h => {
+        const det = rdDetailCache[h.id] || [];
+        det.forEach(x => {
+          // Pastikan x.sku dan x.batch adalah string
+          if (String(x.sku||'').toLowerCase()===s && String(x.batch||'').toLowerCase()===b) count++;
+        });
+      });
+      return count;
+    }
+
+    function renderRDSettingTable(type) {
+      const list = type === 'penarikan' ? rdSettingsPenarikan : type === 'buyback' ? rdSettingsBuyback : rdSettingsBPOM;
+      const tbId = type === 'penarikan' ? 'rdSettingTablePenarikan' : type === 'buyback' ? 'rdSettingTableBuyback' : 'rdSettingTableBPOM';
+      const tb = document.getElementById(tbId);
+      if (!tb) return;
+      if (!list.length) {
+        tb.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada data</td></tr>`;
+        return;
+      }
+      tb.innerHTML = list.map((item, idx) => {
+        const count = rdCountInReturn(item.sku, item.batch);
+        const isAll = (item.batch||'').toUpperCase() === 'ALL';
+        const batchDisplay = isAll
+          ? `<span style="background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.4);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;">🔴 ALL BATCH</span>`
+          : `<code style="background:var(--input-bg);padding:2px 6px;border-radius:4px;font-size:12px;">${item.batch}</code>`;
+        const statusBadge = count > 0
+          ? `<span style="background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">✅ Ada Return</span>`
+          : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);border:1px solid rgba(148,163,184,0.2);padding:2px 8px;border-radius:12px;font-size:11px;">— Belum Ada</span>`;
+        return `<tr style="${isAll?'background:rgba(239,68,68,0.03);':''}">
+          <td style="color:var(--text-muted);font-size:12px;">${idx+1}</td>
+          <td><code style="background:var(--input-bg);padding:2px 6px;border-radius:4px;font-size:12px;">${item.sku}</code></td>
+          <td>${batchDisplay}</td>
+          <td style="font-size:12px;color:var(--text-muted);">${item.manufaktur||'-'}</td>
+          <td style="text-align:center;">${statusBadge}</td>
+          <td style="text-align:center;font-weight:700;color:${count>0?'var(--green)':'var(--text-muted)'};">${count > 0 ? count : '-'}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-danger btn-sm" style="padding:2px 8px;" onclick="removeRDSettingItem('${type}', ${idx})">🗑️</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function addRDSettingItem(type) {
+      const skuId   = type === 'penarikan' ? 'rdNewPenarikanSKU'   : type === 'buyback' ? 'rdNewBuybackSKU'   : 'rdNewBPOMSKU';
+      const batchId = type === 'penarikan' ? 'rdNewPenarikanBatch' : type === 'buyback' ? 'rdNewBuybackBatch' : 'rdNewBPOMBatch';
+      const mfgId   = type === 'penarikan' ? 'rdNewPenarikanMfg'   : type === 'buyback' ? 'rdNewBuybackMfg'   : 'rdNewBPOMMfg';
+      const sku        = (v(skuId)   || '').trim();
+      const batchRaw   = (v(batchId) || '').trim();
+      const manufaktur = (v(mfgId)   || '').trim();
+      const batch      = batchRaw.toUpperCase() === 'ALL' ? 'ALL' : batchRaw;
+      if (!sku || !batch) return toast('Isi SKU dan Batch (atau ketik ALL untuk semua batch)', 'error');
+      const list = type === 'penarikan' ? rdSettingsPenarikan : type === 'buyback' ? rdSettingsBuyback : rdSettingsBPOM;
+      // Pastikan x.sku dan x.batch adalah string sebelum toLowerCase
+      if (list.some(x => String(x.sku||'').toLowerCase()===sku.toLowerCase() && String(x.batch||'').toLowerCase()===batch.toLowerCase()))
+        return toast('SKU + Batch sudah ada di daftar', 'error');
+      list.push({ sku, batch, manufaktur });
+      renderRDSettingTable(type);
+      setVal(skuId, ''); setVal(batchId, ''); setVal(mfgId, '');
+      toast(`✅ Ditambahkan${batch==='ALL'?' (ALL Batch)':''}`, 'success');
+    }
+
+    function removeRDSettingItem(type, idx) {
+      if (type === 'penarikan') rdSettingsPenarikan.splice(idx, 1);
+      else if (type === 'buyback') rdSettingsBuyback.splice(idx, 1);
+      else rdSettingsBPOM.splice(idx, 1);
+      renderRDSettingTable(type);
+    }
+
+    // ---- Import Excel untuk Setting ----
+    function handleImportRDSetting(input, type) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const wb = XLSX.read(e.target.result, {type:'binary'});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+          if (rows.length < 2) return toast('File kosong', 'error');
+          const headerRow = rows[0].map(h => String(h||'').toLowerCase().trim());
+          const skuCol   = headerRow.findIndex(h => h.includes('sku'));
+          const batchCol = headerRow.findIndex(h => h.includes('batch'));
+          const mfgCol   = headerRow.findIndex(h => h.includes('manufaktur') || h.includes('manufacturer') || h.includes('mfg'));
+          if (skuCol < 0 || batchCol < 0) return toast('Kolom SKU atau Batch tidak ditemukan di file', 'error');
+          const list = type === 'penarikan' ? rdSettingsPenarikan
+                     : type === 'buyback'   ? rdSettingsBuyback
+                     :                        rdSettingsBPOM;
+          let added = 0, skipped = 0;
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.every(c => c === '')) continue;
+            const sku        = String(row[skuCol]   || '').trim();
+            const batchRaw   = String(row[batchCol] || '').trim();
+            const manufaktur = mfgCol >= 0 ? String(row[mfgCol] || '').trim() : '';
+            const batch      = batchRaw.toUpperCase() === 'ALL' ? 'ALL' : batchRaw;
+            if (!sku || !batch) { skipped++; continue; }
+            if (list.some(x => x.sku.toLowerCase()===sku.toLowerCase() && x.batch.toLowerCase()===batch.toLowerCase())) { skipped++; continue; }
+            list.push({ sku, batch, manufaktur });
+            added++;
+          }
+          renderRDSettingTable(type);
+          toast(`✅ ${added} SKU ditambahkan${skipped ? `, ${skipped} dilewati` : ''}`, 'success');
+        } catch(err) { toast('Gagal membaca file: ' + err.message, 'error'); }
+        input.value = '';
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    function downloadRDSettingTemplate(type) {
+      const labels = { penarikan: 'Penarikan', buyback: 'BuyBack', bpom: 'BPOM' };
+      const label  = labels[type] || type;
+      const headers = ['SKU', 'Batch', 'Manufaktur'];
+      const sample  = [
+        ['SKU-001', 'BATCH-A1', 'PT Manufaktur ABC'],
+        ['SKU-002', 'ALL',      'PT Manufaktur XYZ'],  // ALL = semua batch
+        ['SKU-003', 'BATCH-C3', ''],
+      ];
+      const note = [[''], ['CATATAN: Isi Batch dengan "ALL" untuk menandai semua batch dari SKU tersebut.']];
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...sample, ...note]);
+      ws['!cols'] = [{wch:16},{wch:14},{wch:24}];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Template ' + label);
+      XLSX.writeFile(wb, `Template_SKU_${label}.xlsx`);
+    }
+
+    // ---- Panel Sinkronisasi ----
+    let rdSyncAllRows = [];
+    function renderRDSyncTable() {
+      const tb = document.getElementById('rdSyncTable');
+      tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">⏳ Memuat data...</td></tr>`;
+      if (!returnDistributorData || !returnDistributorData.length) {
+        tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Tidak ada data Return Distributor</td></tr>`;
+        return;
+      }
+      // Buat map unik SKU+Batch dari data return
+      const map = {};
+      returnDistributorData.forEach(d => {
+        // Pastikan sku dan batch adalah string
+        const key = String(d.sku||'').toLowerCase() + '||' + String(d.batch||'').toLowerCase();
+        if (!map[key]) map[key] = { sku: d.sku, batch: d.batch, count: 0, kategori: d.kategoriReturn };
+        map[key].count++;
+        // Prioritaskan kategori bermasalah
+        if (d.kategoriReturn === 'Return Penarikan' || d.kategoriReturn === 'Return Buy Back')
+          map[key].kategori = d.kategoriReturn;
+      });
+      rdSyncAllRows = Object.values(map);
+      filterRDSyncTable();
+    }
+
+    function filterRDSyncTable() {
+      const q = (v('rdSyncSearch') || '').toLowerCase().trim();
+      const tb = document.getElementById('rdSyncTable');
+      const filtered = rdSyncAllRows.filter(r =>
+        !q || (r.sku||'').toLowerCase().includes(q) || (r.batch||'').toLowerCase().includes(q)
+      );
+      if (!filtered.length) {
+        tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Tidak ada data</td></tr>`;
+        return;
+      }
+      tb.innerHTML = filtered.map(r => {
+        const s = (r.sku||'').toLowerCase(), b = (r.batch||'').toLowerCase();
+        const inP    = rdSettingsPenarikan.some(x => x.sku.toLowerCase()===s && x.batch.toLowerCase()===b);
+        const inB    = rdSettingsBuyback.some(x   => x.sku.toLowerCase()===s && x.batch.toLowerCase()===b);
+        const inBPOM = rdSettingsBPOM.some(x       => x.sku.toLowerCase()===s && x.batch.toLowerCase()===b);
+        let statusBadge, aksi;
+        if (inP) {
+          statusBadge = `<span style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">⚠️ Penarikan</span>`;
+          aksi = `<span style="color:var(--text-muted);font-size:12px;">Sudah terdaftar</span>`;
+        } else if (inB) {
+          statusBadge = `<span style="background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">💰 Buy Back</span>`;
+          aksi = `<span style="color:var(--text-muted);font-size:12px;">Sudah terdaftar</span>`;
+        } else if (inBPOM) {
+          statusBadge = `<span style="background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">🏛️ BPOM</span>`;
+          aksi = `<span style="color:var(--text-muted);font-size:12px;">Sudah terdaftar</span>`;
+        } else {
+          statusBadge = `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);border:1px solid rgba(148,163,184,0.2);padding:2px 8px;border-radius:12px;font-size:11px;">— Belum Terdaftar</span>`;
+          const skuE = r.sku.replace(/'/g,"\\'"), batE = r.batch.replace(/'/g,"\\'");
+          aksi = `<div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
+            <button class="btn btn-sm" style="padding:2px 7px;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3);font-size:11px;"
+              onclick="rdSyncAddToList('${skuE}','${batE}','penarikan')">⚠️ Penarikan</button>
+            <button class="btn btn-sm" style="padding:2px 7px;background:rgba(245,158,11,0.1);color:var(--accent);border:1px solid rgba(245,158,11,0.3);font-size:11px;"
+              onclick="rdSyncAddToList('${skuE}','${batE}','buyback')">💰 Buy Back</button>
+            <button class="btn btn-sm" style="padding:2px 7px;background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);font-size:11px;"
+              onclick="rdSyncAddToList('${skuE}','${batE}','bpom')">🏛️ BPOM</button>
+          </div>`;
+        }
+        const katBadge = getRDKategoriBadge(r.kategori);
+        return `<tr>
+          <td><code style="background:var(--input-bg);padding:2px 6px;border-radius:4px;font-size:12px;">${r.sku}</code></td>
+          <td style="font-size:13px;">${r.batch}</td>
+          <td style="text-align:center;font-weight:700;color:var(--teal);">${r.count}</td>
+          <td style="text-align:center;">${katBadge}</td>
+          <td style="text-align:center;">${statusBadge}</td>
+          <td style="text-align:right;">${aksi}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function rdSyncAddToList(sku, batch, type) {
+      const list = type === 'penarikan' ? rdSettingsPenarikan
+                 : type === 'buyback'   ? rdSettingsBuyback
+                 :                        rdSettingsBPOM;
+      const s = sku.toLowerCase(), b = batch.toLowerCase();
+      if (list.some(x => x.sku.toLowerCase()===s && x.batch.toLowerCase()===b))
+        return toast('Sudah ada di daftar', 'info');
+      list.push({ sku, batch, manufaktur: '' });
+      renderRDSettingTable(type);
+      filterRDSyncTable();
+      const label = type === 'penarikan' ? 'Penarikan' : type === 'buyback' ? 'Buy Back' : 'BPOM';
+      toast(`✅ ${sku} / ${batch} ditambahkan ke daftar ${label}`, 'success');
+    }
+
+    function saveRDSettings() {
+      const btn = document.getElementById('btnSaveRDSettings');
+      btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+      google.script.run.withSuccessHandler(res => {
+        btn.disabled = false; btn.textContent = '💾 Simpan Pengaturan';
+        if (res.success) {
+          toast(res.message || 'Pengaturan berhasil disimpan');
+          closeModal('modalRDSettings');
+        } else toast(res.message, 'error');
+      }).saveReturnDistributorSettings(rdSettingsPenarikan, rdSettingsBuyback, rdSettingsBPOM);
+    }
+    // ===== END RETURN DISTRIBUTOR =====
+
     // ORDER
     function loadOrder() {
       google.script.run.withSuccessHandler(res => {
@@ -16412,6 +18022,431 @@
         })
         .saveDistributorQueueLateNote(poNumber, rowNumber, note);
     }
+
+    // ============================================================
+    // PRINT SURAT JALAN
+    // ============================================================
+    let sjSelectedPOs = [];
+
+    function openPrintSuratJalanModal() {
+      // Set tanggal hari ini
+      const today = new Date().toISOString().split('T')[0];
+      setVal('sjTanggal', today);
+      setVal('sjKeterangan', '');
+      
+      // Filter PO yang Ready Pickup - gunakan field statusGudang
+      const readyPickupPOs = (distributorQueueData || []).filter(item => {
+        const statusNorm = String(item.statusGudang || '').toLowerCase().replace(/\s+/g, '');
+        // Matches: "Ready Pickup", "Ready To Pickup", "Ready", "Pickup", "Siap", "Siap Pickup", etc.
+        return statusNorm === 'readypickup' || statusNorm === 'ready' || statusNorm === 'pickup' ||
+               statusNorm.includes('readypickup') || statusNorm.includes('readytopickup') ||
+               statusNorm.includes('ready') || statusNorm.includes('pickup') || statusNorm.includes('siap');
+      });
+
+      if (!readyPickupPOs.length) {
+        return toast('Tidak ada PO dengan status Ready Pickup. Pastikan kolom Status Gudang diisi dengan "Ready Pickup" atau "Siap Pickup".', 'error');
+      }
+
+      // Reset selection
+      sjSelectedPOs = [];
+      
+      // Render list PO
+      renderSJPOList(readyPickupPOs);
+      updateSJSummary();
+      
+      openModal('modalPrintSuratJalan');
+    }
+
+    function renderSJPOList(pos) {
+      const container = document.getElementById('sjPOList');
+      if (!pos.length) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">Tidak ada PO Ready Pickup</div>';
+        return;
+      }
+
+      container.innerHTML = pos.map((item, idx) => {
+        const dist = String(item.namaDistributor || '-');
+        const po = String(item.poNumber || '-');
+        const koli = Number(item.jumlahDus) || 0;
+        const pcs = Number(item.totalPcs) || 0;
+        const keterangan = String(item.note || item.keterangan || '-');
+        
+        return `
+          <div style="border:1px solid var(--border-color); border-radius:8px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:12px; background:var(--bg-panel-light);">
+            <input type="checkbox" class="sjPOCheckbox" data-idx="${idx}" 
+              data-po="${po}" 
+              data-dist="${dist}"
+              data-koli="${koli}"
+              data-pcs="${pcs}"
+              data-ket="${keterangan}"
+              onchange="updateSJSelection()"
+              style="width:18px; height:18px; cursor:pointer;">
+            <div style="flex:1;">
+              <div style="font-weight:700; font-size:13px; color:var(--text-main); margin-bottom:4px;">
+                📦 PO: <span style="color:var(--teal);">${po}</span>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap;">
+                <span>🏢 ${dist}</span>
+                <span>📦 <strong>${koli}</strong> Koli</span>
+                <span>🔢 <strong>${pcs.toLocaleString('id-ID')}</strong> Pcs</span>
+              </div>
+              ${keterangan !== '-' ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">💬 ${keterangan}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function sjSelectAll() {
+      document.querySelectorAll('.sjPOCheckbox').forEach(cb => cb.checked = true);
+      updateSJSelection();
+    }
+
+    function sjDeselectAll() {
+      document.querySelectorAll('.sjPOCheckbox').forEach(cb => cb.checked = false);
+      updateSJSelection();
+    }
+
+    function updateSJSelection() {
+      sjSelectedPOs = [];
+      document.querySelectorAll('.sjPOCheckbox:checked').forEach(cb => {
+        sjSelectedPOs.push({
+          po: cb.dataset.po,
+          distributor: cb.dataset.dist,
+          koli: Number(cb.dataset.koli) || 0,
+          pcs: Number(cb.dataset.pcs) || 0,
+          keterangan: cb.dataset.ket
+        });
+      });
+      updateSJSummary();
+    }
+
+    function updateSJSummary() {
+      const totalPO = sjSelectedPOs.length;
+      const totalKoli = sjSelectedPOs.reduce((sum, po) => sum + po.koli, 0);
+      document.getElementById('sjTotalPO').textContent = totalPO;
+      document.getElementById('sjTotalKoli').textContent = totalKoli.toLocaleString('id-ID');
+    }
+
+    function printSuratJalan() {
+      const tanggal = v('sjTanggal');
+      const keterangan = v('sjKeterangan');
+
+      if (!tanggal) {
+        return toast('Tanggal Surat Jalan wajib diisi', 'error');
+      }
+
+      if (!sjSelectedPOs.length) {
+        return toast('Pilih minimal 1 PO untuk dicetak', 'error');
+      }
+
+      // Generate HTML untuk print
+      const totalPO = sjSelectedPOs.length;
+      const totalKoli = sjSelectedPOs.reduce((sum, po) => sum + po.koli, 0);
+      
+      const tanggalFormatted = formatDate(tanggal);
+      
+      const poRows = sjSelectedPOs.map((po, idx) => `
+        <tr>
+          <td style="padding:8px; text-align:center; border:1px solid #333;">${idx + 1}</td>
+          <td style="padding:8px; border:1px solid #333;">${po.po}</td>
+          <td style="padding:8px; text-align:center; border:1px solid #333;"><strong>${po.koli}</strong></td>
+          <td style="padding:8px; border:1px solid #333; font-size:11px;">${po.keterangan !== '-' ? po.keterangan : ''}</td>
+        </tr>
+      `).join('');
+
+      // Generate surat jalan content (akan diulang 3x)
+      const suratJalanContent = `
+        <div class="surat-jalan-page">
+          <div class="header">
+            <h1>🚚 SURAT JALAN</h1>
+            <p>Gudang FCL - Antrian Distributor</p>
+          </div>
+
+          <div class="info-section">
+            <div class="info-box">
+              <label>Tanggal:</label>
+              <div><strong>${tanggalFormatted}</strong></div>
+            </div>
+            <div class="info-box" style="text-align:right;">
+              <label>Dicetak:</label>
+              <div style="font-size:11px;">${new Date().toLocaleString('id-ID')}</div>
+            </div>
+          </div>
+
+          ${keterangan ? `<div class="keterangan"><strong>Keterangan:</strong> ${keterangan}</div>` : ''}
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px; text-align:center;">No</th>
+                <th>PO Number</th>
+                <th style="width:100px; text-align:center;">Jumlah Koli</th>
+                <th style="width:150px;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${poRows}
+            </tbody>
+          </table>
+
+          <div class="summary">
+            <div class="summary-row">
+              <span>Total PO:</span>
+              <strong>${totalPO} PO</strong>
+            </div>
+            <div class="summary-row total">
+              <span>TOTAL KOLI:</span>
+              <strong>${totalKoli.toLocaleString('id-ID')} KOLI</strong>
+            </div>
+          </div>
+
+          <div class="footer">
+            <div class="signature-box">
+              <div class="label">Pengirim</div>
+              <div class="line">(...........................)</div>
+            </div>
+            <div class="signature-box">
+              <div class="label">Security</div>
+              <div class="line">(...........................)</div>
+            </div>
+            <div class="signature-box">
+              <div class="label">Driver</div>
+              <div class="line">(...........................)</div>
+            </div>
+            <div class="signature-box">
+              <div class="label">Penerima</div>
+              <div class="line">(...........................)</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Surat Jalan - ${tanggalFormatted}</title>
+          <style>
+            @media print {
+              @page { 
+                size: A4 portrait;
+                margin: 0;
+              }
+              body { margin: 0; }
+              .page-break { page-break-after: always; }
+              .no-print { display: none; }
+            }
+            
+            * {
+              box-sizing: border-box;
+            }
+            
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 0;
+              color: #000;
+              background: #fff;
+            }
+            
+            .surat-jalan-page {
+              width: 100%;
+              height: 32.5vh;
+              padding: 12px 15px;
+              border-bottom: 2px dashed #999;
+              position: relative;
+              page-break-inside: avoid;
+            }
+            
+            .surat-jalan-page:last-child {
+              border-bottom: none;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 12px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 8px;
+            }
+            
+            .header h1 {
+              margin: 0 0 3px 0;
+              font-size: 18px;
+              font-weight: bold;
+            }
+            
+            .header p {
+              margin: 0;
+              font-size: 10px;
+              color: #666;
+            }
+            
+            .info-section {
+              margin-bottom: 10px;
+              display: flex;
+              justify-content: space-between;
+              font-size: 11px;
+            }
+            
+            .info-box label {
+              font-weight: bold;
+              font-size: 10px;
+              color: #666;
+            }
+            
+            .info-box div {
+              font-size: 11px;
+              margin-top: 2px;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+              font-size: 11px;
+            }
+            
+            th {
+              background: #f0f0f0;
+              padding: 6px 8px;
+              text-align: left;
+              border: 1px solid #333;
+              font-size: 10px;
+              font-weight: bold;
+            }
+            
+            td {
+              padding: 5px 8px;
+              border: 1px solid #333;
+              font-size: 10px;
+            }
+            
+            .summary {
+              margin-bottom: 10px;
+              padding: 8px 10px;
+              background: #f9f9f9;
+              border: 1px solid #333;
+              border-radius: 3px;
+            }
+            
+            .summary-row {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 4px;
+              font-size: 11px;
+            }
+            
+            .summary-row strong {
+              font-weight: bold;
+            }
+            
+            .summary-row.total {
+              font-size: 13px;
+              font-weight: bold;
+              color: #0066cc;
+              border-top: 1px solid #333;
+              padding-top: 6px;
+              margin-top: 6px;
+            }
+            
+            .footer {
+              display: flex;
+              justify-content: space-between;
+              gap: 8px;
+              margin-top: 10px;
+            }
+            
+            .signature-box {
+              flex: 1;
+              text-align: center;
+              font-size: 10px;
+            }
+            
+            .signature-box .label {
+              font-weight: bold;
+              margin-bottom: 3px;
+            }
+            
+            .signature-box .line {
+              border-top: 1px solid #000;
+              margin-top: 35px;
+              padding-top: 3px;
+              font-size: 9px;
+            }
+            
+            .keterangan {
+              margin-bottom: 10px;
+              padding: 6px 8px;
+              background: #fffbea;
+              border-left: 3px solid #f59e0b;
+              font-size: 10px;
+            }
+            
+            .print-info {
+              text-align: center;
+              padding: 15px;
+              background: #f0f0f0;
+              border: 2px dashed #999;
+              margin: 20px;
+              border-radius: 8px;
+            }
+            
+            .print-info h2 {
+              margin: 0 0 10px 0;
+              color: #0066cc;
+            }
+            
+            .print-info p {
+              margin: 5px 0;
+              font-size: 14px;
+            }
+            
+            .print-btn {
+              margin-top: 15px;
+              padding: 12px 30px;
+              font-size: 16px;
+              background: #0066cc;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+            }
+            
+            .print-btn:hover {
+              background: #0052a3;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="no-print print-info">
+            <h2>🖨️ Siap Print Surat Jalan</h2>
+            <p><strong>Format:</strong> 1 Halaman = 3 Surat Jalan</p>
+            <p><strong>Total PO:</strong> ${totalPO} PO</p>
+            <p><strong>Total Koli:</strong> ${totalKoli.toLocaleString('id-ID')} Koli</p>
+            <button class="print-btn" onclick="window.print()">🖨️ Print Sekarang</button>
+          </div>
+          
+          <!-- Surat Jalan 1 (Copy 1) -->
+          ${suratJalanContent}
+          
+          <!-- Surat Jalan 2 (Copy 2) -->
+          ${suratJalanContent}
+          
+          <!-- Surat Jalan 3 (Copy 3) -->
+          ${suratJalanContent}
+        </body>
+        </html>
+      `;
+
+      // Open print window
+      const printWindow = window.open('', '_blank', 'width=900,height=700');
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+    }
+
+    // ============================================================
 
     function toLocalDateValue(date) {
       if (!date) return '';
@@ -20483,6 +22518,486 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== MODAL: FORM RETURN DISTRIBUTOR (MULTI-SKU) ===== -->
+  <div class="modal-overlay" id="modalReturnDistributor">
+    <div class="custom-modal" style="width:min(1100px,96vw); max-height:94vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalReturnDistributor')">✕</button>
+      <h3 id="rdModalTitle">🔄 Tambah Return Distributor</h3>
+      <input type="hidden" id="rdId">
+      <input type="hidden" id="rdEditMode" value="0">
+
+      <!-- Header: Tanggal + Distributor + Jenis Return -->
+      <div class="row mb-3">
+        <div class="col-md-3 mb-2">
+          <label class="form-label">Tanggal <span style="color:var(--red)">*</span></label>
+          <input type="date" class="form-control" id="rdTanggal">
+        </div>
+        <div class="col-md-4 mb-2">
+          <label class="form-label">Nama Distributor <span style="color:var(--red)">*</span></label>
+          <input type="text" class="form-control" id="rdNamaDistributor" placeholder="Nama distributor">
+        </div>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">Jenis Return <span style="color:var(--red)">*</span></label>
+          <select class="form-select" id="rdJenisReturn" onchange="rdOnJenisReturnChange()">
+            <option value="">-- Pilih Jenis --</option>
+            <option value="Normal">✅ Normal</option>
+            <option value="Exp Date">📅 Exp Date</option>
+            <option value="Penarikan">⚠️ Penarikan</option>
+            <option value="Buy Back">💰 Buy Back</option>
+            <option value="Sample">🧪 Sample</option>
+            <option value="BPOM">🏛️ BPOM</option>
+          </select>
+          <div id="rdJenisReturnError" style="display:none;color:var(--red);font-size:11px;margin-top:4px;font-weight:600;">⚠️ Wajib pilih Jenis Return</div>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="form-label">No. Mabang</label>
+          <input type="text" class="form-control" id="rdNoMabang" placeholder="Opsional">
+        </div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-md-5 mb-2">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>PIC Sales</span>
+            <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" onclick="openRDPICSalesSettings()">⚙️ Kelola PIC</button>
+          </label>
+          <div style="display:flex;gap:6px;">
+            <select class="form-select" id="rdPICSalesSelect" onchange="rdOnPICSalesSelect()" style="flex:1;">
+              <option value="">-- Pilih PIC Sales --</option>
+            </select>
+            <input type="text" class="form-control" id="rdPICSales" placeholder="Atau ketik manual" style="flex:1;">
+          </div>
+          <small style="color:var(--text-muted);font-size:11px;">Pilih dari daftar atau ketik langsung</small>
+        </div>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">💰 Harga Ongkir</label>
+          <input type="text" class="form-control" id="rdHargaOngkir" placeholder="0" 
+            oninput="formatRupiahInput(this)" 
+            onblur="formatRupiahInput(this)">
+          <small style="color:var(--text-muted);font-size:11px;">Contoh: 5000 atau 5.000</small>
+        </div>
+        <div class="col-md-4 mb-2">
+          <label class="form-label">📦 No. Resi</label>
+          <input type="text" class="form-control" id="rdNoResi" placeholder="Nomor resi pengiriman">
+        </div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-md-12 mb-2">
+          <label class="form-label">Keterangan</label>
+          <input type="text" class="form-control" id="rdKeteranganHeader" placeholder="Catatan tambahan (opsional)">
+        </div>
+      </div>
+
+      <!-- Mode Edit: single item (legacy) -->
+      <div id="rdEditSingleWrap" style="display:none;">
+        <div class="row mb-3">
+          <div class="col-md-4 mb-2">
+            <label class="form-label">SKU <span style="color:var(--red)">*</span></label>
+            <input type="text" class="form-control" id="rdSKU" placeholder="Kode SKU" onchange="checkRDSKUFlag()" onblur="checkRDSKUFlag()">
+          </div>
+          <div class="col-md-4 mb-2">
+            <label class="form-label">Batch <span style="color:var(--red)">*</span></label>
+            <input type="text" class="form-control" id="rdBatch" placeholder="No. Batch" onchange="checkRDSKUFlag()" onblur="checkRDSKUFlag()">
+          </div>
+          <div class="col-md-4 mb-2">
+            <label class="form-label">Qty</label>
+            <input type="number" class="form-control" id="rdQty" placeholder="0" min="1">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-4 mb-2">
+            <label class="form-label">Exp Date</label>
+            <input type="date" class="form-control" id="rdExpDate">
+          </div>
+          <div class="col-md-4 mb-2">
+            <label class="form-label">Kategori Return</label>
+            <div id="rdKategoriBadge" style="display:none; margin-bottom:6px;"></div>
+            <select class="form-select" id="rdKategoriReturn">
+              <option value="Return Normal">Return Normal</option>
+              <option value="Return Exp Date">Return Exp Date</option>
+              <option value="Return Penarikan">Return Penarikan</option>
+              <option value="Return Buy Back">Return Buy Back</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-2">
+            <label class="form-label">Keterangan</label>
+            <input type="text" class="form-control" id="rdKeterangan" placeholder="Catatan (opsional)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Tambah: multi-item table -->
+      <div id="rdMultiItemWrap">
+        <!-- Toolbar baris item -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <label style="font-size:13px; font-weight:700; color:var(--text-main);">
+            📦 Daftar SKU Return
+            <span id="rdItemCount" style="background:var(--accent);color:#000;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;">0</span>
+          </label>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <input type="file" id="fileImportRD" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportRDExcel(this)">
+            <button class="btn btn-ghost btn-sm" onclick="downloadRDTemplate()">🗂️ Template Excel</button>
+            <button class="btn btn-sm" style="background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.3);"
+              onclick="document.getElementById('fileImportRD').click()">📥 Impor Excel</button>
+            <button class="btn btn-sm" style="background:rgba(14,165,233,0.12);color:var(--teal);border:1px solid rgba(14,165,233,0.25);"
+              onclick="addRDItemRow()">+ Tambah Baris</button>
+          </div>
+        </div>
+
+        <!-- Tabel item -->
+        <div style="border:1px solid var(--border-color); border-radius:10px; overflow:hidden; margin-bottom:12px;">
+          <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+            <table style="width:max-content; min-width:100%; border-collapse:collapse; font-size:13px;">
+              <thead>
+                <tr style="background:var(--bg-panel-light); position:sticky; top:0; z-index:2;">
+                  <th style="padding:10px 8px; text-align:center; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; width:36px;">#</th>
+                  <th style="padding:10px 8px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:160px;">SKU *</th>
+                  <th style="padding:10px 8px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:150px;">Batch *</th>
+                  <th style="padding:10px 8px; text-align:center; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:80px;">Qty</th>
+                  <th style="padding:10px 8px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:145px;">Exp Date</th>
+                  <th style="padding:10px 8px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:170px;">Kategori</th>
+                  <th style="padding:10px 8px; text-align:left; font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; min-width:180px;">Keterangan</th>
+                  <th style="padding:10px 8px; width:40px;"></th>
+                </tr>
+              </thead>
+              <tbody id="rdItemsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Info auto-detect -->
+        <div style="background:rgba(14,165,233,0.06); border:1px solid rgba(14,165,233,0.15); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--teal); margin-bottom:4px;">
+          ⚡ <strong>Auto-deteksi aktif:</strong> SKU+Batch yang terdaftar di daftar Penarikan/Buy Back akan otomatis terdeteksi saat diisi.
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeModal('modalReturnDistributor')">Batal</button>
+        <button class="btn btn-primary" id="btnSaveRD" onclick="submitReturnDistributor()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: SETTINGS SKU BERMASALAH ===== -->
+  <div class="modal-overlay" id="modalRDSettings">
+    <div class="custom-modal" style="width:min(860px,96vw); max-height:92vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalRDSettings')">✕</button>
+      <h3>⚙️ Setting SKU &amp; Batch Bermasalah</h3>
+      <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">
+        SKU dan Batch yang terdaftar di sini akan otomatis terdeteksi saat input Return Distributor.
+        Kolom <strong>Status</strong> menunjukkan apakah SKU tersebut sudah pernah di-return.
+      </p>
+
+      <!-- Tabs -->
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <button class="btn btn-sm" id="rdSettingTabPenarikan"
+          style="background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);font-weight:700;"
+          onclick="switchRDSettingTab('penarikan')">⚠️ Daftar Penarikan</button>
+        <button class="btn btn-sm" id="rdSettingTabBuyback"
+          style="background:var(--input-bg);color:var(--text-muted);border:1px solid var(--border-color);"
+          onclick="switchRDSettingTab('buyback')">💰 Daftar Buy Back</button>
+        <button class="btn btn-sm" id="rdSettingTabBPOM"
+          style="background:var(--input-bg);color:var(--text-muted);border:1px solid var(--border-color);"
+          onclick="switchRDSettingTab('bpom')">🏛️ Daftar BPOM</button>
+        <button class="btn btn-sm" id="rdSettingTabSync"
+          style="background:var(--input-bg);color:var(--text-muted);border:1px solid var(--border-color);"
+          onclick="switchRDSettingTab('sync')">🔄 Sinkronisasi Data Return</button>
+      </div>
+
+      <!-- Panel Penarikan -->
+      <div id="rdSettingPanelPenarikan">
+        <!-- Info ALL Batch -->
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:var(--red);">
+          💡 Ketik <strong>ALL</strong> di kolom Batch untuk menandai <strong>semua batch</strong> dari SKU tersebut.
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto auto auto; gap:8px; margin-bottom:10px; align-items:flex-end;">
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">SKU *</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewPenarikanSKU" placeholder="Kode SKU">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Batch * <span style="color:var(--red);font-size:10px;">(atau ALL)</span></label>
+            <div style="display:flex;gap:4px;">
+              <input type="text" class="form-control form-control-sm" id="rdNewPenarikanBatch" placeholder="No. Batch / ALL">
+              <button class="btn btn-sm" style="padding:4px 8px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);white-space:nowrap;font-size:11px;font-weight:800;"
+                onclick="setVal('rdNewPenarikanBatch','ALL')" title="Set ALL Batch">ALL</button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Manufaktur</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewPenarikanMfg" placeholder="Nama manufaktur">
+          </div>
+          <button class="btn btn-danger btn-sm" style="align-self:flex-end;" onclick="addRDSettingItem('penarikan')">+ Tambah</button>
+          <div style="border-left:1px solid var(--border-color); height:32px; align-self:flex-end;"></div>
+          <div style="display:flex;gap:4px;align-self:flex-end;">
+            <input type="file" id="fileImportPenarikan" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportRDSetting(this,'penarikan')">
+            <button class="btn btn-sm" style="background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3);"
+              onclick="document.getElementById('fileImportPenarikan').click()">📥 Impor</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadRDSettingTemplate('penarikan')">🗂️</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+          <table class="table table-sm align-middle" style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:32px;">#</th>
+                <th>SKU</th>
+                <th>Batch</th>
+                <th>Manufaktur</th>
+                <th style="text-align:center; width:95px;">Status Return</th>
+                <th style="text-align:center; width:55px;">Jml</th>
+                <th style="text-align:right; width:50px;">Hapus</th>
+              </tr>
+            </thead>
+            <tbody id="rdSettingTablePenarikan">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Buy Back -->
+      <div id="rdSettingPanelBuyback" style="display:none;">
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:var(--accent);">
+          💡 Ketik <strong>ALL</strong> di kolom Batch untuk menandai <strong>semua batch</strong> dari SKU tersebut.
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto auto auto; gap:8px; margin-bottom:10px; align-items:flex-end;">
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">SKU *</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewBuybackSKU" placeholder="Kode SKU">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Batch * <span style="color:var(--accent);font-size:10px;">(atau ALL)</span></label>
+            <div style="display:flex;gap:4px;">
+              <input type="text" class="form-control form-control-sm" id="rdNewBuybackBatch" placeholder="No. Batch / ALL">
+              <button class="btn btn-sm" style="padding:4px 8px;background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);white-space:nowrap;font-size:11px;font-weight:800;"
+                onclick="setVal('rdNewBuybackBatch','ALL')" title="Set ALL Batch">ALL</button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Manufaktur</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewBuybackMfg" placeholder="Nama manufaktur">
+          </div>
+          <button class="btn btn-sm" style="background:rgba(245,158,11,0.12);color:var(--accent);border:1px solid rgba(245,158,11,0.3);align-self:flex-end;" onclick="addRDSettingItem('buyback')">+ Tambah</button>
+          <div style="border-left:1px solid var(--border-color); height:32px; align-self:flex-end;"></div>
+          <div style="display:flex;gap:4px;align-self:flex-end;">
+            <input type="file" id="fileImportBuyback" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportRDSetting(this,'buyback')">
+            <button class="btn btn-sm" style="background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3);"
+              onclick="document.getElementById('fileImportBuyback').click()">📥 Impor</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadRDSettingTemplate('buyback')">🗂️</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+          <table class="table table-sm align-middle" style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:32px;">#</th>
+                <th>SKU</th>
+                <th>Batch</th>
+                <th>Manufaktur</th>
+                <th style="text-align:center; width:95px;">Status Return</th>
+                <th style="text-align:center; width:55px;">Jml</th>
+                <th style="text-align:right; width:50px;">Hapus</th>
+              </tr>
+            </thead>
+            <tbody id="rdSettingTableBuyback">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel BPOM -->
+      <div id="rdSettingPanelBPOM" style="display:none;">
+        <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:#8b5cf6;">
+          💡 Ketik <strong>ALL</strong> di kolom Batch untuk menandai <strong>semua batch</strong> dari SKU tersebut.
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto auto auto; gap:8px; margin-bottom:10px; align-items:flex-end;">
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">SKU *</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewBPOMSKU" placeholder="Kode SKU">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Batch * <span style="color:#8b5cf6;font-size:10px;">(atau ALL)</span></label>
+            <div style="display:flex;gap:4px;">
+              <input type="text" class="form-control form-control-sm" id="rdNewBPOMBatch" placeholder="No. Batch / ALL">
+              <button class="btn btn-sm" style="padding:4px 8px;background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);white-space:nowrap;font-size:11px;font-weight:800;"
+                onclick="setVal('rdNewBPOMBatch','ALL')" title="Set ALL Batch">ALL</button>
+            </div>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Manufaktur</label>
+            <input type="text" class="form-control form-control-sm" id="rdNewBPOMMfg" placeholder="Nama manufaktur">
+          </div>
+          <button class="btn btn-sm" style="background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid rgba(139,92,246,0.3);align-self:flex-end;" onclick="addRDSettingItem('bpom')">+ Tambah</button>
+          <div style="border-left:1px solid var(--border-color); height:32px; align-self:flex-end;"></div>
+          <div style="display:flex;gap:4px;align-self:flex-end;">
+            <input type="file" id="fileImportBPOM" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportRDSetting(this,'bpom')">
+            <button class="btn btn-sm" style="background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3);"
+              onclick="document.getElementById('fileImportBPOM').click()">📥 Impor</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadRDSettingTemplate('bpom')">🗂️</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+          <table class="table table-sm align-middle" style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:32px;">#</th>
+                <th>SKU</th>
+                <th>Batch</th>
+                <th>Manufaktur</th>
+                <th style="text-align:center; width:95px;">Status Return</th>
+                <th style="text-align:center; width:55px;">Jml</th>
+                <th style="text-align:right; width:50px;">Hapus</th>
+              </tr>
+            </thead>
+            <tbody id="rdSettingTableBPOM">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel Sinkronisasi -->
+      <div id="rdSettingPanelSync" style="display:none;">
+        <div style="background:rgba(14,165,233,0.06);border:1px solid rgba(14,165,233,0.15);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--teal);">
+          🔄 Panel ini menampilkan semua SKU+Batch dari data Return Distributor yang <strong>belum terdaftar</strong> di daftar Penarikan maupun Buy Back.
+          Klik tombol <strong>+ Daftarkan</strong> untuk langsung menambahkan ke daftar yang sesuai.
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+          <input type="text" class="form-control form-control-sm" id="rdSyncSearch" placeholder="🔍 Cari SKU / Batch..." style="max-width:260px;" oninput="filterRDSyncTable()">
+          <button class="btn btn-sm" style="background:rgba(14,165,233,0.1);color:var(--teal);border:1px solid rgba(14,165,233,0.25);" onclick="renderRDSyncTable()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap" style="max-height:340px; overflow-y:auto;">
+          <table class="table table-sm align-middle" style="margin:0;">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Batch</th>
+                <th style="text-align:center;">Jml Return</th>
+                <th style="text-align:center;">Kategori Saat Ini</th>
+                <th style="text-align:center;">Status Daftar</th>
+                <th style="text-align:right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="rdSyncTable">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Klik Refresh untuk memuat data</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeModal('modalRDSettings')">Batal</button>
+        <button class="btn btn-primary" id="btnSaveRDSettings" onclick="saveRDSettings()">💾 Simpan Pengaturan</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== MODAL: EXPORT RETURN DISTRIBUTOR ===== -->
+  <div class="modal-overlay" id="modalRDExport">
+    <div class="custom-modal" style="width:min(700px,96vw); max-height:90vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalRDExport')">✕</button>
+      <h3>📤 Export Return Distributor</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+        Export data lengkap termasuk detail SKU, Batch, Exp Date, Qty, dan Kategori ke file Excel.
+      </p>
+
+      <!-- Mode info -->
+      <div id="rdExportModeInfo" style="margin-bottom:14px;"></div>
+
+      <!-- Pilih return (mode selected) -->
+      <div id="rdExportSelectWrap" style="display:none;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label style="font-size:13px;font-weight:700;">Pilih Return yang akan di-export:</label>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="rdExportSelectAll(true)">✅ Pilih Semua</button>
+            <button class="btn btn-ghost btn-sm" onclick="rdExportSelectAll(false)">☐ Batal Semua</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:280px;overflow-y:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:var(--bg-panel-light);position:sticky;top:0;">
+                <th style="padding:8px 12px;width:36px;"><input type="checkbox" id="rdExportCheckAll" onchange="rdExportSelectAll(this.checked)"></th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">No. Return</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">Tanggal</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">Distributor</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;text-align:center;">SKU</th>
+                <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;text-align:center;">Qty</th>
+              </tr>
+            </thead>
+            <tbody id="rdExportList"></tbody>
+          </table>
+        </div>
+        <div id="rdExportSelectedCount" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:right;"></div>
+      </div>
+
+      <!-- Format pilihan -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <label style="font-size:13px;font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="rdExportFormat" value="xlsx" checked> 📊 Excel (.xlsx)
+        </label>
+        <label style="font-size:13px;font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px;cursor:pointer;">
+          <input type="radio" name="rdExportFormat" value="csv"> 📄 CSV (.csv)
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalRDExport')">Batal</button>
+        <button class="btn btn-primary" id="btnDoRDExport" onclick="doRDExport()">📤 Export Sekarang</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== END MODAL EXPORT RETURN DISTRIBUTOR ===== -->
+
+  <!-- ===== MODAL: SETTING PIC SALES RETURN DISTRIBUTOR ===== -->
+  <div class="modal-overlay" id="modalRDPICSales">
+    <div class="custom-modal" style="width:420px;">
+      <button class="modal-close" onclick="closeModal('modalRDPICSales')">✕</button>
+      <h3>👤 Kelola Daftar PIC Sales</h3>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+        Nama yang ditambahkan akan muncul sebagai pilihan dropdown di form Return Distributor.
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" class="form-control" id="rdNewPICSales" placeholder="Nama PIC Sales baru..."
+          onkeydown="if(event.key==='Enter') addRDPICSales()">
+        <button class="btn btn-primary btn-sm" onclick="addRDPICSales()">+ Tambah</button>
+      </div>
+      <div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:320px;overflow-y:auto;">
+        <table class="table table-sm align-middle" style="margin:0;">
+          <thead>
+            <tr style="background:var(--bg-panel-light);">
+              <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">#</th>
+              <th style="padding:8px 12px;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;">Nama PIC Sales</th>
+              <th style="padding:8px 12px;width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody id="rdPICSalesTable">
+            <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">Belum ada data</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer" style="margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeModal('modalRDPICSales')">Batal</button>
+        <button class="btn btn-primary" id="btnSaveRDPICSales" onclick="saveRDPICSales()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== END MODAL PIC SALES ===== -->
+
+  <!-- ===== MODAL: DETAIL RETURN DISTRIBUTOR ===== -->
+  <div class="modal-overlay" id="modalRDDetail">
+    <div class="custom-modal" style="width:min(860px,96vw); max-height:90vh; overflow-y:auto;">
+      <button class="modal-close" onclick="closeModal('modalRDDetail')">✕</button>
+      <h3 id="rdDetailModalTitle">📋 Detail Return</h3>
+      <p id="rdDetailModalSub" style="color:var(--text-muted);font-size:13px;margin-bottom:16px;"></p>
+      <div id="rdDetailModalBody"></div>
+      <div class="modal-footer" style="margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeModal('modalRDDetail')">Tutup</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== END MODALS RETURN DISTRIBUTOR ===== -->
 
 </body>
 
