@@ -87,7 +87,8 @@ const DISTRIBUTOR_QUEUE_HEADERS = [
 function doGet(e) {
   // Trigger update untuk mengatasi kolom kosong (title/judul Header) - DINONAKTIFKAN untuk performa
   // try { ForceUpdateAllHeaders(); } catch(err) {}
-  try { setupDistributorQueueDatabase(); } catch (err) {}
+  try { setupDistributorQueueDatabase(); } catch (err) { console.error('Error setupDistributorQueueDatabase:', err); }
+  try { setupReturnDistributorSheet(); } catch (err) { console.error('Error setupReturnDistributorSheet:', err); }
 
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
@@ -157,6 +158,8 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_CONTROL, ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.INVENTORY_MONITORING, ['id', 'areaPosisi', 'keterangan', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
+  // ReturnDistributor sheet ada di spreadsheet distributor, bukan di sini
+  // setupReturnDistributorSheet() dipanggil otomatis saat pertama kali diakses
 
   // Ensure installable triggers exist for onEdit syncing
   ensureTriggers();
@@ -5534,6 +5537,24 @@ function doPost(e) {
       result = syncFingerprintData(args[0] || []);
     } else if (func === 'addAbsensiKaryawan') {
       result = addAbsensiKaryawan.apply(null, args);
+    } else if (func === 'saveReturnDistributorBulk') {
+      result = saveReturnDistributorBulk(args[0] || []);
+    } else if (func === 'saveReturnDistributor') {
+      result = saveReturnDistributor(args[0]);
+    } else if (func === 'getReturnDistributor') {
+      result = getReturnDistributor();
+    } else if (func === 'getReturnDistributorDetail') {
+      result = getReturnDistributorDetail(args[0]);
+    } else if (func === 'deleteReturnDistributor') {
+      result = deleteReturnDistributor(args[0]);
+    } else if (func === 'getReturnDistributorSettings') {
+      result = getReturnDistributorSettings();
+    } else if (func === 'saveReturnDistributorSettings') {
+      result = saveReturnDistributorSettings(args[0], args[1], args[2]);
+    } else if (func === 'getReturnDistributorPICSales') {
+      result = getReturnDistributorPICSales();
+    } else if (func === 'saveReturnDistributorPICSales') {
+      result = saveReturnDistributorPICSales(args[0]);
     } else if (func && typeof context[func] === 'function') {
       result = context[func].apply(null, args);
     } else {
@@ -6402,6 +6423,649 @@ function updateInventoryMonitoring(id, areaPosisi, keterangan) {
     }
     
     sheet.appendRow([generateId(), areaPosisi, keterangan, now]);
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// RETURN DISTRIBUTOR
+// Data disimpan di Spreadsheet Distributor (DISTRIBUTOR_QUEUE_SPREADSHEET_ID)
+// Settings (daftar SKU bermasalah) tetap di spreadsheet utama (Settings sheet)
+// ============================================================
+
+// ============================================================
+// RETURN DISTRIBUTOR
+// Arsitektur: Header (1 baris per transaksi) + Detail (N baris SKU per transaksi)
+// Kedua sheet ada di Spreadsheet Distributor
+// Settings (daftar SKU bermasalah) di spreadsheet utama (sheet Settings)
+// ============================================================
+
+const RETURN_DISTRIBUTOR_SHEET        = 'ReturnDistributor';
+const RETURN_DISTRIBUTOR_DETAIL_SHEET = 'ReturnDistributorDetail';
+
+const RETURN_DISTRIBUTOR_HEADERS = [
+  'id', 'noReturn', 'tanggal', 'namaDistributor', 'jenisReturn',
+  'picSales', 'noMabang', 'totalSKU', 'totalQty', 'hargaOngkir', 'noResi', 'keterangan', 'createdBy', 'createdAt'
+];
+const RETURN_DISTRIBUTOR_DETAIL_HEADERS = [
+  'id', 'returnId', 'noReturn', 'sku', 'batch', 'qty', 'expDate',
+  'kategoriReturn', 'keterangan'
+];
+
+const RETURN_DIST_SETTINGS_KEYS = {
+  PENARIKAN: 'returnDist_penarikan', // tidak dipakai lagi, data kini di sheet SKU Bermasalah
+  BUYBACK:   'returnDist_buyback'    // tidak dipakai lagi, data kini di sheet SKU Bermasalah
+};
+
+/**
+ * Fungsi test untuk memverifikasi Return Distributor dapat dimuat
+ * Panggil dari Apps Script Editor untuk debugging
+ */
+function testReturnDistributor() {
+  console.log('=== TEST RETURN DISTRIBUTOR ===');
+  
+  try {
+    // Test 1: Setup sheet
+    console.log('Test 1: Setup sheet...');
+    const setupResult = setupReturnDistributorSheet();
+    console.log('Setup result:', setupResult);
+    
+    // Test 2: Get sheet
+    console.log('Test 2: Get sheet...');
+    const sheet = getReturnDistributorSheet();
+    console.log('Sheet name:', sheet.getName());
+    console.log('Sheet ID:', sheet.getSheetId());
+    
+    // Test 3: Check headers
+    console.log('Test 3: Check headers...');
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    console.log('Current headers:', headers);
+    console.log('Expected headers:', RETURN_DISTRIBUTOR_HEADERS);
+    
+    // Test 4: Get data
+    console.log('Test 4: Get data...');
+    const result = getReturnDistributor();
+    console.log('Result:', JSON.stringify(result));
+    
+    if (result.success) {
+      console.log('✅ SUCCESS: Data berhasil dimuat, jumlah:', result.data.length);
+      if (result.data.length > 0) {
+        console.log('Sample data:', JSON.stringify(result.data[0]));
+      }
+    } else {
+      console.log('❌ FAILED:', result.message);
+    }
+    
+    return result;
+  } catch (e) {
+    console.error('❌ ERROR:', e.message, e.stack);
+    return { success: false, message: e.message, stack: e.stack };
+  }
+}
+
+/**
+ * Fungsi untuk memperbaiki header sheet yang tidak sesuai
+ * Panggil dari Apps Script Editor jika header tidak sesuai
+ */
+function fixReturnDistributorHeaders() {
+  try {
+    console.log('=== FIX RETURN DISTRIBUTOR HEADERS ===');
+    
+    const ss = getReturnDistributorSpreadsheet();
+    const sheet = ss.getSheetByName(RETURN_DISTRIBUTOR_SHEET);
+    
+    if (!sheet) {
+      return { success: false, message: 'Sheet tidak ditemukan' };
+    }
+    
+    // Baca header saat ini
+    const currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    console.log('Current headers:', currentHeaders);
+    console.log('Expected headers:', RETURN_DISTRIBUTOR_HEADERS);
+    
+    // Update header
+    sheet.getRange(1, 1, 1, RETURN_DISTRIBUTOR_HEADERS.length).setValues([RETURN_DISTRIBUTOR_HEADERS]);
+    sheet.getRange(1, 1, 1, RETURN_DISTRIBUTOR_HEADERS.length)
+      .setFontWeight('bold')
+      .setBackground('#1a3a5c')
+      .setFontColor('#ffffff');
+    
+    console.log('✅ Headers berhasil diperbaiki');
+    return { success: true, message: 'Headers berhasil diperbaiki' };
+  } catch (e) {
+    console.error('❌ ERROR:', e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+// ---- Spreadsheet distributor ----
+function getReturnDistributorSpreadsheet() {
+  return SpreadsheetApp.openById(CONFIG.DISTRIBUTOR_QUEUE_SPREADSHEET_ID);
+}
+
+// ---- Setup kedua sheet ----
+function setupReturnDistributorSheet() {
+  try {
+    const ss = getReturnDistributorSpreadsheet();
+    console.log('setupReturnDistributorSheet: Membuat sheet di spreadsheet:', ss.getId());
+    setupSheet(ss, RETURN_DISTRIBUTOR_SHEET,        RETURN_DISTRIBUTOR_HEADERS);
+    setupSheet(ss, RETURN_DISTRIBUTOR_DETAIL_SHEET, RETURN_DISTRIBUTOR_DETAIL_HEADERS);
+    console.log('setupReturnDistributorSheet: Sheet berhasil dibuat');
+    return { success: true };
+  } catch (e) {
+    console.error('setupReturnDistributorSheet Error:', e.message);
+    throw e;
+  }
+}
+
+function getReturnDistributorSheet() {
+  try {
+    const ss = getReturnDistributorSpreadsheet();
+    let sheet = ss.getSheetByName(RETURN_DISTRIBUTOR_SHEET);
+    if (!sheet) { 
+      console.log('getReturnDistributorSheet: Sheet tidak ditemukan, membuat sheet baru');
+      setupReturnDistributorSheet(); 
+      sheet = ss.getSheetByName(RETURN_DISTRIBUTOR_SHEET); 
+    }
+    if (!sheet) {
+      console.error('getReturnDistributorSheet: Gagal membuat sheet');
+      throw new Error('Gagal membuat sheet ReturnDistributor');
+    }
+    return sheet;
+  } catch (e) {
+    console.error('getReturnDistributorSheet Error:', e.message);
+    throw e;
+  }
+}
+
+function getReturnDistributorDetailSheet() {
+  try {
+    const ss = getReturnDistributorSpreadsheet();
+    let sheet = ss.getSheetByName(RETURN_DISTRIBUTOR_DETAIL_SHEET);
+    if (!sheet) { 
+      console.log('getReturnDistributorDetailSheet: Sheet tidak ditemukan, membuat sheet baru');
+      setupReturnDistributorSheet(); 
+      sheet = ss.getSheetByName(RETURN_DISTRIBUTOR_DETAIL_SHEET); 
+    }
+    if (!sheet) {
+      console.error('getReturnDistributorDetailSheet: Gagal membuat sheet');
+      throw new Error('Gagal membuat sheet ReturnDistributorDetail');
+    }
+    return sheet;
+  } catch (e) {
+    console.error('getReturnDistributorDetailSheet Error:', e.message);
+    throw e;
+  }
+}
+
+// ---- Generate nomor return: RD-YYYYMMDD-XXX ----
+function generateNoReturn() {
+  const sheet = getReturnDistributorSheet();
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
+  const prefix = 'RD-' + today + '-';
+  const data = sheet.getDataRange().getValues();
+  let max = 0;
+  for (let i = 1; i < data.length; i++) {
+    const no = String(data[i][1] || '');
+    if (no.startsWith(prefix)) {
+      const num = parseInt(no.replace(prefix, '')) || 0;
+      if (num > max) max = num;
+    }
+  }
+  return prefix + String(max + 1).padStart(3, '0');
+}
+
+// ---- Get all return headers ----
+function getReturnDistributor() {
+  try {
+    const sheet = getReturnDistributorSheet();
+    if (!sheet) {
+      console.error('getReturnDistributor: Sheet tidak ditemukan');
+      return { success: false, message: 'Sheet ReturnDistributor tidak ditemukan' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 1) {
+      console.log('getReturnDistributor: Sheet kosong, mengembalikan array kosong');
+      return { success: true, data: [] };
+    }
+
+    // Baca header row untuk mapping kolom secara dinamis
+    const headers = data[0].map(h => String(h||'').trim().toLowerCase());
+    console.log('getReturnDistributor: Headers found:', headers);
+    
+    const col = (name) => headers.indexOf(name.toLowerCase());
+
+    // Mapping kolom berdasarkan header yang ditemukan
+    // Header order: id, noReturn, tanggal, namaDistributor, jenisReturn, picSales, noMabang, totalSKU, totalQty, hargaOngkir, noResi, keterangan, createdBy, createdAt
+    const idx = {
+      id:              col('id')              >= 0 ? col('id')              : 0,
+      noReturn:        col('noreturn')        >= 0 ? col('noreturn')        : 1,
+      tanggal:         col('tanggal')         >= 0 ? col('tanggal')         : 2,
+      namaDistributor: col('namadistributor') >= 0 ? col('namadistributor') : 3,
+      jenisReturn:     col('jenisreturn')     >= 0 ? col('jenisreturn')     : 4,
+      picSales:        col('picsales')        >= 0 ? col('picsales')        : 5,
+      noMabang:        col('nomabang')        >= 0 ? col('nomabang')        : 6,
+      totalSKU:        col('totalsku')        >= 0 ? col('totalsku')        : 7,
+      totalQty:        col('totalqty')        >= 0 ? col('totalqty')        : 8,
+      hargaOngkir:     col('hargaongkir')     >= 0 ? col('hargaongkir')     : 9,
+      noResi:          col('noresi')          >= 0 ? col('noresi')          : 10,
+      keterangan:      col('keterangan')      >= 0 ? col('keterangan')      : 11,
+      createdBy:       col('createdby')       >= 0 ? col('createdby')       : 12,
+      createdAt:       col('createdat')       >= 0 ? col('createdat')       : 13,
+    };
+
+    console.log('getReturnDistributor: Column mapping:', JSON.stringify(idx));
+
+    const getVal = (row, i, def) => (i >= 0 && i < row.length) ? (row[i] || def) : def;
+
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const row = data[i];
+      const tanggalRaw = getVal(row, idx.tanggal, '');
+      
+      const item = {
+        id:              String(getVal(row, idx.id, '')),
+        noReturn:        String(getVal(row, idx.noReturn, '')),
+        tanggal:         tanggalRaw instanceof Date
+          ? Utilities.formatDate(tanggalRaw, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(tanggalRaw),
+        namaDistributor: String(getVal(row, idx.namaDistributor, '')),
+        jenisReturn:     String(getVal(row, idx.jenisReturn, '')),
+        picSales:        String(getVal(row, idx.picSales, '')),
+        noMabang:        String(getVal(row, idx.noMabang, '')),
+        totalSKU:        Number(getVal(row, idx.totalSKU, 0)) || 0,
+        totalQty:        Number(getVal(row, idx.totalQty, 0)) || 0,
+        hargaOngkir:     Number(getVal(row, idx.hargaOngkir, 0)) || 0,
+        noResi:          String(getVal(row, idx.noResi, '')),
+        keterangan:      String(getVal(row, idx.keterangan, '')),
+        createdBy:       String(getVal(row, idx.createdBy, '')),
+        createdAt:       String(getVal(row, idx.createdAt, ''))
+      };
+      
+      result.push(item);
+    }
+    console.log('getReturnDistributor: Berhasil memuat ' + result.length + ' data');
+    if (result.length > 0) {
+      console.log('getReturnDistributor: Sample data:', JSON.stringify(result[0]));
+    }
+    return { success: true, data: result };
+  } catch (e) { 
+    console.error('getReturnDistributor Error:', e.message, e.stack);
+    return { success: false, message: 'Error: ' + e.message }; 
+  }
+}
+
+// ---- Get detail by returnId ----
+function getReturnDistributorDetail(returnId) {
+  try {
+    const sheet = getReturnDistributorDetailSheet();
+    if (!sheet) {
+      console.error('getReturnDistributorDetail: Sheet tidak ditemukan');
+      return { success: false, message: 'Sheet ReturnDistributorDetail tidak ditemukan' };
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 1) {
+      console.log('getReturnDistributorDetail: Sheet kosong untuk returnId:', returnId);
+      return { success: true, data: [] };
+    }
+
+    // Mapping kolom dinamis
+    const headers = data[0].map(h => String(h||'').trim().toLowerCase());
+    const col = (name) => headers.indexOf(name.toLowerCase());
+    const idx = {
+      id:             col('id')             >= 0 ? col('id')             : 0,
+      returnId:       col('returnid')       >= 0 ? col('returnid')       : 1,
+      noReturn:       col('noreturn')       >= 0 ? col('noreturn')       : 2,
+      sku:            col('sku')            >= 0 ? col('sku')            : 3,
+      batch:          col('batch')          >= 0 ? col('batch')          : 4,
+      qty:            col('qty')            >= 0 ? col('qty')            : 5,
+      expDate:        col('expdate')        >= 0 ? col('expdate')        : 6,
+      kategoriReturn: col('kategorireturn') >= 0 ? col('kategorireturn') : 7,
+      keterangan:     col('keterangan')     >= 0 ? col('keterangan')     : 8,
+    };
+    const getVal = (row, i, def) => (i >= 0 && i < row.length) ? (row[i] !== undefined && row[i] !== null ? row[i] : def) : def;
+
+    const result = [];
+    const rid = String(returnId).trim();
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const row = data[i];
+      if (String(getVal(row, idx.returnId, '')).trim() !== rid) continue;
+
+      const expRaw = getVal(row, idx.expDate, '');
+      result.push({
+        id:             String(getVal(row, idx.id, '')),
+        returnId:       String(getVal(row, idx.returnId, '')),
+        noReturn:       getVal(row, idx.noReturn, ''),
+        sku:            getVal(row, idx.sku, ''),
+        batch:          getVal(row, idx.batch, ''),
+        qty:            getVal(row, idx.qty, ''),
+        expDate:        expRaw instanceof Date
+          ? Utilities.formatDate(expRaw, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+          : String(expRaw || ''),
+        kategoriReturn: getVal(row, idx.kategoriReturn, 'Return Normal'),
+        keterangan:     getVal(row, idx.keterangan, '')
+      });
+    }
+
+    console.log('getReturnDistributorDetail: Berhasil memuat ' + result.length + ' detail untuk returnId:', returnId);
+    return { success: true, data: result };
+  } catch (e) { 
+    console.error('getReturnDistributorDetail Error:', e.message, e.stack);
+    return { success: false, message: 'Error: ' + e.message }; 
+  }
+}
+
+// ---- Resolve kategori ----
+function resolveReturnKategori(sku, batch, defaultKategori, penarikanList, buybackList, bpomList) {
+  const s = String(sku || '').trim().toLowerCase();
+  const b = String(batch || '').trim().toLowerCase();
+  if ((penarikanList||[]).some(x => matchSKUBatch(x, s, b))) return 'Return Penarikan';
+  if ((buybackList||[]).some(x   => matchSKUBatch(x, s, b))) return 'Return Buy Back';
+  if ((bpomList||[]).some(x      => matchSKUBatch(x, s, b))) return 'Return BPOM';
+  return defaultKategori || 'Return Normal';
+}
+
+// ---- Save transaksi return (header + detail sekaligus) ----
+// rec = { id?, tanggal, namaDistributor, keterangan, createdBy, items: [{sku,batch,qty,expDate,kategoriReturn,keterangan}] }
+function saveReturnDistributor(rec) {
+  try {
+    // Backward compat: jika array dikirim langsung → bulk lama
+    if (Array.isArray(rec)) return saveReturnDistributorBulk(rec);
+
+    const settingsRes   = getReturnDistributorSettings();
+    const penarikanList = settingsRes.success ? (settingsRes.data.penarikan || []) : [];
+    const buybackList   = settingsRes.success ? (settingsRes.data.buyback  || []) : [];
+    const bpomList      = settingsRes.success ? (settingsRes.data.bpom     || []) : [];
+    const now           = new Date().toISOString();
+    const hSheet        = getReturnDistributorSheet();
+    const dSheet        = getReturnDistributorDetailSheet();
+
+    // ---- MODE EDIT header saja (tanpa items) ----
+    if (rec.id && (!rec.items || !rec.items.length)) {
+      const hData = hSheet.getDataRange().getValues();
+      for (let i = 1; i < hData.length; i++) {
+        if (String(hData[i][0]) === String(rec.id)) {
+          hSheet.getRange(i+1, 3).setValue(rec.tanggal);
+          hSheet.getRange(i+1, 4).setValue(rec.namaDistributor);
+          hSheet.getRange(i+1, 5).setValue(rec.jenisReturn || '');
+          hSheet.getRange(i+1, 6).setValue(rec.picSales || '');
+          hSheet.getRange(i+1, 7).setValue(rec.noMabang || '');
+          hSheet.getRange(i+1, 10).setValue(rec.hargaOngkir || 0);
+          hSheet.getRange(i+1, 11).setValue(rec.noResi || '');
+          hSheet.getRange(i+1, 12).setValue(rec.keterangan || '');
+          return { success: true, id: rec.id };
+        }
+      }
+      return { success: false, message: 'Header tidak ditemukan' };
+    }
+
+    const items = rec.items || [];
+    const validItems = items.filter(x => x.sku && x.batch);
+    if (!validItems.length) return { success: false, message: 'Minimal 1 item SKU+Batch harus diisi' };
+
+    const totalQty = validItems.reduce((s, x) => s + (parseFloat(x.qty) || 0), 0);
+
+    // ---- MODE TAMBAH BARU ----
+    if (!rec.id) {
+      const returnId = generateId();
+      const noReturn = generateNoReturn();
+
+      // Simpan header
+      hSheet.appendRow([
+        returnId, noReturn, rec.tanggal, rec.namaDistributor,
+        rec.jenisReturn || '', rec.picSales || '', rec.noMabang || '',
+        validItems.length, totalQty, rec.hargaOngkir || 0, rec.noResi || '', rec.keterangan || '', rec.createdBy || '', now
+      ]);
+
+      // Simpan detail (batch)
+      const detailRows = validItems.map(item => {
+        const kat = resolveReturnKategori(item.sku, item.batch, item.kategoriReturn, penarikanList, buybackList, bpomList);
+        return [generateId(), returnId, noReturn, item.sku, item.batch,
+                parseFloat(item.qty)||'', item.expDate||'', kat, item.keterangan||''];
+      });
+      if (detailRows.length > 0) {
+        dSheet.getRange(dSheet.getLastRow()+1, 1, detailRows.length, RETURN_DISTRIBUTOR_DETAIL_HEADERS.length).setValues(detailRows);
+      }
+      return { success: true, id: returnId, noReturn: noReturn, saved: validItems.length };
+    }
+
+    // ---- MODE UPDATE (ganti semua detail) ----
+    const hData = hSheet.getDataRange().getValues();
+    let noReturn = '';
+    for (let i = 1; i < hData.length; i++) {
+      if (String(hData[i][0]) === String(rec.id)) {
+        noReturn = hData[i][1];
+        hSheet.getRange(i+1, 3).setValue(rec.tanggal);
+        hSheet.getRange(i+1, 4).setValue(rec.namaDistributor);
+        hSheet.getRange(i+1, 5).setValue(rec.jenisReturn || '');
+        hSheet.getRange(i+1, 6).setValue(rec.picSales || '');
+        hSheet.getRange(i+1, 7).setValue(rec.noMabang || '');
+        hSheet.getRange(i+1, 8).setValue(validItems.length);
+        hSheet.getRange(i+1, 9).setValue(totalQty);
+        hSheet.getRange(i+1, 10).setValue(rec.hargaOngkir || 0);
+        hSheet.getRange(i+1, 11).setValue(rec.noResi || '');
+        hSheet.getRange(i+1, 12).setValue(rec.keterangan || '');
+        break;
+      }
+    }
+    // Hapus detail lama
+    const dData = dSheet.getDataRange().getValues();
+    for (let i = dData.length - 1; i >= 1; i--) {
+      if (String(dData[i][1]) === String(rec.id)) dSheet.deleteRow(i+1);
+    }
+    // Tulis detail baru
+    const detailRows = validItems.map(item => {
+      const kat = resolveReturnKategori(item.sku, item.batch, item.kategoriReturn, penarikanList, buybackList, bpomList);
+      return [generateId(), rec.id, noReturn, item.sku, item.batch,
+              parseFloat(item.qty)||'', item.expDate||'', kat, item.keterangan||''];
+    });
+    if (detailRows.length > 0) {
+      dSheet.getRange(dSheet.getLastRow()+1, 1, detailRows.length, RETURN_DISTRIBUTOR_DETAIL_HEADERS.length).setValues(detailRows);
+    }
+    return { success: true, id: rec.id, noReturn: noReturn, saved: validItems.length };
+
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ---- Delete return (header + semua detail) ----
+function deleteReturnDistributor(id) {
+  try {
+    const hSheet = getReturnDistributorSheet();
+    const dSheet = getReturnDistributorDetailSheet();
+    // Hapus header
+    const hData = hSheet.getDataRange().getValues();
+    for (let i = hData.length - 1; i >= 1; i--) {
+      if (String(hData[i][0]) === String(id)) { hSheet.deleteRow(i+1); break; }
+    }
+    // Hapus semua detail
+    const dData = dSheet.getDataRange().getValues();
+    for (let i = dData.length - 1; i >= 1; i--) {
+      if (String(dData[i][1]) === String(id)) dSheet.deleteRow(i+1);
+    }
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ---- Backward compat: bulk lama (tidak dipakai lagi tapi tetap ada) ----
+function saveReturnDistributorBulk(records) {
+  if (!records || !records.length) return { success: false, message: 'Tidak ada data.' };
+  // Kelompokkan per tanggal+distributor menjadi 1 transaksi
+  const groups = {};
+  records.forEach(r => {
+    const key = (r.tanggal||'') + '||' + (r.namaDistributor||'');
+    if (!groups[key]) groups[key] = { tanggal: r.tanggal, namaDistributor: r.namaDistributor, keterangan: r.keterangan||'', createdBy: r.createdBy||'', items: [] };
+    groups[key].items.push(r);
+  });
+  let totalSaved = 0;
+  const results = [];
+  Object.values(groups).forEach(g => {
+    const res = saveReturnDistributor(g);
+    if (res.success) totalSaved += (res.saved || 0);
+    results.push(res);
+  });
+  return { success: true, saved: totalSaved, total: records.length, groups: results.length };
+}
+
+// ---- Sheet SKU Bermasalah di spreadsheet distributor ----
+const RETURN_SKU_BERMASALAH_SHEET   = 'SKU Bermasalah';
+const RETURN_SKU_BERMASALAH_HEADERS = ['sku', 'batch', 'manufaktur', 'tipe', 'updatedAt'];
+// batch: nilai spesifik ATAU 'ALL' (semua batch dari SKU tersebut)
+// tipe: 'Penarikan' | 'Buy Back' | 'BPOM'
+
+function getReturnSKUBermasalahSheet() {
+  const ss = getReturnDistributorSpreadsheet();
+  let sheet = ss.getSheetByName(RETURN_SKU_BERMASALAH_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(RETURN_SKU_BERMASALAH_SHEET);
+    sheet.appendRow(RETURN_SKU_BERMASALAH_HEADERS);
+    sheet.getRange(1, 1, 1, RETURN_SKU_BERMASALAH_HEADERS.length)
+      .setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidth(1, 160); // SKU
+    sheet.setColumnWidth(2, 120); // Batch
+    sheet.setColumnWidth(3, 160); // Manufaktur
+    sheet.setColumnWidth(4, 120); // Tipe
+    sheet.setColumnWidth(5, 200); // UpdatedAt
+  } else {
+    // Migrasi: pastikan header sudah ada kolom manufaktur
+    const hdr = sheet.getRange(1, 1, 1, 5).getValues()[0];
+    if (String(hdr[2]||'').toLowerCase() !== 'manufaktur') {
+      // Insert kolom manufaktur di posisi 3
+      sheet.insertColumnAfter(2);
+      sheet.getRange(1, 3).setValue('manufaktur').setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+      sheet.setColumnWidth(3, 160);
+    }
+  }
+  return sheet;
+}
+
+// ---- Helper: cek apakah SKU+Batch cocok (support ALL batch) ----
+function matchSKUBatch(item, sku, batch) {
+  const itemSKU   = String(item.sku   || '').trim().toLowerCase();
+  const itemBatch = String(item.batch || '').trim().toLowerCase();
+  const s = sku.toLowerCase(), b = batch.toLowerCase();
+  if (itemSKU !== s) return false;
+  return itemBatch === 'all' || itemBatch === b;
+}
+
+// ---- Get Return Distributor Settings (baca dari sheet SKU Bermasalah) ----
+function getReturnDistributorSettings() {
+  try {
+    const sheet = getReturnSKUBermasalahSheet();
+    const data  = sheet.getDataRange().getValues();
+    const penarikan = [], buyback = [], bpom = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const sku        = String(data[i][0] || '').trim();
+      const batch      = String(data[i][1] || '').trim();
+      const manufaktur = String(data[i][2] || '').trim();
+      const tipe       = String(data[i][3] || '').trim().toLowerCase();
+      if (!sku || !batch) continue;
+      const entry = { sku, batch, manufaktur };
+      if (tipe === 'penarikan')    penarikan.push(entry);
+      else if (tipe === 'buy back') buyback.push(entry);
+      else if (tipe === 'bpom')    bpom.push(entry);
+    }
+    return { success: true, data: { penarikan, buyback, bpom } };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ---- Save Return Distributor Settings (tulis ulang sheet SKU Bermasalah) ----
+function saveReturnDistributorSettings(penarikanList, buybackList, bpomList) {
+  try {
+    const sheet = getReturnSKUBermasalahSheet();
+    const now   = new Date().toISOString();
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+
+    const rows = [];
+    const addRows = (list, tipeLabel) => {
+      (list || []).forEach(item => {
+        if (!item.sku || !item.batch) return;
+        rows.push([item.sku, item.batch, item.manufaktur || '', tipeLabel, now]);
+      });
+    };
+    addRows(penarikanList, 'Penarikan');
+    addRows(buybackList,   'Buy Back');
+    addRows(bpomList,      'BPOM');
+
+    if (rows.length > 0) {
+      sheet.getRange(2, 1, rows.length, RETURN_SKU_BERMASALAH_HEADERS.length).setValues(rows);
+      rows.forEach((row, i) => {
+        const rowNum = i + 2;
+        const color  = row[3] === 'Penarikan' ? '#fce8e6'
+                     : row[3] === 'Buy Back'  ? '#fef9e7'
+                     : row[3] === 'BPOM'      ? '#f3e8ff'
+                     : '#ffffff';
+        sheet.getRange(rowNum, 1, 1, RETURN_SKU_BERMASALAH_HEADERS.length).setBackground(color);
+        // Bold batch ALL
+        if (String(row[1]).toUpperCase() === 'ALL') {
+          sheet.getRange(rowNum, 2).setFontWeight('bold').setFontColor('#ef4444');
+        }
+      });
+    }
+
+    return { success: true, message: `${rows.length} SKU berhasil disimpan ke sheet "${RETURN_SKU_BERMASALAH_SHEET}".` };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ---- Check if SKU+Batch is flagged ----
+function checkReturnDistributorSKU(sku, batch) {
+  try {
+    const res = getReturnDistributorSettings();
+    if (!res.success) return { success: true, kategori: 'Return Normal', flagged: false };
+    const s = String(sku || '').trim().toLowerCase();
+    const b = String(batch || '').trim().toLowerCase();
+    const inPenarikan = (res.data.penarikan || []).some(item => matchSKUBatch(item, s, b));
+    const inBuyback   = (res.data.buyback   || []).some(item => matchSKUBatch(item, s, b));
+    const inBPOM      = (res.data.bpom      || []).some(item => matchSKUBatch(item, s, b));
+    if (inPenarikan) return { success: true, kategori: 'Return Penarikan', flagged: true, type: 'penarikan' };
+    if (inBuyback)   return { success: true, kategori: 'Return Buy Back',  flagged: true, type: 'buyback'   };
+    if (inBPOM)      return { success: true, kategori: 'Return BPOM',      flagged: true, type: 'bpom'      };
+    return { success: true, kategori: 'Return Normal', flagged: false };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// PIC SALES RETURN DISTRIBUTOR (disimpan di Settings spreadsheet utama)
+// ============================================================
+const RD_PIC_SALES_KEY = 'returnDist_picSalesList';
+
+function getReturnDistributorPICSales() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data  = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]||'').trim() === RD_PIC_SALES_KEY) {
+        let list = [];
+        try { list = JSON.parse(String(data[i][1]||'[]')); } catch(e) { list = []; }
+        return { success: true, data: list };
+      }
+    }
+    return { success: true, data: [] };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function saveReturnDistributorPICSales(picList) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const data  = sheet.getDataRange().getValues();
+    const now   = new Date().toISOString();
+    const val   = JSON.stringify((picList || []).filter(x => x && x.trim()));
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]||'').trim() === RD_PIC_SALES_KEY) {
+        sheet.getRange(i+1, 2).setValue(val);
+        sheet.getRange(i+1, 3).setValue(now);
+        return { success: true };
+      }
+    }
+    sheet.appendRow([RD_PIC_SALES_KEY, val, now]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
