@@ -5,7 +5,7 @@
 
 const CONFIG = {
   SPREADSHEET_ID: '1lde5La49rhI5NElJNtpaGP7ZMFcS9n28ZNRy6YyhU3s', // Database utama aplikasi
-  DISTRIBUTOR_QUEUE_SPREADSHEET_ID: '1Plj0hVoGrKVTceePK1ax4q3SObCyhuo5lcL0y8LronE', // Spreadsheet khusus Antrian Distributor
+  DISTRIBUTOR_QUEUE_SPREADSHEET_ID: '1etetQhe3HGaE8eR2iUHOnUcCLXkdhHrnfzjMRG-tcfA', // Spreadsheet khusus Antrian Distributor
   SHEETS: {
     USERS: 'Users',
     KAS_GUDANG: 'KasGudang',
@@ -26,6 +26,10 @@ const CONFIG = {
     ORDER: 'Order',
     ORDER_DETAIL: 'OrderDetail',
     DISTRIBUTOR_QUEUE: 'Antrian Distributor',
+    DISTRIBUTOR_QUEUE_FOCALSKIN: 'ANTRIAN FOCALSKIN',
+    DISTRIBUTOR_QUEUE_MISTINE: 'ANTRIAN MISTINE',
+    DISTRIBUTOR_QUEUE_SBY: 'ANTRIAN SBY',
+    LATE_SHIPMENT: 'LateShipment',
     RETUR: 'Retur',
     RETUR_DETAIL: 'ReturDetail',
     STOCK_CONTROL: 'Stock Control',
@@ -49,13 +53,17 @@ const CONFIG = {
     AUDIT_REPORTS: 'AuditReports',
     INVENTORY_CONTROL: 'InventoryControl',
     INVENTORY_MONITORING: 'InventoryMonitoring',
-    BOOKING_MOBIL_DETAIL: 'BookingMobilDetail'
+    BOOKING_MOBIL_DETAIL: 'BookingMobilDetail',
+    PETTY_CASH: 'PettyCash',
+    PETTY_CASH_PERIOD: 'PettyCashPeriod'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC',
-  BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo'  // Folder untuk Bukti Pembayaran Booking Mobil
+  BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo',  // Folder untuk Bukti Pembayaran Booking Mobil
+  PETTY_CASH_FOLDER_ID: '1d1jqWSHxHQkEXu2bmhFDTTHuA36afRPd'          // Folder utama Petty Cash Drive
 };
 
 const DISTRIBUTOR_QUEUE_HEADERS = [
+  'No',
   'Order queue time',
   'PIC Sales',
   'Nama Distributor',
@@ -89,6 +97,7 @@ function doGet(e) {
   // try { ForceUpdateAllHeaders(); } catch(err) {}
   try { setupDistributorQueueDatabase(); } catch (err) { console.error('Error setupDistributorQueueDatabase:', err); }
   try { setupReturnDistributorSheet(); } catch (err) { console.error('Error setupReturnDistributorSheet:', err); }
+  try { setupPettyCashSheets(); } catch (err) { console.error('Error setupPettyCashSheets:', err); }
 
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
@@ -134,6 +143,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking','kategori','noResi']);
   setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty','lokasi']);
+  setupSheet(ss, CONFIG.SHEETS.LATE_SHIPMENT, ['id','poNumber','sourceSheet','rowNumber','keterangan','status','createdBy','createdAt','history']);
   setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
   setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL, ['id', 'tanggal', 'pic', 'area', 'kategori', 'alasan', 'karyawan', 'status', 'createdBy', 'createdAt']);
@@ -149,8 +159,10 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes']);
+  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes', 'jamMulaiPerjalanan', 'jamTibaTujuan', 'jamKembaliWarehouse', 'jamSampaiWarehouse']);
   setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL_DETAIL, ['id', 'bookingId', 'tanggal', 'namaCustomer', 'noPo', 'totalCartoon', 'parkir', 'tol', 'pkbm', 'lainLain', 'keterangan', 'buktiUrls']);
+  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH_PERIOD, ['id', 'nama', 'tanggalMulai', 'tanggalSelesai', 'saldoAwal', 'keterangan', 'status', 'createdBy', 'createdAt']);
+  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH, ['id', 'periodId', 'tanggal', 'kategori', 'keterangan', 'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
@@ -263,6 +275,12 @@ function getDistributorQueueSpreadsheet() {
 function setupDistributorQueueDatabase() {
   const ss = getDistributorQueueSpreadsheet();
   setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE, DISTRIBUTOR_QUEUE_HEADERS);
+  
+  // Setup 3 sheet baru dengan template header yang sama
+  setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE_FOCALSKIN, DISTRIBUTOR_QUEUE_HEADERS);
+  setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE, DISTRIBUTOR_QUEUE_HEADERS);
+  setupSheet(ss, CONFIG.SHEETS.DISTRIBUTOR_QUEUE_SBY, DISTRIBUTOR_QUEUE_HEADERS);
+  
   return { success: true, url: ss.getUrl(), spreadsheetId: ss.getId() };
 }
 
@@ -422,7 +440,7 @@ function importUsersBulk(userList) {
   }
 }
 
-function addUser(username, password, nama, role, permissions) {
+function addUser(username, password, nama, role, permissions, divisi) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.USERS);
     const data = sheet.getDataRange().getValues();
@@ -430,12 +448,12 @@ function addUser(username, password, nama, role, permissions) {
       if (data[i][1] === username) return { success: false, message: 'Username sudah ada' };
     }
     const id = generateId();
-    sheet.appendRow([id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]', arguments[5] || '']);
+    sheet.appendRow([id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]', divisi || '']);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateUser(id, username, password, nama, role, permissions) {
+function updateUser(id, username, password, nama, role, permissions, divisi) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.USERS);
     const data = sheet.getDataRange().getValues();
@@ -447,7 +465,7 @@ function updateUser(id, username, password, nama, role, permissions) {
         sheet.getRange(i + 1, 4).setValue(nama);
         sheet.getRange(i + 1, 5).setValue(role);
         sheet.getRange(i + 1, 7).setValue(permissions || '[]');
-        sheet.getRange(i + 1, 8).setValue(arguments[6] || '');
+        sheet.getRange(i + 1, 8).setValue(divisi || '');
         return { success: true };
       }
     }
@@ -1171,10 +1189,18 @@ function uploadChunk(chunkData, chunkIndex, uploadId) {
     const cache = CacheService.getScriptCache();
     const id = uploadId || Utilities.getUuid();
     const key = 'chunk_' + id + '_' + chunkIndex;
-    if (chunkData.length <= 90000) { 
+    
+    // Validasi ukuran chunk
+    if (!chunkData || chunkData.length === 0) {
+      return { success: false, message: 'Chunk data kosong' };
+    }
+    
+    // Support chunk size hingga 30KB (sangat aman untuk file besar)
+    if (chunkData.length <= 30000) { 
       cache.put(key, chunkData, 21600); 
       cache.put('meta_' + id + '_count', String(chunkIndex + 1), 21600); 
     } else { 
+      // Split jika lebih besar dari 30KB
       const half = Math.ceil(chunkData.length / 2); 
       cache.put(key + '_a', chunkData.substring(0, half), 21600); 
       cache.put(key + '_b', chunkData.substring(half), 21600); 
@@ -1182,10 +1208,13 @@ function uploadChunk(chunkData, chunkIndex, uploadId) {
       cache.put('meta_' + id + '_count', String(chunkIndex + 1), 21600); 
     }
     return { success: true, uploadId: id };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { 
+    Logger.log('uploadChunk error: ' + e.message);
+    return { success: false, message: e.message }; 
+  }
 }
 
-function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
+function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName, periodName) {
   try {
     const cache = CacheService.getScriptCache();
     const countStr = cache.get('meta_' + uploadId + '_count');
@@ -1198,8 +1227,19 @@ function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
       if (isSplit) { fullBase64 += (cache.get(key + '_a') || '') + (cache.get(key + '_b') || ''); } 
       else { fullBase64 += cache.get(key) || ''; }
     }
+    
     let folder;
-    if (folderName === 'Bukti Packing') {
+    
+    // Khusus untuk Petty Cash, gunakan folder per periode
+    if (folderName === 'PettyCash' && periodName) {
+      try {
+        folder = getPettyCashPeriodFolder(periodName);
+        Logger.log('File akan disimpan ke folder Petty Cash periode: ' + periodName);
+      } catch(e) {
+        Logger.log('Error accessing Petty Cash period folder, using default: ' + e.message);
+        folder = getOrCreateBuktiFolder(folderName);
+      }
+    } else if (folderName === 'Bukti Packing') {
       try {
         folder = DriveApp.getFolderById('1lE_NWzThv9MdODkmtYjScWz-Bb3N8ocA');
       } catch(e) {
@@ -1212,11 +1252,59 @@ function finalizeChunkedUpload(uploadId, fileName, mimeType, folderName) {
     const decoded = Utilities.base64Decode(fullBase64);
     const blob = Utilities.newBlob(decoded, mimeType || 'application/octet-stream', fileName);
     const file = folder.createFile(blob);
+    
+    const fileId = file.getId();
+    Logger.log('File uploaded successfully with ID: ' + fileId);
+    
+    // PENTING: Set sharing permission agar bisa diakses publik
+    // Gunakan metode yang lebih reliable
     try {
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    } catch(err) {} // abaikan error permission domain
-    return { success: true, url: file.getUrl() };
-  } catch (e) { return { success: false, message: e.message }; }
+      Logger.log('File sharing permission set to ANYONE_WITH_LINK');
+      
+      // Tambahan: Set sharing secara eksplisit dengan Drive API
+      Drive.Permissions.insert(
+        {
+          'type': 'anyone',
+          'role': 'reader',
+          'withLink': true
+        },
+        fileId,
+        {
+          'supportsAllDrives': true
+        }
+      );
+      Logger.log('Drive API permission set successfully');
+    } catch(err) {
+      Logger.log('Warning: Tidak bisa set sharing permission: ' + err.message);
+    }
+    
+    // Generate multiple URL formats untuk compatibility
+    const fileUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+    const thumbnailUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1000';
+    const directUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
+    const embedUrl = 'https://drive.google.com/file/d/' + fileId + '/preview';
+    
+    Logger.log('File URL: ' + fileUrl);
+    Logger.log('Thumbnail URL: ' + thumbnailUrl);
+    Logger.log('Direct URL: ' + directUrl);
+    Logger.log('Embed URL: ' + embedUrl);
+    
+    // Tunggu sebentar agar permission propagate
+    Utilities.sleep(500);
+    
+    return { 
+      success: true, 
+      url: fileUrl,
+      fileId: fileId,
+      thumbnailUrl: thumbnailUrl,
+      directUrl: directUrl,
+      embedUrl: embedUrl
+    };
+  } catch (e) { 
+    Logger.log('finalizeChunkedUpload error: ' + e.message);
+    return { success: false, message: e.message }; 
+  }
 }
 
 // ============================================================
@@ -2522,61 +2610,260 @@ function saveDistributorQueueSLASettings(settings) {
   }
 }
 
-function saveDistributorQueueLateNote(poNumber, rowNumber, note) {
+function saveDistributorQueueLateNote(poNumber, rowNumber, note, sourceSheet, createdBy) {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    const sheet = getSheet(CONFIG.SHEETS.LATE_SHIPMENT);
     const data = sheet.getDataRange().getValues();
     const now = new Date().toISOString();
-    const key = poNumber ? 'distributorQueueLateNote:' + String(poNumber).trim() : 'distributorQueueLateNoteRow:' + String(rowNumber);
+    
+    // Cari data existing berdasarkan PO Number dan Source Sheet
     let found = false;
+    let existingId = null;
+    let existingStatus = 'Pending Team Leader';
+    let existingHistory = [];
+    
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0] || '') === key) {
-        sheet.getRange(i + 1, 2).setValue(note || '');
-        sheet.getRange(i + 1, 3).setValue(now);
+      if (String(data[i][1] || '') === String(poNumber).trim() && 
+          String(data[i][2] || '') === String(sourceSheet).trim()) {
+        existingId = data[i][0];
+        existingStatus = data[i][5] || 'Pending Team Leader';
+        try {
+          existingHistory = JSON.parse(data[i][8] || '[]');
+        } catch(e) {
+          existingHistory = [];
+        }
+        
+        // Update keterangan
+        sheet.getRange(i + 1, 5).setValue(note || ''); // kolom keterangan
+        
+        // Tambah history
+        existingHistory.push({
+          date: now,
+          action: 'Update Keterangan',
+          by: createdBy,
+          keterangan: note
+        });
+        sheet.getRange(i + 1, 9).setValue(JSON.stringify(existingHistory)); // kolom history
+        
         found = true;
         break;
       }
     }
-    if (!found) sheet.appendRow([key, note || '', now]);
-    return { success: true, message: 'Catatan late berhasil disimpan.' };
+    
+    // Jika belum ada, buat baru
+    if (!found) {
+      const id = generateId();
+      const history = [{
+        date: now,
+        action: 'Create',
+        by: createdBy,
+        keterangan: note
+      }];
+      
+      sheet.appendRow([
+        id,
+        poNumber,
+        sourceSheet,
+        rowNumber,
+        note || '',
+        'Pending Team Leader',
+        createdBy,
+        now,
+        JSON.stringify(history)
+      ]);
+    }
+    
+    return { success: true, message: 'Keterangan late shipment berhasil disimpan.' };
   } catch (e) {
     return { success: false, message: e.message };
   }
 }
 
+function getLateShipmentData() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LATE_SHIPMENT);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      
+      let history = [];
+      try {
+        history = JSON.parse(data[i][8] || '[]');
+      } catch(e) {
+        history = [];
+      }
+      
+      result.push({
+        id: String(data[i][0] || ''),
+        poNumber: String(data[i][1] || ''),
+        sourceSheet: String(data[i][2] || ''),
+        rowNumber: String(data[i][3] || ''),
+        keterangan: String(data[i][4] || ''),
+        status: String(data[i][5] || ''),
+        createdBy: String(data[i][6] || ''),
+        createdAt: data[i][7] instanceof Date ? data[i][7].toISOString() : String(data[i][7] || ''),
+        history: history
+      });
+    }
+    
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function approveLateShipment(id, action, userNama, userRole, reason) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.LATE_SHIPMENT);
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        let currentStatus = String(data[i][5] || 'Pending Team Leader');
+        
+        // Authorization check
+        const isAdmin = (userRole === 'admin' || userRole === 'Super Admin');
+        const isTL = (userRole === 'Team Leader' || userRole === 'TL' || userRole.includes('Team Leader'));
+        const isVice = (userRole === 'Vice Supervisor' || userRole === 'Vice SPV' || userRole.includes('Vice'));
+        const isSPV = (userRole === 'Supervisor' || userRole === 'SPV' || (userRole.includes('Supervisor') && !userRole.includes('Vice')));
+        const isSales = (userRole === 'Sales' || userRole.includes('Sales'));
+        
+        let authorized = isAdmin;
+        if (currentStatus === 'Pending Team Leader' && (isTL || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending Vice Supervisor' && (isVice || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending Supervisor' && (isSPV || isAdmin)) authorized = true;
+        if (currentStatus === 'Pending Sales' && (isSales || isAdmin)) authorized = true;
+        
+        if (!authorized) {
+          return { success: false, message: 'Anda tidak memiliki wewenang untuk tahap approval ini (' + currentStatus + ').' };
+        }
+        
+        // Determine new status
+        let newStatus = '';
+        if (action === 'Reject') {
+          newStatus = 'Ditolak';
+        } else if (action === 'Approve') {
+          if (isAdmin) {
+            newStatus = 'Disetujui';
+          } else if (currentStatus === 'Pending Team Leader') {
+            newStatus = 'Pending Vice Supervisor';
+          } else if (currentStatus === 'Pending Vice Supervisor') {
+            newStatus = 'Pending Supervisor';
+          } else if (currentStatus === 'Pending Supervisor') {
+            newStatus = 'Pending Sales';
+          } else if (currentStatus === 'Pending Sales') {
+            newStatus = 'Disetujui';
+          } else {
+            newStatus = 'Disetujui';
+          }
+        }
+        
+        // Update status
+        sheet.getRange(i + 1, 6).setValue(newStatus);
+        
+        // Update history
+        let history = [];
+        try {
+          history = JSON.parse(data[i][8] || '[]');
+        } catch(e) {
+          history = [];
+        }
+        
+        history.push({
+          date: new Date().toISOString(),
+          action: action,
+          status: newStatus,
+          by: userNama,
+          role: userRole,
+          reason: reason || ''
+        });
+        
+        sheet.getRange(i + 1, 9).setValue(JSON.stringify(history));
+        
+        return { success: true, newStatus: newStatus, message: 'Approval berhasil diproses.' };
+      }
+    }
+    
+    return { success: false, message: 'Data tidak ditemukan.' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getDistributorQueueLateNotesMap() {
+  try {
+    const lateData = getLateShipmentData();
+    if (!lateData.success) return {};
+    
+    const map = {};
+    lateData.data.forEach(function(item) {
+      const key = item.poNumber + '|' + item.sourceSheet;
+      map[key] = {
+        keterangan: item.keterangan,
+        status: item.status,
+        id: item.id
+      };
+    });
+    
+    return map;
+  } catch (e) {
+    console.error('Error getting late notes map:', e);
+    return {};
+  }
+}
+
 function mapDistributorQueueRow(row, rowNumber) {
-  const item = {
-    rowNumber: rowNumber,
-    orderQueueTime: formatDistributorQueueDate(row[0], false),
-    picSales: String(row[1] || ''),
-    namaDistributor: String(row[2] || ''),
-    alamat: String(row[3] || ''),
-    noHp: String(row[4] || ''),
-    poNumber: String(row[5] || ''),
-    noMabang: String(row[6] || ''),
-    metodePengiriman: String(row[7] || ''),
-    ongkirDibayarOleh: String(row[8] || ''),
-    note: String(row[9] || ''),
-    timeWib: formatDistributorQueueDate(row[10], true),
-    statusGudang: String(row[11] || ''),
-    jumlahDus: String(row[12] || ''),
-    totalPcs: String(row[13] || ''),
-    packer: String(row[14] || ''),
-    validation: String(row[15] || ''),
-    tanggalSelesaiPacking: formatDistributorQueueDate(row[16], false),
-    shipDate: formatDistributorQueueDate(row[17], false),
-    statusMabang: String(row[18] || ''),
-    gdrive: String(row[19] || ''),
-    deliveryBill: String(row[20] || ''),
-    nomorResi: String(row[21] || ''),
-    buktiPengiriman: String(row[22] || '')
-  };
-  item.sla = evaluateDistributorQueueSLA(item);
-  return item;
+  try {
+    const item = {
+      rowNumber: rowNumber,
+      no: String(row[0] || ''), // Kolom No
+      orderQueueTime: formatDistributorQueueDate(row[1], false),
+      picSales: String(row[2] || ''),
+      namaDistributor: String(row[3] || ''),
+      alamat: String(row[4] || ''),
+      noHp: String(row[5] || ''),
+      poNumber: String(row[6] || ''),
+      noMabang: String(row[7] || ''),
+      metodePengiriman: String(row[8] || ''),
+      ongkirDibayarOleh: String(row[9] || ''),
+      note: String(row[10] || ''),
+      timeWib: formatDistributorQueueDate(row[11], true),
+      statusGudang: String(row[12] || ''),
+      jumlahDus: String(row[13] || ''),
+      totalPcs: String(row[14] || ''),
+      packer: String(row[15] || ''),
+      validation: String(row[16] || ''),
+      tanggalSelesaiPacking: formatDistributorQueueDate(row[17], false),
+      shipDate: formatDistributorQueueDate(row[18], false),
+      statusMabang: String(row[19] || ''),
+      gdrive: String(row[20] || ''),
+      deliveryBill: String(row[21] || ''),
+      nomorResi: String(row[22] || ''),
+      buktiPengiriman: String(row[23] || '')
+    };
+    
+    // OPTIMASI: Skip SLA evaluation untuk loading lebih cepat
+    // item.sla = evaluateDistributorQueueSLA(item);
+    item.sla = {
+      status: 'Pending',
+      isLate: false,
+      dueDate: '',
+      completionDate: '',
+      daysRemaining: 0
+    };
+    
+    return item;
+  } catch (e) {
+    console.error('Error mapping row ' + rowNumber + ':', e);
+    return null;
+  }
 }
 
 function buildDistributorQueueRowValues(payload) {
   return [
+    payload.no || '',
     payload.orderQueueTime || '',
     payload.picSales || '',
     payload.namaDistributor || '',
@@ -2650,51 +2937,67 @@ function debugDistributorQueueStatus() {
 // Fast dashboard-only endpoint (no SLA evaluation, no note map) for quick first paint
 function getDistributorQueueDashboardFast() {
   try {
-    const sheet = getDistributorQueueSheet();
-    const data = sheet.getDataRange().getValues();
+    const ss = getDistributorQueueSpreadsheet();
+    const allSheets = [
+      CONFIG.SHEETS.DISTRIBUTOR_QUEUE,
+      CONFIG.SHEETS.DISTRIBUTOR_QUEUE_FOCALSKIN,
+      CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE,
+      CONFIG.SHEETS.DISTRIBUTOR_QUEUE_SBY
+    ];
+    
     var total = 0, terkirim = 0, readyPickup = 0, selesai = 0,
         belumSelesai = 0, belumDikerjakan = 0, late = 0;
     var today = startOfDayLocal(new Date());
     var poHariIni = 0, poMingguIni = 0, poBulanIni = 0;
 
-    for (var i = 1; i < data.length; i++) {
-      var row = data[i];
-      if (row.join('').trim() === '') continue;
-      total++;
+    allSheets.forEach(function(sheetName) {
+      try {
+        const sheet = ss.getSheetByName(sheetName);
+        if (!sheet) return;
+        
+        const data = sheet.getDataRange().getValues();
 
-      var statusGudang = String(row[11] || '').toLowerCase().trim();
-      var shipDate     = row[17] ? String(row[17]).trim() : '';
-      var packingDate  = row[16] ? String(row[16]).trim() : '';
-      var nomorResi    = String(row[21] || '').trim();
-      var orderDate    = parseDistributorQueueDate(row[0]) || parseDistributorQueueDate(row[10]);
+        for (var i = 1; i < data.length; i++) {
+          var row = data[i];
+          if (row.join('').trim() === '') continue;
+          
+          total++;
 
-      // totalTerkirim from Status column L
-      if (isStatusTerkirim(statusGudang)) terkirim++;
-      // totalReadyToPickup from Status column L
-      if (isStatusReadyPickup(statusGudang)) readyPickup++;
+          var statusGudang = String(row[12] || '').toLowerCase().trim(); // Kolom M (index 12) - Status
+          var shipDate     = row[18] ? String(row[18]).trim() : ''; // Kolom S (index 18) - Ship date
+          var packingDate  = row[17] ? String(row[17]).trim() : ''; // Kolom R (index 17) - Tanggal selesai packing
+          var orderDate    = parseDistributorQueueDate(row[1]) || parseDistributorQueueDate(row[11]); // Kolom B (index 1) - Order queue time, Kolom L (index 11) - Time
 
-      // selesai / belumSelesai / belumDikerjakan
-      if (shipDate || packingDate) {
-        selesai++;
-      } else {
-        var sNorm = statusGudang.replace(/\s+/g, '');
-        // Belum Dikerjakan: kolom L kosong
-        if (statusGudang === '') {
-          belumDikerjakan++;
-        // Belum Selesai: kolom L = Picking
-        } else if (sNorm.includes('picking')) {
-          belumSelesai++;
+          // totalTerkirim from Status column M
+          if (isStatusTerkirim(statusGudang)) terkirim++;
+          // totalReadyToPickup from Status column M
+          if (isStatusReadyPickup(statusGudang)) readyPickup++;
+
+          // selesai / belumSelesai / belumDikerjakan
+          if (shipDate || packingDate) {
+            selesai++;
+          } else {
+            var sNorm = statusGudang.replace(/\s+/g, '');
+            // Belum Dikerjakan: kolom M kosong
+            if (statusGudang === '') {
+              belumDikerjakan++;
+            // Belum Selesai: kolom M = Picking
+            } else if (sNorm.includes('picking')) {
+              belumSelesai++;
+            }
+          }
+
+          // PO counts
+          if (orderDate) {
+            if (isSameDayLocal(orderDate, today)) poHariIni++;
+            if (isWithinCurrentWeekLocal(orderDate, today)) poMingguIni++;
+            if (isWithinCurrentMonthLocal(orderDate, today)) poBulanIni++;
+          }
         }
-        // lainnya (ready, terkirim, dll) tidak dihitung di sini
+      } catch (err) {
+        console.error('Error reading sheet ' + sheetName + ' in fast dashboard:', err);
       }
-
-      // PO counts
-      if (orderDate) {
-        if (isSameDayLocal(orderDate, today)) poHariIni++;
-        if (isWithinCurrentWeekLocal(orderDate, today)) poMingguIni++;
-        if (isWithinCurrentMonthLocal(orderDate, today)) poBulanIni++;
-      }
-    }
+    });
 
     return {
       success: true,
@@ -2720,89 +3023,169 @@ function getDistributorQueueDashboardFast() {
   }
 }
 
+/**
+ * OPTIMIZED untuk 30,000+ baris data
+ * Load data terbaru dari semua sheet secara merata
+ */
 function getDistributorQueueData() {
   try {
-    const sheet = getDistributorQueueSheet();
-    const data = sheet.getDataRange().getValues();
+    const ss = getDistributorQueueSpreadsheet();
+    const sheets = [
+      { name: CONFIG.SHEETS.DISTRIBUTOR_QUEUE, label: 'Antrian Distributor' },
+      { name: CONFIG.SHEETS.DISTRIBUTOR_QUEUE_FOCALSKIN, label: 'ANTRIAN FOCALSKIN' },
+      { name: CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE, label: 'ANTRIAN MISTINE' },
+      { name: CONFIG.SHEETS.DISTRIBUTOR_QUEUE_SBY, label: 'ANTRIAN SBY' }
+    ];
+    
     const rows = [];
-    const today = startOfDayLocal(new Date());
-    const noteMap = getDistributorQueueLateNotesMap();
-
-    for (let i = 1; i < data.length; i++) {
-      if (data[i].join('').trim() === '') continue;
-      const item = mapDistributorQueueRow(data[i], i + 1);
-      item.catatanLate = noteMap[item.poNumber] || noteMap['row:' + item.rowNumber] || '';
-      rows.push(item);
+    const MAX_ITEMS_PER_SHEET = 150; // 150 items per sheet = 600 total (4 sheets)
+    
+    console.log('Loading max', MAX_ITEMS_PER_SHEET, 'items per sheet from', sheets.length, 'sheets');
+    
+    // Baca dari semua sheet dengan jatah yang sama
+    for (let s = 0; s < sheets.length; s++) {
+      const sheetConfig = sheets[s];
+      let sheetItemCount = 0;
+      
+      try {
+        const sheet = ss.getSheetByName(sheetConfig.name);
+        if (!sheet) {
+          console.log('Sheet not found:', sheetConfig.name);
+          continue;
+        }
+        
+        const lastRow = sheet.getLastRow();
+        if (lastRow <= 1) {
+          console.log('Sheet empty:', sheetConfig.name);
+          continue;
+        }
+        
+        // Hitung berapa baris yang perlu dibaca (max 150 per sheet)
+        const startRow = Math.max(2, lastRow - MAX_ITEMS_PER_SHEET + 1);
+        const numRows = lastRow - startRow + 1;
+        
+        console.log('Sheet:', sheetConfig.name, 'Total rows:', lastRow, 'Reading rows', startRow, 'to', lastRow);
+        
+        // Baca hanya range yang diperlukan
+        const data = sheet.getRange(startRow, 1, numRows, 24).getValues();
+        
+        // Proses dari bawah ke atas (data terbaru)
+        for (let i = data.length - 1; i >= 0; i--) {
+          if (sheetItemCount >= MAX_ITEMS_PER_SHEET) break;
+          if (data[i].join('').trim() === '') continue;
+          
+          try {
+            const item = {
+              rowNumber: startRow + i,
+              sourceSheet: sheetConfig.label,
+              no: String(data[i][0] || ''),
+              orderQueueTime: formatDistributorQueueDate(data[i][1], false),
+              picSales: String(data[i][2] || ''),
+              namaDistributor: String(data[i][3] || ''),
+              alamat: String(data[i][4] || ''),
+              noHp: String(data[i][5] || ''),
+              poNumber: String(data[i][6] || ''),
+              noMabang: String(data[i][7] || ''),
+              metodePengiriman: String(data[i][8] || ''),
+              ongkirDibayarOleh: String(data[i][9] || ''),
+              note: String(data[i][10] || ''),
+              timeWib: formatDistributorQueueDate(data[i][11], true),
+              statusGudang: String(data[i][12] || ''),
+              jumlahDus: String(data[i][13] || ''),
+              totalPcs: String(data[i][14] || ''),
+              packer: String(data[i][15] || ''),
+              validation: String(data[i][16] || ''),
+              tanggalSelesaiPacking: formatDistributorQueueDate(data[i][17], false),
+              shipDate: formatDistributorQueueDate(data[i][18], false),
+              statusMabang: String(data[i][19] || ''),
+              gdrive: String(data[i][20] || ''),
+              deliveryBill: String(data[i][21] || ''),
+              nomorResi: String(data[i][22] || ''),
+              buktiPengiriman: String(data[i][23] || ''),
+              catatanLate: '',
+              catatanLateStatus: '',
+              catatanLateId: '',
+              sla: { status: 'Pending', isLate: false, dueDate: '', completionDate: '', daysRemaining: 0 }
+            };
+            
+            rows.push(item);
+            sheetItemCount++;
+          } catch (err) {
+            console.error('Error mapping row:', err);
+          }
+        }
+        
+        console.log('Sheet:', sheetConfig.name, 'Loaded', sheetItemCount, 'items');
+        
+      } catch (err) {
+        console.error('Error reading sheet ' + sheetConfig.name + ':', err);
+      }
     }
-
+    
+    console.log('Total items loaded from all sheets:', rows.length);
+    
+    // Sort by order queue time
     rows.sort(function(a, b) {
       const dateA = parseDistributorQueueDate(a.orderQueueTime) || new Date(0);
       const dateB = parseDistributorQueueDate(b.orderQueueTime) || new Date(0);
       return dateB.getTime() - dateA.getTime();
     });
-
-    const completedCount = rows.filter(function(item) {
-      return !!(item.shipDate || item.tanggalSelesaiPacking);
-    }).length;
-
-    // Belum Selesai: Status kolom L = "Picking" (sedang dikerjakan)
-    const inProgressCount = rows.filter(function(item) {
-      var s = String(item.statusGudang || '').toLowerCase().replace(/\s+/g, '');
-      return s.includes('picking');
-    }).length;
-
-    // Belum Dikerjakan: Status kolom L kosong
-    const notStartedCount = rows.filter(function(item) {
-      return String(item.statusGudang || '').trim() === '';
-    }).length;
-
-    const poKeluarHariIni = rows.filter(function(item) {
-      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
-      return orderDate ? isSameDayLocal(orderDate, today) : false;
-    }).length;
-
-    const poKeluarMingguIni = rows.filter(function(item) {
-      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
-      return orderDate ? isWithinCurrentWeekLocal(orderDate, today) : false;
-    }).length;
-
-    const poKeluarBulanIni = rows.filter(function(item) {
-      const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
-      return orderDate ? isWithinCurrentMonthLocal(orderDate, today) : false;
-    }).length;
-
+    
+    // Hitung dashboard
+    const today = startOfDayLocal(new Date());
     const dashboard = {
       total: rows.length,
-      selesai: completedCount,
-      belumSelesai: inProgressCount,
-      belumDikerjakan: notStartedCount,
-      poKeluarHariIni: poKeluarHariIni,
-      poKeluarMingguIni: poKeluarMingguIni,
-      poKeluarBulanIni: poKeluarBulanIni,
-      totalTerkirim: rows.filter(function(item) {
-        return isStatusTerkirim(String(item.statusGudang || '').toLowerCase().trim());
+      selesai: rows.filter(function(item) { return !!(item.shipDate || item.tanggalSelesaiPacking); }).length,
+      belumSelesai: rows.filter(function(item) { return String(item.statusGudang || '').toLowerCase().includes('picking'); }).length,
+      belumDikerjakan: rows.filter(function(item) { return String(item.statusGudang || '').trim() === ''; }).length,
+      totalReadyToPickup: rows.filter(function(item) { 
+        var s = String(item.statusGudang || '').toLowerCase();
+        return s.includes('ready') || s.includes('pickup') || s.includes('siap');
       }).length,
-      totalReadyToPickup: rows.filter(function(item) {
-        return isStatusReadyPickup(String(item.statusGudang || '').toLowerCase().trim());
+      totalTerkirim: rows.filter(function(item) { 
+        var s = String(item.statusGudang || '').toLowerCase();
+        return s.includes('terkirim') || s.includes('delivered');
       }).length,
-      pending: rows.filter(function(item) { return item.sla.status === 'Pending'; }).length,
-      onTime: rows.filter(function(item) { return item.sla.status === 'On Time'; }).length,
-      late: rows.filter(function(item) { return item.sla.isLate; }).length,
-      dueToday: rows.filter(function(item) {
-        return item.sla.dueDate && item.sla.dueDate === formatDistributorQueueDate(new Date(), false) && !item.sla.completionDate;
+      poKeluarHariIni: rows.filter(function(item) {
+        const orderDate = parseDistributorQueueDate(item.orderQueueTime);
+        return orderDate ? isSameDayLocal(orderDate, today) : false;
       }).length,
-      lateItems: rows.filter(function(item) { return item.sla.isLate; })
+      poKeluarMingguIni: rows.filter(function(item) {
+        const orderDate = parseDistributorQueueDate(item.orderQueueTime);
+        return orderDate ? isWithinCurrentWeekLocal(orderDate, today) : false;
+      }).length,
+      poKeluarBulanIni: rows.filter(function(item) {
+        const orderDate = parseDistributorQueueDate(item.orderQueueTime);
+        return orderDate ? isWithinCurrentMonthLocal(orderDate, today) : false;
+      }).length,
+      pending: 0,
+      onTime: 0,
+      late: 0,
+      dueToday: 0,
+      lateItems: []
     };
-
+    
+    console.log('Success! Returning', rows.length, 'items');
+    console.log('Dashboard:', JSON.stringify(dashboard));
     return { success: true, data: rows, dashboard: dashboard };
+    
   } catch (e) {
-    return { success: false, message: e.message };
+    console.error('FATAL ERROR in getDistributorQueueData:', e);
+    return { success: false, message: e.message, data: [] };
   }
 }
 
 function saveDistributorQueue(payload, updatedBy) {
   try {
     const parsed = typeof payload === 'string' ? JSON.parse(payload) : (payload || {});
+    
+    // Auto-numbering: Jika kolom "No" kosong, isi dengan nomor urut otomatis
+    if (!parsed.no || parsed.no.trim() === '') {
+      const sheet = getDistributorQueueSheet();
+      const lastRow = sheet.getLastRow();
+      parsed.no = String(lastRow); // Nomor urut berdasarkan baris terakhir
+    }
+    
     const rowValues = buildDistributorQueueRowValues(parsed);
     const sheet = getDistributorQueueSheet();
     const rowNumber = Number(parsed.rowNumber || 0);
@@ -4173,8 +4556,8 @@ function getBookingMobil() {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return { success: true, data: [] };
     
-    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 18 (termasuk pkbm)
-    const data = sheet.getRange(2, 1, lastRow - 1, 18).getValues();
+    // Ambil data mulai dari baris 2 kolom 1 s/d baris terakhir kolom 22 (termasuk jam-jam baru)
+    const data = sheet.getRange(2, 1, lastRow - 1, 22).getValues();
     const result = [];
     
     for (let i = 0; i < data.length; i++) {
@@ -4204,7 +4587,11 @@ function getBookingMobil() {
             lainLain: Number(row[14] || 0),
             totalBiaya: Number(row[15] || 0),
             buktiPembayaranUrl: String(row[16] || ''),
-            driverNotes: String(row[17] || '')
+            driverNotes: String(row[17] || ''),
+            jamMulaiPerjalanan: String(row[18] || ''),
+            jamTibaTujuan: String(row[19] || ''),
+            jamKembaliWarehouse: String(row[20] || ''),
+            jamSampaiWarehouse: String(row[21] || '')
         });
     }
     return { success: true, data: result, totalOnSheet: lastRow - 1 };
@@ -4681,10 +5068,26 @@ function updateBookingStatus(id, newStatus) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL);
     const data = sheet.getDataRange().getValues();
+    const now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+    
     for (let i = 1; i < data.length; i++) {
         if (String(data[i][0]) === String(id)) {
+            // Update status (kolom 8, index 7)
             sheet.getRange(i + 1, 8).setValue(newStatus);
-            return { success: true };
+            
+            // Update timestamp sesuai status
+            if (newStatus === 'Sedang Dalam Perjalanan Ke Tujuan') {
+              sheet.getRange(i + 1, 19).setValue(now); // jamMulaiPerjalanan
+            } else if (newStatus === 'Sudah Tiba Di Tempat Tujuan') {
+              sheet.getRange(i + 1, 20).setValue(now); // jamTibaTujuan
+            } else if (newStatus === 'Kembali Ke Warehouse JKT') {
+              sheet.getRange(i + 1, 21).setValue(now); // jamKembaliWarehouse
+            } else if (newStatus === 'Sudah Sampai Di Warehouse') {
+              sheet.getRange(i + 1, 22).setValue(now); // jamSampaiWarehouse
+            }
+            
+            SpreadsheetApp.flush();
+            return { success: true, timestamp: now };
         }
     }
     return { success: false, message: 'ID tidak ditemukan' };
@@ -7068,4 +7471,438 @@ function saveReturnDistributorPICSales(picList) {
     sheet.appendRow([RD_PIC_SALES_KEY, val, now]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// PETTY CASH
+// ============================================================
+
+function setupPettyCashSheets() {
+  const ss = getSpreadsheet();
+  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH_PERIOD, [
+    'id', 'nama', 'tanggalMulai', 'tanggalSelesai', 'saldoAwal',
+    'keterangan', 'status', 'createdBy', 'createdAt'
+  ]);
+  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH, [
+    'id', 'periodId', 'tanggal', 'kategori', 'keterangan',
+    'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt'
+  ]);
+  return { success: true };
+}
+
+// --- PERIOD ---
+function getPettyCashPeriods() {
+  try {
+    setupPettyCashSheets(); // Pastikan header selalu ada
+    const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      result.push({
+        id: data[i][0],
+        nama: data[i][1],
+        tanggalMulai: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]),
+        tanggalSelesai: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][3]),
+        saldoAwal: parseFloat(data[i][4]) || 0,
+        keterangan: data[i][5] || '',
+        status: data[i][6] || 'Aktif',
+        createdBy: data[i][7],
+        createdAt: data[i][8]
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addPettyCashPeriod(nama, tanggalMulai, tanggalSelesai, saldoAwal, keterangan, createdBy) {
+  try {
+    const id = generateId();
+    getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD).appendRow([
+      id, nama, tanggalMulai, tanggalSelesai,
+      parseFloat(saldoAwal) || 0, keterangan || '', 'Aktif',
+      createdBy, new Date().toISOString()
+    ]);
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function updatePettyCashPeriodStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 7).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Periode tidak ditemukan' };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deletePettyCashPeriod(id) {
+  return deleteRow(CONFIG.SHEETS.PETTY_CASH_PERIOD, id);
+}
+
+// --- TRANSACTIONS ---
+function getPettyCash(periodId) {
+  try {
+    setupPettyCashSheets(); // Pastikan header selalu ada
+    const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      if (periodId && String(data[i][1]) !== String(periodId)) continue;
+      result.push({
+        id: data[i][0],
+        periodId: data[i][1],
+        tanggal: data[i][2] instanceof Date ? Utilities.formatDate(data[i][2], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][2]),
+        kategori: data[i][3],
+        keterangan: data[i][4],
+        nominal: parseFloat(data[i][5]) || 0,
+        tipe: data[i][6] || 'OUT',
+        buktiUrl: data[i][7] || '',
+        createdBy: data[i][8],
+        createdAt: data[i][9]
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function addPettyCash(periodId, tanggal, kategori, keterangan, nominal, tipe, buktiUrl, createdBy) {
+  try {
+    const id = generateId();
+    getSheet(CONFIG.SHEETS.PETTY_CASH).appendRow([
+      id, periodId, tanggal, kategori, keterangan,
+      parseFloat(nominal) || 0, tipe || 'OUT',
+      buktiUrl || '', createdBy, new Date().toISOString()
+    ]);
+    return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function deletePettyCash(id) {
+  return deleteRow(CONFIG.SHEETS.PETTY_CASH, id);
+}
+
+/**
+ * Ambil atau buat subfolder per periode di dalam folder Petty Cash Drive.
+ * Struktur: PettyCash Drive Root → [Nama Periode]
+ */
+function getPettyCashPeriodFolder(periodNama) {
+  try {
+    const root = DriveApp.getFolderById(CONFIG.PETTY_CASH_FOLDER_ID);
+    const safeName = (periodNama || 'Umum').replace(/[\/\\:*?"<>|]/g, '-').trim();
+    const iter = root.getFoldersByName(safeName);
+    return iter.hasNext() ? iter.next() : root.createFolder(safeName);
+  } catch (e) {
+    // Fallback ke folder Drive utama jika folder Petty Cash tidak bisa diakses
+    Logger.log('Error accessing PETTY_CASH_FOLDER_ID, using DRIVE_FOLDER_ID: ' + e.message);
+    const root = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+    const safeName = 'PettyCash_' + (periodNama || 'Umum').replace(/[\/\\:*?"<>|]/g, '-').trim();
+    const iter = root.getFoldersByName(safeName);
+    return iter.hasNext() ? iter.next() : root.createFolder(safeName);
+  }
+}
+
+/**
+ * Upload atau ganti bukti untuk transaksi petty cash yang sudah ada.
+ * File disimpan ke subfolder periode di Google Drive Petty Cash.
+ * 
+ * @param {string} txId - ID transaksi
+ * @param {string} base64Data - Base64 data file (kosong jika hanya update URL)
+ * @param {string} fileName - Nama file
+ * @param {string} mimeType - MIME type
+ * @param {string} existingUrl - URL yang sudah ada (jika hanya update tanpa upload baru)
+ */
+function uploadPettyCashBukti(txId, base64Data, fileName, mimeType, existingUrl) {
+  let file = null;
+  let fileUrl = existingUrl || '';
+  let folderUrl = '';
+  
+  try {
+    // Cari nama periode dari transaksi
+    const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH);
+    const data = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+    let periodId = '';
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(txId)) {
+        rowIndex = i;
+        periodId = String(data[i][1]);
+        break;
+      }
+    }
+    if (rowIndex === -1) return { success: false, message: 'Transaksi tidak ditemukan' };
+
+    // Jika existingUrl diberikan, langsung update database tanpa upload
+    if (existingUrl && existingUrl.trim() !== '') {
+      sheet.getRange(rowIndex + 1, 8).setValue(existingUrl);
+      return { success: true, url: existingUrl, folderUrl: '', fileName: fileName || 'bukti' };
+    }
+
+    // Jika tidak ada base64Data, return error
+    if (!base64Data || base64Data.trim() === '') {
+      return { success: false, message: 'Tidak ada file untuk diupload' };
+    }
+
+    // Ambil nama periode
+    let periodNama = 'Umum';
+    try {
+      const pSheet = getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD);
+      const pData = pSheet.getDataRange().getValues();
+      for (let i = 1; i < pData.length; i++) {
+        if (String(pData[i][0]) === periodId) { periodNama = String(pData[i][1]); break; }
+      }
+    } catch(e) {
+      Logger.log('Error getting period name: ' + e.message);
+    }
+
+    // STEP 1: Upload file ke Drive dulu (ke root My Drive untuk menghindari error akses folder)
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, fileName);
+    file = DriveApp.createFile(blob);
+    
+    // STEP 2: Coba pindahkan ke subfolder periode (jika berhasil)
+    try {
+      const folder = getPettyCashPeriodFolder(periodNama);
+      file.moveTo(folder);
+      folderUrl = folder.getUrl();
+      Logger.log('File berhasil dipindahkan ke folder: ' + periodNama);
+    } catch(e) {
+      // Jika gagal pindah folder, biarkan di root - file tetap terupload
+      Logger.log('File tetap di root Drive, tidak bisa pindah ke folder: ' + e.message);
+      folderUrl = 'https://drive.google.com/drive/folders/' + CONFIG.DRIVE_FOLDER_ID;
+    }
+    
+    // STEP 3: Set sharing permission dengan metode yang lebih reliable
+    const fileId = file.getId();
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      Logger.log('File sharing permission set to ANYONE_WITH_LINK');
+      
+      // Tambahan: Set sharing secara eksplisit dengan Drive API
+      Drive.Permissions.insert(
+        {
+          'type': 'anyone',
+          'role': 'reader',
+          'withLink': true
+        },
+        fileId,
+        {
+          'supportsAllDrives': true
+        }
+      );
+      Logger.log('Drive API permission set successfully');
+    } catch(e) {
+      Logger.log('Warning: Tidak bisa set sharing permission: ' + e.message);
+    }
+    
+    // Tunggu sebentar agar permission propagate
+    Utilities.sleep(500);
+    
+    // STEP 4: Generate URL
+    fileUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;
+
+    // STEP 5: Update kolom buktiUrl (kolom 8) di sheet
+    sheet.getRange(rowIndex + 1, 8).setValue(fileUrl);
+    
+    return { success: true, url: fileUrl, folderUrl: folderUrl, fileName: fileName };
+    
+  } catch (e) {
+    Logger.log('Error in uploadPettyCashBukti: ' + e.message);
+    
+    // Jika file sudah dibuat tapi ada error di langkah lain, tetap return success dengan URL file
+    if (file && file.getId()) {
+      try {
+        fileUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+        const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH);
+        const data = sheet.getDataRange().getValues();
+        for (let i = 1; i < data.length; i++) {
+          if (String(data[i][0]) === String(txId)) {
+            sheet.getRange(i + 1, 8).setValue(fileUrl);
+            break;
+          }
+        }
+        return { success: true, url: fileUrl, folderUrl: 'https://drive.google.com/drive/my-drive', fileName: fileName };
+      } catch(e2) {
+        Logger.log('Error saving file URL: ' + e2.message);
+      }
+    }
+    
+    return { success: false, message: 'Upload gagal: ' + e.message };
+  }
+}
+
+/**
+ * Export data Petty Cash periode ke file Excel (.xlsx) dan simpan ke Google Drive.
+ * Mengembalikan URL file di Drive.
+ */
+function exportPettyCashToGDrive(periodId) {
+  try {
+    // Ambil data periode
+    const pSheet = getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD);
+    const pData = pSheet.getDataRange().getValues();
+    let period = null;
+    for (let i = 1; i < pData.length; i++) {
+      if (String(pData[i][0]) === String(periodId)) {
+        period = {
+          id: pData[i][0],
+          nama: pData[i][1],
+          tanggalMulai: pData[i][2] instanceof Date ? Utilities.formatDate(pData[i][2], Session.getScriptTimeZone(), 'dd/MM/yyyy') : String(pData[i][2]),
+          tanggalSelesai: pData[i][3] instanceof Date ? Utilities.formatDate(pData[i][3], Session.getScriptTimeZone(), 'dd/MM/yyyy') : String(pData[i][3]),
+          saldoAwal: parseFloat(pData[i][4]) || 0
+        };
+        break;
+      }
+    }
+    if (!period) return { success: false, message: 'Periode tidak ditemukan' };
+
+    // Ambil transaksi periode ini
+    const txSheet = getSheet(CONFIG.SHEETS.PETTY_CASH);
+    const txData = txSheet.getDataRange().getValues();
+    const txs = [];
+    for (let i = 1; i < txData.length; i++) {
+      if (txData[i].join('').trim() === '') continue;
+      if (String(txData[i][1]) !== String(periodId)) continue;
+      txs.push({
+        tanggal: txData[i][2] instanceof Date ? Utilities.formatDate(txData[i][2], Session.getScriptTimeZone(), 'dd/MM/yyyy') : String(txData[i][2]),
+        kategori: txData[i][3],
+        keterangan: txData[i][4],
+        nominal: parseFloat(txData[i][5]) || 0,
+        tipe: txData[i][6] || 'OUT',
+        buktiUrl: txData[i][7] || '',
+        createdBy: txData[i][8]
+      });
+    }
+    // Sort by tanggal
+    txs.sort((a, b) => new Date(a.tanggal.split('/').reverse().join('-')) - new Date(b.tanggal.split('/').reverse().join('-')));
+
+    // Build HTML table untuk Excel
+    let running = period.saldoAwal;
+    let totalOut = 0, totalIn = 0;
+
+    const formatRpGs = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+
+    let rows = '';
+    txs.forEach((d, i) => {
+      if (d.tipe === 'IN') { running += d.nominal; totalIn += d.nominal; }
+      else { running -= d.nominal; totalOut += d.nominal; }
+      rows += `<tr>
+        <td>${i + 1}</td>
+        <td>${d.tanggal}</td>
+        <td>${d.tipe}</td>
+        <td>${d.kategori}</td>
+        <td>${d.keterangan}</td>
+        <td style="mso-number-format:'#,##0';">${d.tipe === 'OUT' ? -d.nominal : d.nominal}</td>
+        <td style="mso-number-format:'#,##0';">${running}</td>
+        <td>${d.buktiUrl ? d.buktiUrl : '-'}</td>
+        <td>${d.createdBy}</td>
+      </tr>`;
+    });
+
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="UTF-8">
+    <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>
+    <x:ExcelWorksheet><x:Name>Petty Cash</x:Name>
+    <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+    </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+    <style>
+      th { background:#1e3a5f; color:#fff; font-weight:bold; padding:6px; }
+      td { padding:5px; }
+      .footer { font-weight:bold; background:#f3f4f6; }
+    </style>
+    </head><body>
+    <table>
+      <tr><td colspan="9" style="font-size:16pt;font-weight:bold;color:#1e3a5f;">LAPORAN PETTY CASH - ${period.nama}</td></tr>
+      <tr><td colspan="9">Periode: ${period.tanggalMulai} s/d ${period.tanggalSelesai}</td></tr>
+      <tr><td colspan="9">Saldo Awal: ${formatRpGs(period.saldoAwal)}</td></tr>
+      <tr></tr>
+      <tr>
+        <th>No</th><th>Tanggal</th><th>Tipe</th><th>Kategori</th>
+        <th>Keterangan</th><th>Nominal</th><th>Saldo Berjalan</th>
+        <th>Link Bukti</th><th>Input By</th>
+      </tr>
+      ${rows}
+      <tr class="footer">
+        <td colspan="5" style="text-align:right;">TOTAL PENGELUARAN</td>
+        <td style="mso-number-format:'#,##0';">${-totalOut}</td>
+        <td colspan="3"></td>
+      </tr>
+      <tr class="footer">
+        <td colspan="5" style="text-align:right;">TOTAL PEMASUKAN</td>
+        <td style="mso-number-format:'#,##0';">${totalIn}</td>
+        <td colspan="3"></td>
+      </tr>
+      <tr class="footer">
+        <td colspan="5" style="text-align:right;">SISA SALDO AKHIR</td>
+        <td style="mso-number-format:'#,##0';">${period.saldoAwal + totalIn - totalOut}</td>
+        <td colspan="3"></td>
+      </tr>
+    </table>
+    </body></html>`;
+
+    // Simpan ke subfolder periode di Drive
+    const folder = getPettyCashPeriodFolder(period.nama);
+    const fileName = 'PettyCash_' + period.nama.replace(/[\/\\:*?"<>|]/g, '-') + '_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmm') + '.xls';
+    const blob = Utilities.newBlob(html, 'application/vnd.ms-excel', fileName);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    return {
+      success: true,
+      fileUrl: file.getUrl(),
+      folderUrl: folder.getUrl(),
+      fileName: fileName,
+      periodNama: period.nama
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getPettyCashFull() {
+  try {
+    const periods = getPettyCashPeriods();
+    const txAll = getPettyCash(null);
+    if (!periods.success || !txAll.success) return { success: false, message: 'Gagal memuat data' };
+    return { success: true, periods: periods.data, transactions: txAll.data };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+// ============================================================
+// FETCH MULTIPLE DRIVE FILES AS BASE64 (untuk Print Bukti Foto)
+// ============================================================
+/**
+ * Mengambil beberapa file dari Google Drive dan mengembalikannya
+ * sebagai data URI base64 agar bisa di-embed langsung di HTML print
+ * tanpa perlu autentikasi ulang.
+ *
+ * @param {string[]} fileIds - Array of Google Drive file IDs
+ * @returns {Object} { success, images: { [fileId]: { dataUri, mimeType } | null } }
+ */
+function getFilesAsBase64(fileIds) {
+  try {
+    const result = {};
+    (fileIds || []).forEach(function(fileId) {
+      if (!fileId) return;
+      try {
+        const file = DriveApp.getFileById(fileId);
+        const blob = file.getBlob();
+        const mimeType = blob.getContentType() || 'image/jpeg';
+        const b64 = Utilities.base64Encode(blob.getBytes());
+        result[fileId] = { dataUri: 'data:' + mimeType + ';base64,' + b64, mimeType: mimeType };
+      } catch (e) {
+        // File tidak bisa diakses (permission, tidak ada, dll)
+        result[fileId] = null;
+      }
+    });
+    return { success: true, images: result };
+  } catch (e) {
+    return { success: false, message: e.message, images: {} };
+  }
 }
