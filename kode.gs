@@ -55,7 +55,10 @@ const CONFIG = {
     INVENTORY_MONITORING: 'InventoryMonitoring',
     BOOKING_MOBIL_DETAIL: 'BookingMobilDetail',
     PETTY_CASH: 'PettyCash',
-    PETTY_CASH_PERIOD: 'PettyCashPeriod'
+    PETTY_CASH_PERIOD: 'PettyCashPeriod',
+    PAYMENT_GUDANG: 'PaymentGudang',
+    PAYMENT_GUDANG_PARTICIPANTS: 'PaymentGudangParticipants',
+    MIDTRANS_CONFIG: 'MidtransConfig'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC',
   BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo',  // Folder untuk Bukti Pembayaran Booking Mobil
@@ -157,12 +160,18 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
   setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'code', 'nama', 'tanggalMasuk', 'divisi', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
+  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'kategori', 'code', 'nama', 'divisi', 'tanggalMasuk', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
   setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes', 'jamMulaiPerjalanan', 'jamTibaTujuan', 'jamKembaliWarehouse', 'jamSampaiWarehouse']);
   setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL_DETAIL, ['id', 'bookingId', 'tanggal', 'namaCustomer', 'noPo', 'totalCartoon', 'parkir', 'tol', 'pkbm', 'lainLain', 'keterangan', 'buktiUrls']);
   setupSheet(ss, CONFIG.SHEETS.PETTY_CASH_PERIOD, ['id', 'nama', 'tanggalMulai', 'tanggalSelesai', 'saldoAwal', 'keterangan', 'status', 'createdBy', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.PETTY_CASH, ['id', 'periodId', 'tanggal', 'kategori', 'keterangan', 'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt']);
+  
+  // Payment Gudang Sheets
+  setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG, ['id', 'nama', 'deskripsi', 'hargaPerOrang', 'deadline', 'status', 'createdBy', 'createdAt', 'midtransOrderId', 'midtransStatus', 'tipe']);
+  setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, ['id', 'paymentId', 'karyawanId', 'namaKaryawan', 'statusBayar', 'tanggalBayar', 'metodeBayar', 'buktiUrl', 'midtransTransactionId']);
+  setupSheet(ss, CONFIG.SHEETS.MIDTRANS_CONFIG, ['id', 'serverKey', 'clientKey', 'isProduction', 'updatedBy', 'updatedAt']);
+
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
   setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
@@ -212,6 +221,39 @@ function setupSheet(ss, sheetName, headers) {
 // Fungsi manual untuk trigger update header yang kosong di Google Sheets
 function ForceUpdateAllHeaders() {
   setupDatabase();
+}
+
+// Migrasi data lama: pastikan kolom 'kategori' ada dan isi default untuk baris yang kosong
+function migrateAssetWarehouseKategori() {
+  try {
+    const ss = getSpreadsheet();
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    if (!sheet) return { success: false, message: 'Sheet AssetWarehouse tidak ditemukan' };
+
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    if (!data || data.length <= 1) return { success: true, message: 'Tidak ada data untuk dimigrasi' };
+
+    // Pastikan header sesuai urutan baru
+    const desiredHeader = ['id', 'kategori', 'code', 'nama', 'divisi', 'tanggalMasuk', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId'];
+    sheet.getRange(1, 1, 1, desiredHeader.length).setValues([desiredHeader]);
+
+    let updated = 0;
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i] || [];
+      const val = (row && row[1]) !== undefined ? row[1] : '';
+      if (val === null || String(val || '').trim() === '') {
+        sheet.getRange(i + 1, 2).setValue('Lain-lain');
+        updated++;
+      }
+      // Ensure qty exists at col 11
+      if ((row[10] === undefined || row[10] === '') ) {
+        sheet.getRange(i + 1, 11).setValue(1);
+      }
+    }
+
+    return { success: true, message: 'Migrasi selesai. Baris yang diperbarui: ' + updated };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 
 /**
@@ -3909,8 +3951,87 @@ function addAsset(tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas
   } catch(e) { return { success: false, message: e.message }; }
 }
 
+function updateAsset(id, tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas, bukti, updatedBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) !== String(id)) continue;
+      const creator = String(data[i][9] || '');
+      if (String(updatedBy) !== creator) {
+        return { success: false, message: 'Hanya pembuat pengajuan yang dapat mengedit asset ini.' };
+      }
+      const status = String(data[i][8] || '');
+      const finalStatuses = ['Disetujui', 'Tolak', 'Ditolak', 'Approved', 'Rejected', 'Disetujui Admin', 'Approved Admin'];
+      if (finalStatuses.includes(status)) {
+        return { success: false, message: 'Pengajuan tidak dapat diedit karena sudah selesai.' };
+      }
+      sheet.getRange(i + 1, 2).setValue(tanggal);
+      sheet.getRange(i + 1, 3).setValue(nama);
+      sheet.getRange(i + 1, 4).setValue(jenisAsset);
+      sheet.getRange(i + 1, 5).setValue(deskripsi);
+      sheet.getRange(i + 1, 6).setValue(parseFloat(estimasiHarga) || 0);
+      sheet.getRange(i + 1, 7).setValue(prioritas);
+      sheet.getRange(i + 1, 8).setValue(bukti || '');
+      let historyRaw = data[i][11] || '[]';
+      let historyArr = [];
+      try { historyArr = JSON.parse(historyRaw); } catch (e) { historyArr = []; }
+      historyArr.push({ date: now, action: 'Diedit', status: status, by: updatedBy, role: 'Pemohon', reason: 'Update data pengajuan' });
+      sheet.getRange(i + 1, 12).setValue(JSON.stringify(historyArr));
+      return { success: true };
+    }
+    return { success: false, message: 'Asset tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
 function deleteAsset(id) {
   return deleteRow(CONFIG.SHEETS.ASSET, id);
+}
+
+/**
+ * Tambahkan komentar ke riwayat pengajuan asset (tidak mengubah status kecuali direquest)
+ */
+function addAssetComment(id, comment, by, role) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        let historyRaw = data[i][11] || '[]';
+        let historyArr = [];
+        try { historyArr = JSON.parse(historyRaw); } catch(e) { historyArr = []; }
+        historyArr.push({ date: now, action: 'Komentar', status: data[i][8] || '', by: by || '', role: role || '', reason: comment || '' });
+        sheet.getRange(i+1, 12).setValue(JSON.stringify(historyArr));
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Asset tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Update status pengajuan asset secara eksplisit (bisa mundur/maju), dan catat history
+ */
+function updateAssetStatus(id, status, by, role, reason) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.ASSET);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i+1, 9).setValue(status);
+        let historyRaw = data[i][11] || '[]';
+        let historyArr = [];
+        try { historyArr = JSON.parse(historyRaw); } catch(e) { historyArr = []; }
+        historyArr.push({ date: now, action: 'Status diubah', status: status, by: by || '', role: role || '', reason: reason || '' });
+        sheet.getRange(i+1, 12).setValue(JSON.stringify(historyArr));
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Asset tidak ditemukan' };
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 // ============================================================
@@ -4133,16 +4254,17 @@ function getAssetWarehouseData() {
         if (data[i].join('').trim() === '') continue;
         result.push({
             id: data[i][0],
-            code: data[i][1],
-            nama: data[i][2],
-            tanggalMasuk: data[i][3] instanceof Date ? Utilities.formatDate(data[i][3], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][3]||''),
-            divisi: data[i][4],
-            status: data[i][5] || 'Aktif',
-            createdBy: data[i][6],
-            createdAt: data[i][7],
-            history: data[i][8],
-            qty: data[i][9] || 1,
-            zoneId: data[i][10] || ''
+            kategori: data[i][1] || '',
+            code: data[i][2] || '',
+            nama: data[i][3] || '',
+            divisi: data[i][4] || '',
+            tanggalMasuk: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][5]||''),
+            status: data[i][6] || 'Aktif',
+            createdBy: data[i][7] || '',
+            createdAt: data[i][8] || '',
+            history: data[i][9] || '',
+            qty: data[i][10] || 1,
+            zoneId: data[i][11] || ''
         });
     }
     return { success: true, data: result };
@@ -4166,38 +4288,67 @@ function getAssetAuditStatus() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty, zoneId) {
+function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, createdBy, qty, zoneId, kategori) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
     const createdAt = new Date().toISOString();
     const count = parseInt(qty) || 1;
     
-    // Tentukan awalan kode (terkecuali jika user input kode manual, kita jadikan itu prefix)
+    if (String(status || '').toLowerCase() === 'rusak') {
+      divisi = '';
+      zoneId = '';
+    }
+
     const basePrefix = (codePrefix && codePrefix.trim() !== '') ? codePrefix.trim() : nama;
     const prefix = basePrefix + "-";
     
-    // Cari nomor terakhir untuk prefix tersebut agar urutan berlanjut
     let maxNum = 0;
     for (let j = 1; j < data.length; j++) {
-        const existingCode = String(data[j][1]);
-        if (existingCode.startsWith(prefix)) {
-            const numPart = parseInt(existingCode.split('-').pop());
-            if (!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
-        }
+      const existingCode = String(data[j][2] || '');
+      if (existingCode.startsWith(prefix)) {
+        const numPart = parseInt(existingCode.split('-').pop());
+        if (!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
+      }
     }
     
-    // Looping untuk membuat baris individu per unit dengan nomor urut
     for (let i = 0; i < count; i++) {
         const id = generateId();
         const currentNum = maxNum + i + 1;
         const code = `${basePrefix}-${currentNum}`;
         const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
         
-        sheet.appendRow([id, code, nama, tanggalMasuk, divisi, status || 'Aktif', createdBy, createdAt, history, 1, zoneId || '']);
+        // New column order: id, kategori, code, nama, divisi, tanggalMasuk, status, createdBy, createdAt, history, qty, zoneId
+        sheet.appendRow([id, kategori || '', code, nama, divisi, tanggalMasuk, status || 'Aktif', createdBy, createdAt, history, 1, zoneId || '']);
     }
     
     return { success: true, message: `${count} unit asset ${nama} berhasil ditambahkan.` };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+function importAssetWarehouseBulk(items, userNama) {
+  try {
+    if (!items || !items.length) return { success: false, message: 'Tidak ada data untuk diimpor.' };
+    const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const data = sheet.getDataRange().getValues();
+    let imported = 0;
+
+    items.forEach(item => {
+      const codePrefix = item.CodePrefix || item.codeprefix || item.codePrefix || item['Code Prefix'] || item['code prefix'] || '';
+      const nama = item.Nama || item.nama || item.Name || item.name || '';
+      const tanggalMasuk = item.TanggalMasuk || item.tanggalMasuk || item['Tanggal Masuk'] || '';
+      const divisi = item.Divisi || item.divisi || item.Division || item.division || 'Gudang';
+      const status = item.Status || item.status || 'Aktif';
+      const qty = item.Qty || item.qty || item.quantity || 1;
+      const zoneId = item.ZoneId || item.zoneId || item.Zone || item.zone || '';
+      const kategori = item.Kategori || item.kategori || item.Category || item.category || item['Kategori'] || item['kategori'] || item['Category'] || item['category'] || 'Lain-lain';
+
+      if (!nama) return;
+      addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, userNama || 'System', qty, zoneId, kategori);
+      imported += parseInt(qty) || 1;
+    });
+
+    return { success: true, message: `Berhasil mengimpor ${imported} asset.` };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -4276,7 +4427,8 @@ function approveAssetAudit(auditId, status, approver) {
           const awData = awSheet.getDataRange().getValues();
           for (let j = 1; j < awData.length; j++) {
             if (String(awData[j][0]) === String(assetId)) {
-              awSheet.getRange(j + 1, 6).setValue(kondisi);
+              // status is column 7 in new layout
+              awSheet.getRange(j + 1, 7).setValue(kondisi);
               break;
             }
           }
@@ -4288,23 +4440,31 @@ function approveAssetAudit(auditId, status, approver) {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
-function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty, zoneId) {
+function updateAssetWarehouse(id, nama, tanggalMasuk, status, userNama, qty, zoneId, kategori) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
-        sheet.getRange(i + 1, 3).setValue(nama);
-        sheet.getRange(i + 1, 4).setValue(tanggalMasuk);
-        sheet.getRange(i + 1, 6).setValue(status);
-        sheet.getRange(i + 1, 10).setValue(qty || 1);
-        if (zoneId !== undefined) sheet.getRange(i + 1, 11).setValue(zoneId || '');
-        
-        let oldHist = data[i][8] || '';
+        // columns: 1=id,2=kategori,3=code,4=nama,5=divisi,6=tanggalMasuk,7=status,8=createdBy,9=createdAt,10=history,11=qty,12=zoneId
+        sheet.getRange(i + 1, 4).setValue(nama);
+        sheet.getRange(i + 1, 6).setValue(tanggalMasuk);
+        sheet.getRange(i + 1, 7).setValue(status);
+        sheet.getRange(i + 1, 11).setValue(qty || 1);
+        sheet.getRange(i + 1, 2).setValue(kategori || 'Lain-lain');
+
+        if (String(status || '').toLowerCase() === 'rusak') {
+          sheet.getRange(i + 1, 5).setValue('');
+          sheet.getRange(i + 1, 12).setValue('');
+        } else if (zoneId !== undefined) {
+          sheet.getRange(i + 1, 12).setValue(zoneId || '');
+        }
+
+        let oldHist = data[i][9] || '';
         const now = new Date().toLocaleString('id-ID');
         const entry = `✏️ Diperbarui oleh ${userNama} pada ${now}`;
-        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
-        
+        sheet.getRange(i + 1, 10).setValue(oldHist ? oldHist + '\n' + entry : entry);
+
         return { success: true };
       }
     }
@@ -4320,28 +4480,28 @@ function moveAssetWarehouse(assetId, targetDivisi, targetZoneId, userNama) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(assetId)) {
         const oldDiv = data[i][4];
-        const oldZone = data[i][10] || '';
-        const oldHist = data[i][8] || '';
+        const oldZone = data[i][11] || '';
+        const oldHist = data[i][9] || '';
         const now = new Date().toLocaleString('id-ID');
         
         const divChanged = oldDiv !== targetDivisi;
         const zoneChanged = oldZone !== targetZoneId;
         
-        if (!divChanged && !zoneChanged) return { success: true };
-        
-        let textChange = [];
-        if (divChanged) textChange.push(`divisi dari ${oldDiv} ke ${targetDivisi}`);
-        if (zoneChanged) {
-           const zoneNameStr = targetZoneId ? `zona baru` : `Tanpa Zona`;
-           textChange.push(`lokasi ke ${zoneNameStr}`);
-        }
-        
-        const entry = `📦 Dipindah ${textChange.join(' dan ')} oleh ${userNama} pada ${now}`;
-        
-        sheet.getRange(i + 1, 5).setValue(targetDivisi);
-        sheet.getRange(i + 1, 11).setValue(targetZoneId || '');
-        sheet.getRange(i + 1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
-        return { success: true };
+          if (!divChanged && !zoneChanged) return { success: true };
+
+          let textChange = [];
+          if (divChanged) textChange.push(`divisi dari ${oldDiv} ke ${targetDivisi}`);
+          if (zoneChanged) {
+            const zoneNameStr = targetZoneId ? `zona baru` : `Tanpa Zona`;
+            textChange.push(`lokasi ke ${zoneNameStr}`);
+          }
+
+          const entry = `📦 Dipindah ${textChange.join(' dan ')} oleh ${userNama} pada ${now}`;
+
+          sheet.getRange(i + 1, 5).setValue(targetDivisi);
+          sheet.getRange(i + 1, 12).setValue(targetZoneId || '');
+          sheet.getRange(i + 1, 10).setValue(oldHist ? oldHist + '\n' + entry : entry);
+          return { success: true };
       }
     }
     return { success: false, message: 'Asset tidak ditemukan' };
@@ -4374,7 +4534,8 @@ function getAuditReports() {
         createdBy: data[i][7],
         createdAt: data[i][8],
         history: data[i][9] || '',
-        missingAssets: data[i][10] || '[]'
+        missingAssets: data[i][10] || '[]',
+        negativeList: data[i][11] || '[]'
       });
     }
     return { success: true, data: result };
@@ -4415,6 +4576,105 @@ function generateAuditReport(auditorName) {
     reportSheet.appendRow([id, tanggal, auditorName, totalAsset, terscan, minus, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList)]);
     
     return { success: true, id: id };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
+/**
+ * Generate a detailed opname report for a specific Asset Opname session.
+ * Returns report id and list of negative-stock items (where system qty > physical qty).
+ */
+function generateOpnameReport(sessionId, auditorName) {
+  try {
+    const ss = getSpreadsheet();
+    const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
+    const logSheet = ss.getSheetByName('AssetOpnameLog');
+    const reportSheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
+
+    if (!assetSheet || !logSheet || !reportSheet) throw new Error('Sheet data tidak ditemukan');
+
+    const assets = assetSheet.getDataRange().getValues().slice(1).filter(r => r.join('').trim() !== '');
+    const logs = logSheet.getDataRange().getValues().slice(1).filter(r => r.join('').trim() !== '');
+
+    // Fetch session details to get the divisi
+    const sesSheet = ss.getSheetByName('AssetOpnameSession');
+    let sessionDivisi = 'Semua';
+    if (sesSheet) {
+      const sesData = sesSheet.getDataRange().getValues();
+      for (let i = 1; i < sesData.length; i++) {
+        if (String(sesData[i][0]) === String(sessionId)) {
+          sessionDivisi = sesData[i][2] || 'Semua';
+          break;
+        }
+      }
+    }
+
+    // Filter logs for this session
+    const sessionLogs = logs.filter(l => String(l[1]) === String(sessionId));
+    const auditedIds = new Set(sessionLogs.map(l => String(l[2])));
+
+    // Filter assets by session division to calculate correct stats
+    const filteredAssets = assets.filter(a => {
+      if (sessionDivisi && sessionDivisi !== 'Semua' && String(a[4] || '') !== sessionDivisi) return false;
+      return true;
+    });
+
+    const totalAsset = filteredAssets.length;
+    const terscan = auditedIds.size;
+    const minusCount = totalAsset - terscan;
+
+    // Missing assets (not scanned in this session, but belong to this session's division)
+    const missingAssetsList = filteredAssets.filter(a => !auditedIds.has(String(a[0]))).map(a => `${a[2]} (${a[1]})`);
+
+    // Negative stock details: compare system qty vs scanned qty per asset
+    const negativeList = [];
+    for (let i = 0; i < sessionLogs.length; i++) {
+      const row = sessionLogs[i];
+      const assetId = String(row[2]);
+      const qtyFisik = parseFloat(row[6]) || 0; // log: qty fisik at index 6
+
+      // find asset in assets
+      const assetRow = assets.find(a => String(a[0]) === assetId);
+      if (!assetRow) continue;
+      const systemQty = parseFloat(assetRow[9]) || 0; // ASSET_WAREHOUSE qty column (index 9)
+      const diff = systemQty - qtyFisik; // positive if system has more than physical (minus)
+      if (diff > 0) {
+        negativeList.push({
+          assetId: assetRow[0],
+          code: assetRow[1],
+          nama: assetRow[2],
+          divisi: assetRow[4],
+          systemQty: systemQty,
+          physicalQty: qtyFisik,
+          difference: diff
+        });
+      }
+    }
+
+    // Append report to AuditReports (re-using existing audit reports sheet)
+    const id = sessionId; // Link report ID directly to sessionId for easy tracking
+    const now = new Date();
+    const nowStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+    const tanggal = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    const history = JSON.stringify([{ action: 'Opname report generated', by: auditorName, time: nowStr }]);
+
+    // Check if report row already exists to avoid duplication
+    let existingRowIndex = -1;
+    const reportData = reportSheet.getDataRange().getValues();
+    for (let r = 1; r < reportData.length; r++) {
+      if (String(reportData[r][0]) === String(id)) {
+        existingRowIndex = r + 1;
+        break;
+      }
+    }
+
+    const rowData = [id, tanggal, auditorName, totalAsset, terscan, minusCount, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList), JSON.stringify(negativeList)];
+    if (existingRowIndex > 0) {
+      reportSheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      reportSheet.appendRow(rowData);
+    }
+
+    return { success: true, id: id, negative: negativeList, missing: missingAssetsList };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -6637,6 +6897,27 @@ function approveAssetOpname(sessionId, action, approverNama) {
     hist.push({ action: action === 'Approve' ? 'Disetujui' : 'Ditolak', by: approverNama, time: nowStr });
     sesSheet.getRange(sessionRow+1, 11).setValue(JSON.stringify(hist));
 
+    // Update status di AuditReports (Laporan SO)
+    try {
+      const reportSheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
+      if (reportSheet) {
+        const reportData = reportSheet.getDataRange().getValues();
+        for (let r = 1; r < reportData.length; r++) {
+          if (String(reportData[r][0]) === String(sessionId)) {
+            reportSheet.getRange(r+1, 7).setValue(newStatus);
+            let repHist = [];
+            try { repHist = JSON.parse(reportData[r][9] || '[]'); } catch(e) {}
+            const reportNowStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+            repHist.push({ action: action === 'Approve' ? 'Laporan disetujui' : 'Laporan ditolak', by: approverNama, time: reportNowStr });
+            reportSheet.getRange(r+1, 10).setValue(JSON.stringify(repHist));
+            break;
+          }
+        }
+      }
+    } catch(err) {
+      console.error('Gagal mengupdate status di AuditReports:', err);
+    }
+
     // Jika Approve → update AssetWarehouse
     if (action === 'Approve') {
       const logSheet = ss.getSheetByName('AssetOpnameLog');
@@ -6645,28 +6926,53 @@ function approveAssetOpname(sessionId, action, approverNama) {
         const assetSheet = getSheet(CONFIG.SHEETS.ASSET_WAREHOUSE);
         const assetData = assetSheet.getDataRange().getValues();
         const nowLocale = now.toLocaleString('id-ID');
+        const sessionDivisi = sesData[sessionRow][2] || 'Semua';
 
+        // 1. Dapatkan set ID asset yang terscan pada sesi ini
+        const scannedAssetIds = new Set();
         for (let li = 1; li < logData.length; li++) {
-          if (String(logData[li][1]) !== String(sessionId)) continue;
-          const assetId   = String(logData[li][2]);
-          const qtyFisik  = parseFloat(logData[li][6]) || 1;
-          const kondisi   = String(logData[li][8] || 'Baik');
+          if (String(logData[li][1]) === String(sessionId)) {
+            scannedAssetIds.add(String(logData[li][2]));
+          }
+        }
 
-          // Cari & update di AssetWarehouse
-          for (let ai = 1; ai < assetData.length; ai++) {
-            if (String(assetData[ai][0]) === assetId) {
-              assetSheet.getRange(ai+1, 10).setValue(qtyFisik); // qty
-              // Update status berdasarkan kondisi
+        // 2. Loop semua asset di warehouse
+        for (let ai = 1; ai < assetData.length; ai++) {
+          if (assetData[ai].join('').trim() === '') continue;
+          const assetId = String(assetData[ai][0]);
+          const assetDivisi = String(assetData[ai][4] || '');
+
+          // Filter divisi asset agar sesuai divisi sesi SO
+          if (sessionDivisi && sessionDivisi !== 'Semua' && assetDivisi !== sessionDivisi) {
+            continue;
+          }
+
+          if (scannedAssetIds.has(assetId)) {
+            // Asset terscan: cari log scan dan update sesuai isinya
+            const logEntry = logData.find(l => String(l[1]) === String(sessionId) && String(l[2]) === assetId);
+            if (logEntry) {
+              const qtyFisik = parseFloat(logEntry[6]) || 1;
+              const kondisi = String(logEntry[8] || 'Baik');
+
+              assetSheet.getRange(ai+1, 10).setValue(qtyFisik); // qty (kolom 10)
+              
               let newAssetStatus = assetData[ai][5] || 'Aktif';
               if (kondisi === 'Rusak') newAssetStatus = 'Tidak Aktif';
               else if (kondisi === 'Hilang') newAssetStatus = 'Hilang';
-              assetSheet.getRange(ai+1, 6).setValue(newAssetStatus);
-              // Tambah history
+              assetSheet.getRange(ai+1, 6).setValue(newAssetStatus); // status (kolom 6)
+
               const oldHist = assetData[ai][8] || '';
               const entry = `🔄 SO Asset disetujui oleh ${approverNama} pada ${nowLocale}. Qty Fisik: ${qtyFisik}, Kondisi: ${kondisi}`;
               assetSheet.getRange(ai+1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
-              break;
             }
+          } else {
+            // Asset TIDAK terscan: berarti Hilang!
+            assetSheet.getRange(ai+1, 10).setValue(0); // qty = 0 (kolom 10)
+            assetSheet.getRange(ai+1, 6).setValue('Hilang'); // status = Hilang (kolom 6)
+
+            const oldHist = assetData[ai][8] || '';
+            const entry = `❌ SO Asset disetujui oleh ${approverNama} pada ${nowLocale}. Asset tidak terscan saat opname, otomatis diubah menjadi Hilang (Qty: 0)`;
+            assetSheet.getRange(ai+1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
           }
         }
       }
@@ -7485,7 +7791,7 @@ function setupPettyCashSheets() {
   ]);
   setupSheet(ss, CONFIG.SHEETS.PETTY_CASH, [
     'id', 'periodId', 'tanggal', 'kategori', 'keterangan',
-    'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt'
+    'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt', 'statusBayar'
   ]);
   return { success: true };
 }
@@ -7565,7 +7871,8 @@ function getPettyCash(periodId) {
         tipe: data[i][6] || 'OUT',
         buktiUrl: data[i][7] || '',
         createdBy: data[i][8],
-        createdAt: data[i][9]
+        createdAt: data[i][9],
+        statusBayar: data[i][10] || 'Belum Bayar'
       });
     }
     return { success: true, data: result };
@@ -7578,7 +7885,7 @@ function addPettyCash(periodId, tanggal, kategori, keterangan, nominal, tipe, bu
     getSheet(CONFIG.SHEETS.PETTY_CASH).appendRow([
       id, periodId, tanggal, kategori, keterangan,
       parseFloat(nominal) || 0, tipe || 'OUT',
-      buktiUrl || '', createdBy, new Date().toISOString()
+      buktiUrl || '', createdBy, new Date().toISOString(), 'Belum Bayar'
     ]);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
@@ -7586,6 +7893,22 @@ function addPettyCash(periodId, tanggal, kategori, keterangan, nominal, tipe, bu
 
 function deletePettyCash(id) {
   return deleteRow(CONFIG.SHEETS.PETTY_CASH, id);
+}
+
+function updatePettyCashStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PETTY_CASH);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 11).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Transaksi tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
 }
 
 /**
@@ -7904,5 +8227,620 @@ function getFilesAsBase64(fileIds) {
     return { success: true, images: result };
   } catch (e) {
     return { success: false, message: e.message, images: {} };
+  }
+}
+
+
+// ============================================================
+// TOKO GUDANG
+// ============================================================
+
+/**
+ * Get all Payment Gudang records
+ */
+function getPaymentGudang() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      result.push({
+        id: String(data[i][0]),
+        nama: String(data[i][1] || ''),
+        deskripsi: String(data[i][2] || ''),
+        hargaPerOrang: Number(data[i][3] || 0),
+        deadline: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][4] || ''),
+        status: String(data[i][5] || 'Aktif'),
+        createdBy: String(data[i][6] || ''),
+        createdAt: data[i][7],
+        midtransOrderId: String(data[i][8] || ''),
+        midtransStatus: String(data[i][9] || ''),
+        tipe: String(data[i][10] || 'Reguler')
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Add new Payment Gudang
+ */
+function addPaymentGudang(nama, deskripsi, hargaPerOrang, deadline, createdBy, tipe) {
+  try {
+    const id = generateId();
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG);
+    sheet.appendRow([
+      id,
+      nama,
+      deskripsi,
+      Number(hargaPerOrang) || 0,
+      deadline,
+      'Aktif',
+      createdBy,
+      new Date().toISOString(),
+      '', // midtransOrderId
+      '', // midtransStatus
+      tipe || 'Reguler'
+    ]);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Get or create participant for Toko Gudang, syncing with employee account if necessary
+ */
+function getOrCreateParticipantForUser(paymentId, karyawanNama) {
+  try {
+    // 1. Check if participant already exists
+    const sheetPart = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const dataPart = sheetPart.getDataRange().getValues();
+    for (let i = 1; i < dataPart.length; i++) {
+      if (String(dataPart[i][1]) === String(paymentId) && String(dataPart[i][3]).toLowerCase() === String(karyawanNama).toLowerCase()) {
+        return {
+          success: true,
+          participantId: String(dataPart[i][0]),
+          karyawanId: String(dataPart[i][2]),
+          namaKaryawan: String(dataPart[i][3])
+        };
+      }
+    }
+
+    // 2. Not found, search in Karyawan sheet to sync details
+    let karyawanId = 'K-' + generateId();
+    const sheetKar = getSheet(CONFIG.SHEETS.KARYAWAN);
+    const dataKar = sheetKar.getDataRange().getValues();
+    for (let j = 1; j < dataKar.length; j++) {
+      if (String(dataKar[j][1]).toLowerCase() === String(karyawanNama).toLowerCase()) {
+        karyawanId = String(dataKar[j][0]); // Found match, sync it!
+        break;
+      }
+    }
+
+    // 3. Create new participant
+    const id = generateId();
+    sheetPart.appendRow([
+      id,
+      paymentId,
+      karyawanId,
+      karyawanNama,
+      'Belum Bayar',
+      '',
+      '',
+      '',
+      ''
+    ]);
+
+    return {
+      success: true,
+      participantId: id,
+      karyawanId: karyawanId,
+      namaKaryawan: karyawanNama
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Update Payment Gudang status
+ */
+function updatePaymentGudangStatus(id, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 6).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Update Payment Gudang product details
+ */
+function updatePaymentGudang(id, nama, deskripsi, hargaPerOrang, deadline, tipe, status) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG);
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        sheet.getRange(i + 1, 2).setValue(nama);
+        sheet.getRange(i + 1, 3).setValue(deskripsi || '');
+        sheet.getRange(i + 1, 4).setValue(Number(hargaPerOrang) || 0);
+        sheet.getRange(i + 1, 5).setValue(deadline || '');
+        sheet.getRange(i + 1, 6).setValue(status || 'Aktif');
+        sheet.getRange(i + 1, 11).setValue(tipe || 'Reguler');
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Product tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Delete Payment Gudang
+ */
+function deletePaymentGudang(id) {
+  return deleteRow(CONFIG.SHEETS.PAYMENT_GUDANG, id);
+}
+
+/**
+ * Get participants for a payment
+ */
+function getPaymentParticipants(paymentId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i][0]) continue;
+      if (String(data[i][1]) === String(paymentId)) {
+        result.push({
+          id: String(data[i][0]),
+          paymentId: String(data[i][1]),
+          karyawanId: String(data[i][2] || ''),
+          namaKaryawan: String(data[i][3] || ''),
+          statusBayar: String(data[i][4] || 'Belum Bayar'),
+          tanggalBayar: data[i][5] ? (data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss') : String(data[i][5])) : '',
+          metodeBayar: String(data[i][6] || ''),
+          buktiUrl: String(data[i][7] || ''),
+          midtransTransactionId: String(data[i][8] || '')
+        });
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Add participant to payment
+ */
+function addPaymentParticipant(paymentId, karyawanId, namaKaryawan) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const id = generateId();
+    sheet.appendRow([
+      id,
+      paymentId,
+      karyawanId,
+      namaKaryawan,
+      'Belum Bayar',
+      '',
+      '',
+      '',
+      ''
+    ]);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Add multiple participants at once
+ */
+function addPaymentParticipantsBulk(paymentId, karyawanList) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    let count = 0;
+    
+    karyawanList.forEach(k => {
+      const id = generateId();
+      sheet.appendRow([
+        id,
+        paymentId,
+        k.id || '',
+        k.nama || '',
+        'Belum Bayar',
+        '',
+        '',
+        '',
+        ''
+      ]);
+      count++;
+    });
+    
+    return { success: true, count: count };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Update participant payment status
+ */
+function updateParticipantPaymentStatus(participantId, statusBayar, metodeBayar, buktiUrl, midtransTransactionId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(participantId)) {
+        sheet.getRange(i + 1, 5).setValue(statusBayar);
+        sheet.getRange(i + 1, 6).setValue(now);
+        sheet.getRange(i + 1, 7).setValue(metodeBayar || '');
+        sheet.getRange(i + 1, 8).setValue(buktiUrl || '');
+        sheet.getRange(i + 1, 9).setValue(midtransTransactionId || '');
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Participant tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Delete participant
+ */
+function deletePaymentParticipant(id) {
+  return deleteRow(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, id);
+}
+
+/**
+ * Get Payment Gudang with participants (full data)
+ */
+function getPaymentGudangFull() {
+  try {
+    const paymentsRes = getPaymentGudang();
+    if (!paymentsRes.success) return paymentsRes;
+    
+    const payments = paymentsRes.data;
+    
+    // Get participants for each payment
+    payments.forEach(payment => {
+      const participantsRes = getPaymentParticipants(payment.id);
+      payment.participants = participantsRes.success ? participantsRes.data : [];
+      
+      // Calculate statistics
+      const total = payment.participants.length;
+      const lunas = payment.participants.filter(p => p.statusBayar === 'Lunas').length;
+      const belum = total - lunas;
+      
+      payment.stats = {
+        total: total,
+        lunas: lunas,
+        belum: belum,
+        totalNominal: total * payment.hargaPerOrang,
+        terkumpul: lunas * payment.hargaPerOrang,
+        sisa: belum * payment.hargaPerOrang
+      };
+    });
+    
+    return { success: true, data: payments };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ============================================================
+// MIDTRANS CONFIGURATION
+// ============================================================
+
+/**
+ * Get Midtrans configuration
+ */
+function getMidtransConfig() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.MIDTRANS_CONFIG);
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length > 1 && data[1][0]) {
+      return {
+        success: true,
+        config: {
+          id: String(data[1][0]),
+          serverKey: String(data[1][1] || ''),
+          clientKey: String(data[1][2] || ''),
+          isProduction: Boolean(data[1][3]),
+          updatedBy: String(data[1][4] || ''),
+          updatedAt: data[1][5]
+        }
+      };
+    }
+    
+    // Return empty config if not set
+    return {
+      success: true,
+      config: {
+        id: '',
+        serverKey: '',
+        clientKey: '',
+        isProduction: false,
+        updatedBy: '',
+        updatedAt: ''
+      }
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Save Midtrans configuration
+ */
+function saveMidtransConfig(serverKey, clientKey, isProduction, updatedBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.MIDTRANS_CONFIG);
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    
+    if (data.length > 1 && data[1][0]) {
+      // Update existing
+      sheet.getRange(2, 2).setValue(serverKey);
+      sheet.getRange(2, 3).setValue(clientKey);
+      sheet.getRange(2, 4).setValue(isProduction);
+      sheet.getRange(2, 5).setValue(updatedBy);
+      sheet.getRange(2, 6).setValue(now);
+    } else {
+      // Create new
+      const id = generateId();
+      sheet.appendRow([id, serverKey, clientKey, isProduction, updatedBy, now]);
+    }
+    
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ============================================================
+// MIDTRANS INTEGRATION
+// ============================================================
+
+/**
+ * Create Midtrans Snap transaction
+ */
+function createMidtransTransaction(paymentId, participantId, amount, customerName, customerEmail, paymentMethodType) {
+  try {
+    const configRes = getMidtransConfig();
+    if (!configRes.success) return configRes;
+    
+    const config = configRes.config;
+    if (!config.serverKey) {
+      return { success: false, message: 'Midtrans belum dikonfigurasi. Silakan setting API Key terlebih dahulu.' };
+    }
+    
+    // Generate order ID
+    const orderId = 'PG-' + paymentId.substring(0, 8) + '-' + participantId.substring(0, 8) + '-' + Date.now();
+    
+    // Midtrans API endpoint
+    const apiUrl = config.isProduction 
+      ? 'https://app.midtrans.com/snap/v1/transactions'
+      : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+    
+    // Prepare transaction data
+    const transactionData = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: amount
+      },
+      customer_details: {
+        first_name: customerName,
+        email: customerEmail || 'noreply@gudangfcl.com'
+      },
+      item_details: [{
+        id: paymentId,
+        price: amount,
+        quantity: 1,
+        name: 'Toko Gudang'
+      }]
+    };
+
+    if (paymentMethodType) {
+      if (paymentMethodType === 'va') {
+        transactionData.enabled_payments = ["bca_va", "bni_va", "bri_va", "other_va", "permata_va", "echannel"];
+      } else if (paymentMethodType === 'qr') {
+        transactionData.enabled_payments = ["gopay", "shopeepay", "qris"];
+      } else if (paymentMethodType === 'gopay') {
+        transactionData.enabled_payments = ["gopay", "qris"];
+      } else if (paymentMethodType === 'shopeepay') {
+        transactionData.enabled_payments = ["shopeepay", "qris"];
+      } else if (paymentMethodType === 'ovo') {
+        transactionData.enabled_payments = ["gopay", "shopeepay", "qris"];
+      } else if (paymentMethodType === 'cstore') {
+        transactionData.enabled_payments = ["cstore"];
+      }
+    }
+    
+    // Create authorization header
+    const authString = Utilities.base64Encode(config.serverKey + ':');
+    
+    // Make API request
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'Authorization': 'Basic ' + authString,
+        'Accept': 'application/json'
+      },
+      payload: JSON.stringify(transactionData),
+      muteHttpExceptions: true
+    };
+    
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const responseCode = response.getResponseCode();
+    const responseBody = response.getContentText();
+    
+    Logger.log('Midtrans Response Code: ' + responseCode);
+    Logger.log('Midtrans Response Body: ' + responseBody);
+    
+    if (responseCode === 201) {
+      const result = JSON.parse(responseBody);
+      
+      // Update payment record with Midtrans order ID
+      updateParticipantMidtransId(participantId, orderId);
+      
+      return {
+        success: true,
+        token: result.token,
+        redirectUrl: result.redirect_url,
+        orderId: orderId
+      };
+    } else {
+      const error = JSON.parse(responseBody);
+      return {
+        success: false,
+        message: 'Midtrans Error: ' + (error.error_messages ? error.error_messages.join(', ') : 'Unknown error')
+      };
+    }
+  } catch (e) {
+    Logger.log('createMidtransTransaction error: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Update participant with Midtrans transaction ID
+ */
+function updateParticipantMidtransId(participantId, midtransTransactionId) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(participantId)) {
+        sheet.getRange(i + 1, 9).setValue(midtransTransactionId);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Participant tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Handle Midtrans payment notification (webhook)
+ */
+function handleMidtransNotification(notificationData) {
+  try {
+    const orderId = notificationData.order_id;
+    const transactionStatus = notificationData.transaction_status;
+    const fraudStatus = notificationData.fraud_status;
+    
+    Logger.log('Midtrans Notification - Order ID: ' + orderId + ', Status: ' + transactionStatus);
+    
+    // Find participant by Midtrans transaction ID
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][8]) === String(orderId)) {
+        let statusBayar = 'Belum Bayar';
+        let metodeBayar = notificationData.payment_type || '';
+        
+        // Determine payment status based on Midtrans status
+        if (transactionStatus === 'capture') {
+          if (fraudStatus === 'accept') {
+            statusBayar = 'Lunas';
+          }
+        } else if (transactionStatus === 'settlement') {
+          statusBayar = 'Lunas';
+        } else if (transactionStatus === 'pending') {
+          statusBayar = 'Pending';
+        } else if (transactionStatus === 'deny' || transactionStatus === 'expire' || transactionStatus === 'cancel') {
+          statusBayar = 'Gagal';
+        }
+        
+        // Update participant status
+        sheet.getRange(i + 1, 5).setValue(statusBayar);
+        sheet.getRange(i + 1, 6).setValue(new Date().toISOString());
+        sheet.getRange(i + 1, 7).setValue(metodeBayar);
+        
+        Logger.log('Updated participant payment status to: ' + statusBayar);
+        
+        return { success: true, status: statusBayar };
+      }
+    }
+    
+    return { success: false, message: 'Order ID tidak ditemukan: ' + orderId };
+  } catch (e) {
+    Logger.log('handleMidtransNotification error: ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+/**
+ * Check Midtrans transaction status
+ */
+function checkMidtransStatus(orderId) {
+  try {
+    const configRes = getMidtransConfig();
+    if (!configRes.success) return configRes;
+    
+    const config = configRes.config;
+    if (!config.serverKey) {
+      return { success: false, message: 'Midtrans belum dikonfigurasi' };
+    }
+    
+    const apiUrl = config.isProduction
+      ? 'https://api.midtrans.com/v2/' + orderId + '/status'
+      : 'https://api.sandbox.midtrans.com/v2/' + orderId + '/status';
+    
+    const authString = Utilities.base64Encode(config.serverKey + ':');
+    
+    const options = {
+      method: 'get',
+      headers: {
+        'Authorization': 'Basic ' + authString,
+        'Accept': 'application/json'
+      },
+      muteHttpExceptions: true
+    };
+    
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const responseCode = response.getResponseCode();
+    const responseBody = response.getContentText();
+    
+    if (responseCode === 200) {
+      const result = JSON.parse(responseBody);
+      return {
+        success: true,
+        status: result.transaction_status,
+        data: result
+      };
+    } else {
+      return { success: false, message: 'Failed to check status' };
+    }
+  } catch (e) {
+    return { success: false, message: e.message };
   }
 }
