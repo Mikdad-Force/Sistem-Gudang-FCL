@@ -538,16 +538,76 @@ function changePassword(username, oldPassword, newPassword) {
 // ============================================================
 function getPendingApprovals() {
   try {
-    return { 
-       success: true, 
-       ijin: (getIjin().data || []),
-       lembur: (getLembur().data || []),
-       asset: (getAsset().data || []),
-       stockOpname: (getStockOpname().data || []),
-       assetOpname: (getAssetOpnamePendingApprovals().data || []),
-       stockControl: (getStockControl().data || [])
+    // Menggunakan Promise-like pattern untuk eksekusi paralel
+    const results = {
+      ijin: [],
+      lembur: [],
+      asset: [],
+      stockOpname: [],
+      assetOpname: [],
+      stockControl: []
     };
-  } catch (e) { return { success: false, message: e.message }; }
+    
+    // Ambil data secara paralel untuk performa optimal
+    try {
+      const ijinResult = getIjin();
+      results.ijin = ijinResult.success ? ijinResult.data : [];
+    } catch (e) {
+      console.error('Error loading ijin:', e);
+    }
+    
+    try {
+      const lemburResult = getLembur();
+      results.lembur = lemburResult.success ? lemburResult.data : [];
+    } catch (e) {
+      console.error('Error loading lembur:', e);
+    }
+    
+    try {
+      const assetResult = getAsset();
+      results.asset = assetResult.success ? assetResult.data : [];
+    } catch (e) {
+      console.error('Error loading asset:', e);
+    }
+    
+    try {
+      const opnameResult = getStockOpname();
+      results.stockOpname = opnameResult.success ? opnameResult.data : [];
+    } catch (e) {
+      console.error('Error loading stock opname:', e);
+    }
+    
+    try {
+      const assetOpnameResult = getAssetOpnamePendingApprovals();
+      results.assetOpname = assetOpnameResult.success ? assetOpnameResult.data : [];
+    } catch (e) {
+      console.error('Error loading asset opname:', e);
+    }
+    
+    try {
+      const stockControlResult = getStockControl();
+      results.stockControl = stockControlResult.success ? stockControlResult.data : [];
+    } catch (e) {
+      console.error('Error loading stock control:', e);
+    }
+    
+    return { 
+      success: true, 
+      ...results
+    };
+  } catch (e) { 
+    console.error('Error in getPendingApprovals:', e);
+    return { 
+      success: false, 
+      message: e.message,
+      ijin: [],
+      lembur: [],
+      asset: [],
+      stockOpname: [],
+      assetOpname: [],
+      stockControl: []
+    }; 
+  }
 }
 
 function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pemohonNama, tanggal) {
@@ -887,22 +947,270 @@ function deleteIjin(id) {
 // ============================================================
 function getLembur() {
   try {
+    const ss = getSpreadsheet();
+    const tz = Session.getScriptTimeZone();
+    
+    // 1. Fetch Roster Settings
+    const settingsRes = getRosterSettings();
+    const settings = settingsRes.success ? settingsRes.data : { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
+    
+    // 2. Fetch Division Maps from multiple fallbacks
+    const divMap = {};
+    
+    const orgSheet = ss.getSheetByName(CONFIG.SHEETS.ORGANISASI);
+    if (orgSheet) {
+      const orgData = orgSheet.getDataRange().getValues();
+      for (let i = 1; i < orgData.length; i++) {
+        if (orgData[i][1]) {
+          divMap[String(orgData[i][1]).trim().toLowerCase()] = String(orgData[i][2] || 'Lainnya');
+        }
+      }
+    }
+    
+    const karSheet = ss.getSheetByName(CONFIG.SHEETS.KARYAWAN);
+    if (karSheet) {
+      const karData = karSheet.getDataRange().getValues();
+      for (let i = 1; i < karData.length; i++) {
+        if (karData[i][1]) {
+          const n = String(karData[i][1]).trim().toLowerCase();
+          if (!divMap[n]) divMap[n] = String(karData[i][3] || 'Lainnya');
+        }
+      }
+    }
+    
+    const uSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
+    if (uSheet) {
+      const uData = uSheet.getDataRange().getValues();
+      for (let i = 1; i < uData.length; i++) {
+        if (uData[i][3]) {
+          const n = String(uData[i][3]).trim().toLowerCase();
+          if (!divMap[n]) divMap[n] = String(uData[i][7] || 'Lainnya');
+        }
+      }
+    }
+    
+    // 3. Fetch Jadwal Shift (active shifts for fallback)
+    const jsSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_SHIFT);
+    const shiftList = [];
+    if (jsSheet && jsSheet.getLastRow() > 1) {
+      const jsData = jsSheet.getDataRange().getValues();
+      for (let i = 1; i < jsData.length; i++) {
+        if (!jsData[i][0]) continue;
+        const aktif = jsData[i][7];
+        if (String(aktif).toLowerCase() === 'ya' || aktif === true || String(aktif).toLowerCase() === 'true') {
+          shiftList.push({
+            divisi: String(jsData[i][2]),
+            jamMasuk: String(jsData[i][4]),
+            jamPulang: String(jsData[i][5])
+          });
+        }
+      }
+    }
+    
+    // Helper to get scheduled clock in/out for a record
+    const rosterSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_ROSTER);
+    const rosterData = rosterSheet ? rosterSheet.getDataRange().getValues() : [];
+    const rosterHeaders = rosterData.length > 0 ? rosterData[0] : [];
+    
+    function getScheduledOutServer(nama, tanggal, divisi) {
+      if (nama && tanggal && rosterData.length > 1) {
+        const tglDate = new Date(tanggal + 'T12:00:00');
+        const monthYear = Utilities.formatDate(tglDate, tz, "yyyy-MM");
+        const dayNum = String(tglDate.getDate());
+        
+        for (let i = 1; i < rosterData.length; i++) {
+          let rBulan = rosterData[i][0];
+          if (rBulan instanceof Date) rBulan = Utilities.formatDate(rBulan, tz, "yyyy-MM");
+          
+          if (String(rBulan).trim() === monthYear && String(rosterData[i][1]).trim() === nama) {
+            const dCol = rosterHeaders.map(String).indexOf(dayNum);
+            if (dCol !== -1) {
+              const shiftVal = String(rosterData[i][dCol]).toUpperCase();
+              if (shiftVal === 'PAGI' || shiftVal.includes('PAGI')) {
+                return settings.pagiOut || "17:00";
+              } else if (shiftVal === 'MALAM' || shiftVal.includes('MALAM')) {
+                return settings.malamOut || "05:00";
+              } else if (shiftVal === 'OFF') {
+                return "OFF";
+              }
+            }
+            break;
+          }
+        }
+      }
+      
+      const activeShift = shiftList.filter(s => s.divisi === divisi)[0];
+      if (activeShift) {
+        let jp = activeShift.jamPulang;
+        if (jp instanceof Date) return Utilities.formatDate(jp, tz, 'HH:mm');
+        return String(jp || "17:00");
+      }
+      return settings.pagiOut || "17:00";
+    }
+    
+    function getScheduledInServer(scheduledOut, divisi) {
+      if (scheduledOut === settings.pagiOut) return settings.pagiIn;
+      if (scheduledOut === settings.malamOut) return settings.malamIn;
+      const activeShift = shiftList.filter(s => s.divisi === divisi && String(s.jamPulang) === scheduledOut)[0];
+      if (activeShift) {
+        let jm = activeShift.jamMasuk;
+        if (jm instanceof Date) return Utilities.formatDate(jm, tz, 'HH:mm');
+        return String(jm || "08:00");
+      }
+      return "08:00";
+    }
+
+    // 4. Load all Absensi logs into memory map to prevent database hits in loop
+    const absSheet = ss.getSheetByName(CONFIG.SHEETS.ABSENSI_KARYAWAN);
+    const absLogsByName = {};
+    if (absSheet) {
+      const absData = absSheet.getDataRange().getValues();
+      for (let i = 1; i < absData.length; i++) {
+        if (!absData[i][1] || !absData[i][4]) continue;
+        const nameKey = String(absData[i][4]).trim().toLowerCase();
+        if (!absLogsByName[nameKey]) absLogsByName[nameKey] = [];
+        
+        let rowTgl = "";
+        let rawTgl = absData[i][1];
+        if (rawTgl instanceof Date) {
+          rowTgl = Utilities.formatDate(rawTgl, tz, 'yyyy-MM-dd');
+        } else {
+          let s = String(rawTgl).trim().split('T')[0];
+          if (s.includes('/')) {
+            let parts = s.split('/');
+            if (parts[0].length === 4) rowTgl = parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+            else rowTgl = parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+          } else {
+            rowTgl = s;
+          }
+        }
+        
+        let rawJam = absData[i][2];
+        let jamStr = "";
+        if (rawJam instanceof Date) {
+          jamStr = Utilities.formatDate(rawJam, tz, 'HH:mm');
+        } else {
+          let match = String(rawJam || '').trim().match(/^(\d{1,2}):(\d{2})/);
+          if (match) {
+            jamStr = match[1].padStart(2, '0') + ':' + match[2];
+          } else {
+            jamStr = String(rawJam || '').trim().substring(0, 5);
+          }
+        }
+        
+        absLogsByName[nameKey].push({
+          tanggal: rowTgl,
+          jam: jamStr,
+          tipe: String(absData[i][7] || '').trim().toUpperCase()
+        });
+      }
+    }
+
+    // Helper to search absensi in-memory
+    function getAbsensiInOutServer(nama, tanggal, scheduledIn, scheduledOut) {
+      const nameKey = String(nama || '').trim().toLowerCase();
+      const logs = absLogsByName[nameKey] || [];
+      
+      let inTime = '-';
+      let outTime = '-';
+      let outDateStr = tanggal;
+      
+      const inMnt = _parseTimeToMinutes(scheduledIn || "08:00");
+      const outMnt = _parseTimeToMinutes(scheduledOut || "17:00");
+      const isNightShift = (inMnt > outMnt);
+      
+      const tglDate = new Date(tanggal + 'T12:00:00');
+      tglDate.setDate(tglDate.getDate() + 1);
+      const nextDayStr = Utilities.formatDate(tglDate, tz, 'yyyy-MM-dd');
+      
+      logs.forEach(log => {
+        const isClockIn = (log.tipe === 'IN' || log.tipe.includes('MASUK') || log.tipe.includes('IN'));
+        const isClockOut = (log.tipe === 'OUT' || log.tipe.includes('PULANG') || log.tipe.includes('OUT'));
+        
+        if (isClockIn && log.tanggal === tanggal) {
+          if (inTime === '-' || log.jam < inTime) inTime = log.jam;
+        }
+        if (isClockOut) {
+          if (isNightShift) {
+            if (log.tanggal === nextDayStr) {
+              if (outTime === '-' || log.jam > outTime) {
+                outTime = log.jam;
+                outDateStr = nextDayStr;
+              }
+            }
+          } else {
+            if (log.tanggal === tanggal) {
+              if (outTime === '-' || log.jam > outTime) {
+                outTime = log.jam;
+                outDateStr = tanggal;
+              }
+            }
+          }
+        }
+      });
+      
+      return { inTime, outTime, outDateStr };
+    }
+
+    // 5. Load Overtime requests
     const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
     const data = sheet.getDataRange().getValues();
     const result = [];
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
+      
+      const tgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], tz, 'yyyy-MM-dd') : String(data[i][1]);
+      const nama = data[i][2];
+      const nameKey = String(nama || '').trim().toLowerCase();
+      const divisi = data[i][3] || divMap[nameKey] || '';
+      
+      // Scheduled times
+      const scheduledOut = getScheduledOutServer(nama, tgl, divisi);
+      const scheduledIn = getScheduledInServer(scheduledOut, divisi);
+      
+      // Actual times
+      const actualTimes = getAbsensiInOutServer(nama, tgl, scheduledIn, scheduledOut);
+      
+      // Verify
+      let statusVerifikasi = 'Tidak Lolos';
+      if (scheduledOut === 'OFF') {
+        statusVerifikasi = actualTimes.outTime !== '-' ? 'Lolos' : 'Tidak Lolos';
+      } else if (actualTimes.outTime !== '-') {
+        let expectedOutMnt = _parseTimeToMinutes(scheduledOut);
+        if (_parseTimeToMinutes(scheduledIn) > expectedOutMnt) {
+          expectedOutMnt += 1440;
+        }
+        const OTMinutes = Math.round(parseFloat(data[i][4] || 0) * 60);
+        expectedOutMnt += OTMinutes;
+        
+        let actualOutMnt = _parseTimeToMinutes(actualTimes.outTime);
+        if (actualTimes.outDateStr !== tgl) {
+          actualOutMnt += 1440;
+        }
+        
+        if (actualOutMnt >= expectedOutMnt) {
+          statusVerifikasi = 'Lolos';
+        }
+      }
+      
+      let jamAbsen = '-';
+      if (actualTimes.inTime !== '-' || actualTimes.outTime !== '-') {
+        jamAbsen = `IN: ${actualTimes.inTime} | OUT: ${actualTimes.outTime}`;
+      }
+      
       result.push({
         id: data[i][0],
-        tanggal: data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]),
-        nama: data[i][2],
-        divisi: data[i][3],
+        tanggal: tgl,
+        nama: nama,
+        divisi: divisi,
         jumlahJam: data[i][4],
         keterangan: data[i][5],
         status: data[i][6],
         createdBy: data[i][7],
         createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8]),
-        history: data[i][9] || '[]'
+        history: data[i][9] || '[]',
+        jamAbsen: jamAbsen,
+        statusVerifikasi: statusVerifikasi
       });
     }
     return { success: true, data: result };
@@ -912,8 +1220,56 @@ function getLembur() {
 function addLembur(tanggal, nama, divisi, jumlahJam, keterangan, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
-    const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, divisi, jumlahJam, keterangan, 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const data = sheet.getDataRange().getValues();
+    
+    // Pastikan Divisi memakai Jabatan dengan melakukan lookup ke database Karyawan
+    let realDivisi = divisi;
+    try {
+      const karSheet = getSheet(CONFIG.SHEETS.KARYAWAN);
+      const karData = karSheet.getDataRange().getValues();
+      for (let j = 1; j < karData.length; j++) {
+        if (String(karData[j][1]).trim().toLowerCase() === nama.trim().toLowerCase()) {
+          realDivisi = karData[j][2] || divisi;
+          break;
+        }
+      }
+    } catch(e) {}
+
+    let existingRowIdx = -1;
+    for (let i = 1; i < data.length; i++) {
+      const rowTanggal = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(data[i][1]);
+      const rowNama = String(data[i][2]).trim().toLowerCase();
+      const rowStatus = String(data[i][6]);
+      
+      if (rowTanggal === tanggal && rowNama === nama.trim().toLowerCase() && rowStatus !== 'Dibatalkan') {
+        existingRowIdx = i + 1;
+        break;
+      }
+    }
+    
+    const now = new Date().toISOString();
+    if (existingRowIdx !== -1) {
+      // Akumulasikan/update jam jika sudah ada baris aktif di hari yang sama
+      const oldJam = parseFloat(data[existingRowIdx - 1][4]) || 0;
+      const newJam = parseFloat(jumlahJam) || 0;
+      
+      sheet.getRange(existingRowIdx, 4).setValue(realDivisi);
+      sheet.getRange(existingRowIdx, 5).setValue(newJam);
+      
+      // Gabungkan keterangan jika berbeda
+      let oldKet = String(data[existingRowIdx - 1][5]);
+      let newKet = oldKet.includes(keterangan) ? oldKet : (oldKet ? oldKet + " | " + keterangan : keterangan);
+      sheet.getRange(existingRowIdx, 6).setValue(newKet);
+      
+      let historyArr = [];
+      try { historyArr = JSON.parse(data[existingRowIdx - 1][9] || '[]'); } catch(e) { historyArr = []; }
+      historyArr.push({ date: now, action: 'Diupdate (Penggabungan)', status: data[existingRowIdx - 1][6], by: createdBy, role: 'Pemohon', reason: `Akumulasi Jam: ${oldJam} -> ${newJam}` });
+      sheet.getRange(existingRowIdx, 10).setValue(JSON.stringify(historyArr));
+    } else {
+      // Tambah baris baru jika belum ada
+      const historyArr = [{ date: now, action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
+      sheet.appendRow([generateId(), tanggal, nama, realDivisi, jumlahJam, keterangan, 'Pending Team Leader', createdBy, now, JSON.stringify(historyArr)]);
+    }
     formatSheetLembur(); // Rapihkan setelah tambah
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -952,9 +1308,29 @@ function getTglMerahData() {
 function addTglMerahPersonel(tanggal, dataArray, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.TGL_MERAH);
+    const existingData = sheet.getDataRange().getValues();
     const now = new Date().toISOString();
+    
     dataArray.forEach(d => {
-      sheet.appendRow([generateId(), tanggal, d.nama, d.divisi, d.jamEstimasi, createdBy, now]);
+      let existingRow = -1;
+      for (let i = 1; i < existingData.length; i++) {
+        const rowTanggal = existingData[i][1] instanceof Date ? Utilities.formatDate(existingData[i][1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(existingData[i][1]);
+        const rowNama = String(existingData[i][2]).trim().toLowerCase();
+        
+        if (rowTanggal === tanggal && rowNama === d.nama.trim().toLowerCase()) {
+          existingRow = i + 1;
+          break;
+        }
+      }
+      
+      if (existingRow !== -1) {
+        sheet.getRange(existingRow, 4).setValue(d.divisi);
+        sheet.getRange(existingRow, 5).setValue(d.jamEstimasi);
+        sheet.getRange(existingRow, 6).setValue(createdBy);
+        sheet.getRange(existingRow, 7).setValue(now);
+      } else {
+        sheet.appendRow([generateId(), tanggal, d.nama, d.divisi, d.jamEstimasi, createdBy, now]);
+      }
     });
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
@@ -2082,27 +2458,61 @@ function deleteKlaim(id) { return deleteRow(CONFIG.SHEETS.KLAIM, id); }
 // ============================================================
 // SOP & STRUKTUR ORGANISASI
 // ============================================================
+// SOP & STRUKTUR ORGANISASI
+// ============================================================
 function getSOP() {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.SOP); const data = sheet.getDataRange().getValues(); const result = [];
+    const sheet = getSheet(CONFIG.SHEETS.SOP); 
+    const data = sheet.getDataRange().getValues(); 
+    const result = [];
+    
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
-      result.push({ id: data[i][0], judul: data[i][1], konten: data[i][2], kategori: data[i][3], createdBy: data[i][4] });
+      result.push({ 
+        id: data[i][0], 
+        judul: data[i][1], 
+        konten: data[i][2], 
+        kategori: data[i][3], 
+        createdBy: data[i][4],
+        updatedAt: data[i][5] || '' // Column 6 for updatedAt
+      });
     }
+    
     return { success: true, data: result };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { 
+    return { success: false, message: e.message }; 
+  }
 }
+
 function addSOP(judul, konten, kategori, createdBy) {
-  try { getSheet(CONFIG.SHEETS.SOP).appendRow([generateId(), judul, konten, kategori, createdBy, new Date().toISOString()]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
+  try { 
+    getSheet(CONFIG.SHEETS.SOP).appendRow([generateId(), judul, konten, kategori, createdBy, new Date().toISOString()]); 
+    return { success: true }; 
+  } catch (e) { 
+    return { success: false, message: e.message }; 
+  }
 }
 function updateSOP(id, judul, konten, kategori) {
   try {
-    const sheet = getSheet(CONFIG.SHEETS.SOP); const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) { if (String(data[i][0]) === String(id)) { sheet.getRange(i + 1, 2, 1, 4).setValues([[judul, konten, kategori, new Date().toISOString()]]); return { success: true }; } }
+    const sheet = getSheet(CONFIG.SHEETS.SOP); 
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) { 
+      if (String(data[i][0]) === String(id)) { 
+        sheet.getRange(i + 1, 2, 1, 4).setValues([[judul, konten, kategori, new Date().toISOString()]]); 
+        return { success: true }; 
+      } 
+    }
+    
     return { success: false, message: 'Data tidak ditemukan' };
-  } catch (e) { return { success: false, message: e.message }; }
+  } catch (e) { 
+    return { success: false, message: e.message }; 
+  }
 }
-function deleteSOP(id) { return deleteRow(CONFIG.SHEETS.SOP, id); }
+
+function deleteSOP(id) { 
+  return deleteRow(CONFIG.SHEETS.SOP, id); 
+}
 function exportSOP() {
   try {
     const sheet = getSheet(CONFIG.SHEETS.SOP); const data = sheet.getDataRange().getValues();
@@ -4559,7 +4969,7 @@ function generateAuditReport(auditorName) {
     const minus = totalAsset - terscan;
     
     // Identify Missing Assets
-    const missingAssetsList = assets.filter(a => !auditedIds.has(a[0])).map(a => `${a[2]} (${a[1]})`); // Nama (Code)
+    const missingAssetsList = assets.filter(a => !auditedIds.has(a[0])).map(a => `${a[3]} (${a[2]})`); // Nama (Code)
     
     const reportSheet = getSheet(CONFIG.SHEETS.AUDIT_REPORTS);
     const id = 'REP-' + Date.now();
@@ -4623,7 +5033,7 @@ function generateOpnameReport(sessionId, auditorName) {
     const minusCount = totalAsset - terscan;
 
     // Missing assets (not scanned in this session, but belong to this session's division)
-    const missingAssetsList = filteredAssets.filter(a => !auditedIds.has(String(a[0]))).map(a => `${a[2]} (${a[1]})`);
+    const missingAssetsList = filteredAssets.filter(a => !auditedIds.has(String(a[0]))).map(a => `${a[3]} (${a[2]})`);
 
     // Negative stock details: compare system qty vs scanned qty per asset
     const negativeList = [];
@@ -4635,13 +5045,13 @@ function generateOpnameReport(sessionId, auditorName) {
       // find asset in assets
       const assetRow = assets.find(a => String(a[0]) === assetId);
       if (!assetRow) continue;
-      const systemQty = parseFloat(assetRow[9]) || 0; // ASSET_WAREHOUSE qty column (index 9)
+      const systemQty = parseFloat(assetRow[10]) || 0; // ASSET_WAREHOUSE qty column (index 10)
       const diff = systemQty - qtyFisik; // positive if system has more than physical (minus)
       if (diff > 0) {
         negativeList.push({
           assetId: assetRow[0],
-          code: assetRow[1],
-          nama: assetRow[2],
+          code: assetRow[2],
+          nama: assetRow[3],
           divisi: assetRow[4],
           systemQty: systemQty,
           physicalQty: qtyFisik,
@@ -5580,6 +5990,241 @@ function getAbsensiKaryawan(tanggal, divisi, requesterUsername) {
   } catch (e) { 
     return { success: false, message: "Error getAbsensiKaryawan: " + e.message }; 
   }
+}
+
+function getScheduledClockOut(nama, tanggal, divisi) {
+  try {
+    const ss = getSpreadsheet();
+    const tz = Session.getScriptTimeZone();
+    const settingsRes = getRosterSettings();
+    const settings = settingsRes.success ? settingsRes.data : { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
+    
+    // 1. Cek Roster
+    if (nama && tanggal) {
+      const tglDate = new Date(tanggal + 'T12:00:00'); // avoid timezone offset issues
+      const monthYear = Utilities.formatDate(tglDate, tz, "yyyy-MM");
+      const dayNum = String(tglDate.getDate());
+      
+      const rosterSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_ROSTER);
+      if (rosterSheet) {
+        const rData = rosterSheet.getDataRange().getValues();
+        const rHeaders = rData[0];
+        for (let i = 1; i < rData.length; i++) {
+          let rBulan = rData[i][0];
+          if (rBulan instanceof Date) rBulan = Utilities.formatDate(rBulan, tz, "yyyy-MM");
+          
+          if (String(rBulan).trim() === monthYear && String(rData[i][1]).trim() === nama) {
+            const dCol = rHeaders.map(String).indexOf(dayNum);
+            if (dCol !== -1) {
+              const shiftVal = String(rData[i][dCol]).toUpperCase();
+              if (shiftVal === 'PAGI' || shiftVal.includes('PAGI')) {
+                return settings.pagiOut || "17:00";
+              } else if (shiftVal === 'MALAM' || shiftVal.includes('MALAM')) {
+                return settings.malamOut || "05:00";
+              } else if (shiftVal === 'OFF') {
+                return "OFF";
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Fallback: Jadwal Shift Divisi
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_SHIFT);
+    if (sheet && sheet.getLastRow() > 1) {
+      const data = sheet.getDataRange().getValues();
+      const activeList = [];
+      for (let i = 1; i < data.length; i++) {
+        if (!data[i][0]) continue;
+        if (divisi && data[i][2] !== divisi) continue;
+        const aktif = data[i][7];
+        if (String(aktif).toLowerCase() === 'ya' || aktif === true || String(aktif).toLowerCase() === 'true') {
+          activeList.push(data[i]);
+        }
+      }
+      if (activeList.length > 0) {
+        let jamPulang = activeList[0][5];
+        if (jamPulang instanceof Date) {
+          return Utilities.formatDate(jamPulang, tz, 'HH:mm');
+        }
+        return String(jamPulang || "17:00");
+      }
+    }
+    
+    // 3. Fallback ke global roster pagi out
+    return settings.pagiOut || "17:00";
+  } catch(e) {
+    return "17:00";
+  }
+}
+
+function getAbsensiInOut(ss, tz, nama, tanggal, scheduledIn, scheduledOut) {
+  const absSheet = ss.getSheetByName(CONFIG.SHEETS.ABSENSI_KARYAWAN);
+  let inTime = '-';
+  let outTime = '-';
+  let outDateStr = tanggal;
+  
+  if (!absSheet) return { inTime, outTime, outDateStr };
+  
+  const inMnt = _parseTimeToMinutes(scheduledIn || "08:00");
+  const outMnt = _parseTimeToMinutes(scheduledOut || "17:00");
+  const isNightShift = (inMnt > outMnt);
+  
+  const tglDate = new Date(tanggal + 'T12:00:00');
+  tglDate.setDate(tglDate.getDate() + 1);
+  const nextDayStr = Utilities.formatDate(tglDate, tz, 'yyyy-MM-dd');
+  
+  const absData = absSheet.getDataRange().getValues();
+  const nameLower = String(nama || '').trim().toLowerCase();
+  
+  for (let i = 1; i < absData.length; i++) {
+    if (!absData[i][1] || !absData[i][4]) continue;
+    if (String(absData[i][4]).trim().toLowerCase() !== nameLower) continue;
+    
+    let rowTgl = "";
+    let rawTgl = absData[i][1];
+    if (rawTgl instanceof Date) {
+      rowTgl = Utilities.formatDate(rawTgl, tz, 'yyyy-MM-dd');
+    } else {
+      let s = String(rawTgl).trim().split('T')[0];
+      if (s.includes('/')) {
+        let parts = s.split('/');
+        if (parts[0].length === 4) rowTgl = parts[0] + '-' + parts[1].padStart(2, '0') + '-' + parts[2].padStart(2, '0');
+        else rowTgl = parts[2] + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+      } else {
+        rowTgl = s;
+      }
+    }
+    
+    let rawJam = absData[i][2];
+    let jamStr = "";
+    if (rawJam instanceof Date) {
+      jamStr = Utilities.formatDate(rawJam, tz, 'HH:mm');
+    } else {
+      let match = String(rawJam || '').trim().match(/^(\d{1,2}):(\d{2})/);
+      if (match) {
+        jamStr = match[1].padStart(2, '0') + ':' + match[2];
+      } else {
+        jamStr = String(rawJam || '').trim().substring(0, 5);
+      }
+    }
+    
+    const tipe = String(absData[i][7] || '').trim().toUpperCase();
+    const isClockIn = (tipe === 'IN' || tipe.includes('MASUK') || tipe.includes('IN'));
+    const isClockOut = (tipe === 'OUT' || tipe.includes('PULANG') || tipe.includes('OUT'));
+    
+    if (isClockIn && rowTgl === tanggal) {
+      if (inTime === '-' || jamStr < inTime) {
+        inTime = jamStr;
+      }
+    }
+    
+    if (isClockOut) {
+      if (isNightShift) {
+        if (rowTgl === nextDayStr) {
+          if (outTime === '-' || jamStr > outTime) {
+            outTime = jamStr;
+            outDateStr = nextDayStr;
+          }
+        }
+      } else {
+        if (rowTgl === tanggal) {
+          if (outTime === '-' || jamStr > outTime) {
+            outTime = jamStr;
+            outDateStr = tanggal;
+          }
+        }
+      }
+    }
+  }
+  
+  return { inTime, outTime, outDateStr };
+}
+
+function getAbsensiKaryawanOnePerson(nama, tanggal) {
+  try {
+    const ss = getSpreadsheet();
+    const tz = Session.getScriptTimeZone();
+    
+    const nameLower = String(nama || '').trim().toLowerCase();
+    let divisi = '';
+    
+    const orgSheet = ss.getSheetByName(CONFIG.SHEETS.ORGANISASI);
+    if (orgSheet) {
+      const orgData = orgSheet.getDataRange().getValues();
+      for (let i = 1; i < orgData.length; i++) {
+        if (orgData[i][1] && String(orgData[i][1]).trim().toLowerCase() === nameLower) {
+          divisi = String(orgData[i][2] || '');
+          break;
+        }
+      }
+    }
+    if (!divisi) {
+      const karSheet = ss.getSheetByName(CONFIG.SHEETS.KARYAWAN);
+      if (karSheet) {
+        const karData = karSheet.getDataRange().getValues();
+        for (let i = 1; i < karData.length; i++) {
+          if (karData[i][1] && String(karData[i][1]).trim().toLowerCase() === nameLower) {
+            divisi = String(karData[i][3] || '');
+            break;
+          }
+        }
+      }
+    }
+    if (!divisi) {
+      const uSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
+      if (uSheet) {
+        const uData = uSheet.getDataRange().getValues();
+        for (let i = 1; i < uData.length; i++) {
+          if (uData[i][3] && String(uData[i][3]).trim().toLowerCase() === nameLower) {
+            divisi = String(uData[i][7] || '');
+            break;
+          }
+        }
+      }
+    }
+    
+    const scheduledOut = getScheduledClockOut(nama, tanggal, divisi);
+    let scheduledIn = "08:00";
+    if (scheduledOut !== "OFF") {
+      const settingsRes = getRosterSettings();
+      const settings = settingsRes.success ? settingsRes.data : { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
+      if (scheduledOut === settings.pagiOut) {
+        scheduledIn = settings.pagiIn;
+      } else if (scheduledOut === settings.malamOut) {
+        scheduledIn = settings.malamIn;
+      } else {
+        const sheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_SHIFT);
+        if (sheet && sheet.getLastRow() > 1) {
+          const data = sheet.getDataRange().getValues();
+          for (let i = 1; i < data.length; i++) {
+            if (!data[i][0]) continue;
+            if (divisi && data[i][2] !== divisi) continue;
+            const aktif = data[i][7];
+            if (String(aktif).toLowerCase() === 'ya' || aktif === true || String(aktif).toLowerCase() === 'true') {
+              if (String(data[i][5]) === scheduledOut) {
+                scheduledIn = String(data[i][4]);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    const times = getAbsensiInOut(ss, tz, nama, tanggal, scheduledIn, scheduledOut);
+    
+    return { 
+      success: true, 
+      inTime: times.inTime, 
+      outTime: times.outTime, 
+      outDateStr: times.outDateStr,
+      scheduledIn: scheduledIn,
+      scheduledOut: scheduledOut
+    };
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function addAbsensiKaryawan(karyawanId, nama, divisi, jabatan, tipe, jam, tanggal, keterangan, requesterUsername) {
@@ -6528,8 +7173,17 @@ function getRosterSettings() {
     const data = (sheet.getLastRow() > 0) ? sheet.getDataRange().getValues() : [];
     const result = {};
     for (let i = 1; i < data.length; i++) {
-        if (data[i][0]) result[data[i][0]] = data[i][1];
+      if (data[i][0]) result[data[i][0]] = data[i][1];
     }
+
+    // Parse special dates
+    let specialDates = {};
+    try {
+      if (result.roster_special_dates) {
+        specialDates = JSON.parse(result.roster_special_dates);
+      }
+    } catch (e) { specialDates = {}; }
+
     return { 
       success: true, 
       data: {
@@ -6537,7 +7191,8 @@ function getRosterSettings() {
         pagiOut: result.roster_pagi_out || "17:00",
         malamIn: result.roster_malam_in || "20:00",
         malamOut: result.roster_malam_out || "05:00",
-        toleransi: parseInt(result.roster_toleransi) || 0
+        toleransi: parseInt(result.roster_toleransi) || 0,
+        specialDates: specialDates
       }
     };
   } catch (e) {
@@ -6798,10 +7453,10 @@ function scanAssetForOpname(sessionId, assetCode, qtyFisik, kondisi, catatan, sc
     const assetData = assetSheet.getDataRange().getValues();
     let foundAsset = null;
     for (let i = 1; i < assetData.length; i++) {
-      if (String(assetData[i][1]).trim().toLowerCase() === String(assetCode).trim().toLowerCase()) {
+      if (String(assetData[i][2]).trim().toLowerCase() === String(assetCode).trim().toLowerCase()) {
         foundAsset = {
-          id: assetData[i][0], code: assetData[i][1], nama: assetData[i][2],
-          divisi: assetData[i][4], qty: parseFloat(assetData[i][9]) || 1
+          id: assetData[i][0], code: assetData[i][2], nama: assetData[i][3],
+          divisi: assetData[i][4], qty: parseFloat(assetData[i][10]) || 1
         };
         break;
       }
@@ -6954,25 +7609,25 @@ function approveAssetOpname(sessionId, action, approverNama) {
               const qtyFisik = parseFloat(logEntry[6]) || 1;
               const kondisi = String(logEntry[8] || 'Baik');
 
-              assetSheet.getRange(ai+1, 10).setValue(qtyFisik); // qty (kolom 10)
+              assetSheet.getRange(ai+1, 11).setValue(qtyFisik); // qty (kolom 11)
               
-              let newAssetStatus = assetData[ai][5] || 'Aktif';
+              let newAssetStatus = assetData[ai][6] || 'Aktif';
               if (kondisi === 'Rusak') newAssetStatus = 'Tidak Aktif';
               else if (kondisi === 'Hilang') newAssetStatus = 'Hilang';
-              assetSheet.getRange(ai+1, 6).setValue(newAssetStatus); // status (kolom 6)
+              assetSheet.getRange(ai+1, 7).setValue(newAssetStatus); // status (kolom 7)
 
-              const oldHist = assetData[ai][8] || '';
+              const oldHist = assetData[ai][9] || '';
               const entry = `🔄 SO Asset disetujui oleh ${approverNama} pada ${nowLocale}. Qty Fisik: ${qtyFisik}, Kondisi: ${kondisi}`;
-              assetSheet.getRange(ai+1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+              assetSheet.getRange(ai+1, 10).setValue(oldHist ? oldHist + '\n' + entry : entry); // history (kolom 10)
             }
           } else {
             // Asset TIDAK terscan: berarti Hilang!
-            assetSheet.getRange(ai+1, 10).setValue(0); // qty = 0 (kolom 10)
-            assetSheet.getRange(ai+1, 6).setValue('Hilang'); // status = Hilang (kolom 6)
+            assetSheet.getRange(ai+1, 11).setValue(0); // qty = 0 (kolom 11)
+            assetSheet.getRange(ai+1, 7).setValue('Hilang'); // status = Hilang (kolom 7)
 
-            const oldHist = assetData[ai][8] || '';
+            const oldHist = assetData[ai][9] || '';
             const entry = `❌ SO Asset disetujui oleh ${approverNama} pada ${nowLocale}. Asset tidak terscan saat opname, otomatis diubah menjadi Hilang (Qty: 0)`;
-            assetSheet.getRange(ai+1, 9).setValue(oldHist ? oldHist + '\n' + entry : entry);
+            assetSheet.getRange(ai+1, 10).setValue(oldHist ? oldHist + '\n' + entry : entry); // history (kolom 10)
           }
         }
       }
@@ -8840,6 +9495,359 @@ function checkMidtransStatus(orderId) {
     } else {
       return { success: false, message: 'Failed to check status' };
     }
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ==========================================
+// PUSAT APPROVAL (APPROVAL CENTER) FUNCTIONS
+// ==========================================
+
+function getApprovalCenterData(username) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+    let pending = 0, approved = 0, rejected = 0, total = 0;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      const row = data[i];
+      const statusRaw = String(row[7] || '');
+      
+      if (statusRaw !== 'Menunggu Approval' && statusRaw !== 'Approved' && statusRaw !== 'Ditolak' && statusRaw !== 'Disetujui' && statusRaw !== 'Rejected') {
+        continue;
+      }
+      
+      let status = 'pending';
+      if (statusRaw === 'Menunggu Approval') {
+        status = 'pending';
+        pending++;
+      } else if (statusRaw === 'Approved' || statusRaw === 'Disetujui') {
+        status = 'approved';
+        approved++;
+      } else if (statusRaw === 'Ditolak' || statusRaw === 'Rejected') {
+        status = 'rejected';
+        rejected++;
+      }
+      total++;
+
+      result.push({
+        id: row[0],
+        tanggal: row[1] instanceof Date ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : row[1],
+        pic: row[2],
+        area: row[3],
+        kategori: row[4],
+        temuan: row[5],
+        qty: '-',
+        status: status
+      });
+    }
+
+    return { 
+      success: true, 
+      approvals: result.reverse(),
+      stats: { pending, approved, rejected, total }
+    };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
+this['getApprovalCenterData'] = getApprovalCenterData;
+
+function approveStockAdjustment(id, username) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const data = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+    let kategori = '';
+    let existingLog = '';
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        rowIndex = i + 1;
+        kategori = data[i][4];
+        existingLog = data[i][10] || '';
+        break;
+      }
+    }
+    if (rowIndex === -1) throw new Error('Data tidak ditemukan');
+
+    // Update status di Master
+    sheet.getRange(rowIndex, 8).setValue('Approved');
+    const nowLocal = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+    const newLog = `✅ Approved by ${username} pada ${nowLocal}`;
+    sheet.getRange(rowIndex, 11).setValue(newLog + (existingLog ? '\n' + existingLog : ''));
+
+    // Update ke Stock Jika Kategori = Stock Opname
+    if (kategori === 'Stock Opname') {
+      const detailSheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL_DETAIL);
+      const detailData = detailSheet.getDataRange().getValues();
+      const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
+      const stockData = stockSheet.getDataRange().getValues();
+
+      for (let j = 1; j < detailData.length; j++) {
+        if (String(detailData[j][1]) === String(id)) {
+          const sku = String(detailData[j][3] || '');
+          const aksi = String(detailData[j][11] || '');
+          const f = parseFloat(detailData[j][8]) || 0;
+          const fs = parseFloat(detailData[j][13]) || 0;
+          const finalStock = (detailData[j][13] !== '' && detailData[j][13] !== undefined && detailData[j][13] !== null) ? fs : f;
+
+          if (aksi === 'Adjust Stock' && sku) {
+            // Find in STOCK and adjust
+            for (let k = 1; k < stockData.length; k++) {
+              if (String(stockData[k][1]) === sku || String(stockData[k][3]) === sku) {
+                stockSheet.getRange(k + 1, 8).setValue(finalStock); // Kolom 8 = stok
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { success: true, message: 'Berhasil di-approve' };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
+this['approveStockAdjustment'] = approveStockAdjustment;
+
+function rejectStockAdjustment(id, username, reason) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.STOCK_CONTROL);
+    const data = sheet.getDataRange().getValues();
+    let rowIndex = -1;
+    let existingLog = '';
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        rowIndex = i + 1;
+        existingLog = data[i][10] || '';
+        break;
+      }
+    }
+    if (rowIndex === -1) throw new Error('Data tidak ditemukan');
+
+    // Update status di Master
+    sheet.getRange(rowIndex, 8).setValue('Ditolak');
+    const nowLocal = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+    const newLog = `❌ Ditolak by ${username} pada ${nowLocal}. Alasan: ${reason}`;
+    sheet.getRange(rowIndex, 11).setValue(newLog + (existingLog ? '\n' + existingLog : ''));
+
+    return { success: true, message: 'Berhasil ditolak' };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
+this['rejectStockAdjustment'] = rejectStockAdjustment;
+
+// ============================================================
+// NOTIFIKASI SISTEM
+// ============================================================
+
+/**
+ * Mengambil notifikasi dari Settings sheet key 'notifikasi_data'.
+ * Notifikasi disimpan sebagai JSON array di kolom value.
+ */
+function getNotifikasi() {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    if (!sheet) return { success: true, data: [] };
+
+    const data = sheet.getDataRange().getValues();
+    let notifRaw = '';
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === 'notifikasi_data') {
+        notifRaw = data[i][1] || '[]';
+        break;
+      }
+    }
+
+    let notifArr = [];
+    try { notifArr = JSON.parse(notifRaw); } catch (e) { notifArr = []; }
+
+    // Filter: hanya tampilkan notifikasi yang belum kadaluarsa (7 hari terakhir)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    notifArr = notifArr.filter(n => {
+      if (!n.tanggal) return true;
+      return new Date(n.tanggal) >= cutoff;
+    });
+
+    // Tambah notifikasi otomatis dari data sistem
+    const autoNotifs = _generateAutoNotifications();
+    notifArr = autoNotifs.concat(notifArr);
+
+    return { success: true, data: notifArr };
+  } catch (e) {
+    return { success: false, message: e.message, data: [] };
+  }
+}
+
+/**
+ * Generate notifikasi otomatis berdasarkan data terkini.
+ */
+function _generateAutoNotifications() {
+  const notifs = [];
+  const now = new Date();
+  const todayStr = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  try {
+    // 1. Notifikasi approval pending
+    const ijinSheet = getSheet(CONFIG.SHEETS.IJIN);
+    if (ijinSheet) {
+      const ijinData = ijinSheet.getDataRange().getValues();
+      let pendingIjin = 0;
+      for (let i = 1; i < ijinData.length; i++) {
+        const status = String(ijinData[i][6] || '');
+        if (status.startsWith('Pending')) pendingIjin++;
+      }
+      if (pendingIjin > 0) {
+        notifs.push({
+          id: 'auto_ijin_pending',
+          title: 'Approval Ijin Menunggu',
+          text: pendingIjin + ' pengajuan ijin/cuti menunggu persetujuan Anda',
+          type: 'warning',
+          page: 'approval',
+          targetAkses: 'approval',
+          tanggal: now.toISOString()
+        });
+      }
+    }
+  } catch (e) { /* silent */ }
+
+  try {
+    // 2. Notifikasi stok rendah
+    const stockSheet = getSheet(CONFIG.SHEETS.STOCK);
+    if (stockSheet) {
+      const stockData = stockSheet.getDataRange().getValues();
+      let lowStock = 0;
+      for (let i = 1; i < stockData.length; i++) {
+        const stok = Number(stockData[i][7]) || 0;
+        const stokMin = Number(stockData[i][8]) || 0;
+        if (stokMin > 0 && stok <= stokMin) lowStock++;
+      }
+      if (lowStock > 0) {
+        notifs.push({
+          id: 'auto_stock_low',
+          title: 'Stok Rendah',
+          text: lowStock + ' item mencapai batas stok minimum',
+          type: 'danger',
+          page: 'stock',
+          targetAkses: 'stock',
+          tanggal: now.toISOString()
+        });
+      }
+    }
+  } catch (e) { /* silent */ }
+
+  return notifs;
+}
+
+/**
+ * Simpan notifikasi manual ke Settings sheet.
+ */
+function saveNotifikasi(notifJson, username) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    if (!sheet) return { success: false, message: 'Sheet Settings tidak ditemukan' };
+
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    let found = false;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === 'notifikasi_data') {
+        sheet.getRange(i + 1, 2).setValue(notifJson);
+        sheet.getRange(i + 1, 3).setValue(now);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sheet.appendRow(['notifikasi_data', notifJson, now]);
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ============================================================
+// UPLOAD FILE INSTANT (untuk file kecil < 1MB)
+// ============================================================
+
+/**
+ * Upload file langsung (tanpa chunking) untuk file kecil.
+ * @param {string} base64Data - Data file dalam format base64
+ * @param {string} fileName   - Nama file
+ * @param {string} mimeType   - MIME type file
+ * @param {string} folderName - Nama folder tujuan di Drive
+ */
+function uploadFileInstant(base64Data, fileName, mimeType, folderName) {
+  try {
+    if (!base64Data) return { success: false, message: 'Data file kosong' };
+
+    const folder = getOrCreateBuktiFolder(folderName || 'FCL_Uploads');
+    const decoded = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(decoded, mimeType || 'application/octet-stream', fileName || 'file');
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    return {
+      success: true,
+      url: 'https://drive.google.com/file/d/' + file.getId() + '/view',
+      fileId: file.getId()
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ============================================================
+// ROSTER SPECIAL DATES
+// ============================================================
+
+/**
+ * Menyimpan jadwal khusus tanggal untuk Roster ke Settings sheet.
+ * @param {string} jsonStr - JSON string dari objek specialDates
+ * @param {string} username - Username yang menyimpan
+ */
+function saveRosterSpecialDates(jsonStr, username) {
+  try {
+    if (username && !checkPermission(username, 'jadwalShift')) {
+      return { success: false, message: 'Akses ditolak. Anda tidak memiliki izin mengubah jadwal shift.' };
+    }
+
+    // Validasi JSON
+    try { JSON.parse(jsonStr); } catch (e) {
+      return { success: false, message: 'Format data tidak valid: ' + e.message };
+    }
+
+    const sheet = getSheet(CONFIG.SHEETS.SETTINGS);
+    if (!sheet) return { success: false, message: 'Sheet Settings tidak ditemukan' };
+
+    const data = sheet.getDataRange().getValues();
+    const now = new Date().toISOString();
+    let found = false;
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === 'roster_special_dates') {
+        sheet.getRange(i + 1, 2).setValue(jsonStr);
+        sheet.getRange(i + 1, 3).setValue(now);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sheet.appendRow(['roster_special_dates', jsonStr, now]);
+    }
+
+    return { success: true, message: 'Jadwal khusus berhasil disimpan' };
   } catch (e) {
     return { success: false, message: e.message };
   }
