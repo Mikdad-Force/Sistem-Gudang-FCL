@@ -4240,8 +4240,7 @@
             <div class="nav-item" onclick="showPage('expense')" data-i18n="expense"><span class="icon">💸</span> Expense
               List</div>
             <div class="nav-item" onclick="showPage('pettyCash')"><span class="icon">🪙</span> Petty Cash</div>
-            <div class="nav-item" onclick="showPage('paymentGudang')"><span class="icon">🛒</span> Toko Gudang
-            </div>
+            <div class="nav-item" onclick="showPage('paymentGudang')"><span class="icon">💄</span> MISTINE</div>
 
             <div class="nav-section" data-i18n="operasionalKerja">Operasional Kerja</div>
             <div class="nav-item" onclick="showPage('laporanKerja')" data-i18n="laporanKerja"><span
@@ -5086,91 +5085,96 @@
           </div>
 
           <div class="page" id="page-paymentGudang">
-            <!-- Stats Bar -->
-            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:20px;"
-              id="pgStatsGrid">
-              <div class="stat-card green">
-                <div class="stat-label">Harga Product</div>
-                <div class="stat-value" id="pgStatHarga">Rp 0</div>
-                <div class="stat-icon">💵</div>
+            <!-- Header -->
+            <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div>
+                <h3 style="margin:0;font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:26px;">💄</span> MISTINE - Rekap Ongkir Pengiriman
+                </h3>
+                <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Data dari sheet ANTRIAN MISTINE — kelola No Resi & Harga Ongkir pengiriman distributor</p>
               </div>
-              <div class="stat-card amber">
-                <div class="stat-label">Total Karyawan</div>
-                <div class="stat-value" id="pgStatTotal">0</div>
-                <div class="stat-icon">👥</div>
-              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:20px;">
               <div class="stat-card teal">
-                <div class="stat-label">Sudah Bayar</div>
-                <div class="stat-value" id="pgStatLunas">0</div>
+                <div class="stat-label">Total Order</div>
+                <div class="stat-value" id="mistineStatTotal">0</div>
+                <div class="stat-icon">�</div>
+              </div>
+              <div class="stat-card green">
+                <div class="stat-label">Sudah Input Resi</div>
+                <div class="stat-value" id="mistineStatResi">0</div>
                 <div class="stat-icon">✅</div>
               </div>
               <div class="stat-card red">
-                <div class="stat-label">Belum Bayar</div>
-                <div class="stat-value" id="pgStatBelum">0</div>
+                <div class="stat-label">Belum Input Resi</div>
+                <div class="stat-value" id="mistineStatBelum">0</div>
                 <div class="stat-icon">⏳</div>
               </div>
+              <div class="stat-card amber">
+                <div class="stat-label">Total Ongkir</div>
+                <div class="stat-value amber" id="mistineStatOngkir">Rp 0</div>
+                <div class="stat-icon">💰</div>
+              </div>
             </div>
 
-            <!-- Product Selector + Actions -->
-            <div class="card mb-4">
+            <!-- Filter & Actions -->
+            <div class="card mb-3">
               <div class="card-header">
-                <h4>📦 Product Toko Gudang</h4>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;" id="pgAdminActions">
-                  <button class="btn btn-ghost btn-sm" id="btnPgCreateProduct" onclick="openCreatePGProductModal()">➕ Buat Product Baru</button>
-                  <button class="btn btn-primary btn-sm" id="btnPgAddTransaction" onclick="ensurePGProductSelected();openPaymentGudangAddTransactionModal()">+ Tambah Transaksi Karyawan</button>
-                  <button class="btn btn-ghost btn-sm" id="btnPgSettingPayment" onclick="openModal('modalMidtransConfig');loadMidtransConfig()">⚙️ Setting Payment</button>
+                <h4>� Filter & Export</h4>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button class="btn btn-ghost btn-sm" onclick="loadPaymentGudang()">🔄 Refresh</button>
+                  <button class="btn btn-primary btn-sm" onclick="exportRekapOngkirMistine()">📤 Export Excel</button>
                 </div>
               </div>
-              <!-- Product Filters -->
-              <div style="display:flex;gap:8px;padding:12px 16px 4px;" id="pgProductFilterContainer">
-                <button class="btn btn-primary btn-xs" id="btnPgFilterActive" onclick="setPGProductFilter('Aktif')">🟢 Aktif</button>
-                <button class="btn btn-outline-danger btn-xs" id="btnPgFilterOut" onclick="setPGProductFilter('Stock Habis')">🔴 Stok Habis</button>
-                <button class="btn btn-outline-secondary btn-xs" id="btnPgFilterAll" onclick="setPGProductFilter('Semua')">📁 Semua</button>
+              <div style="padding:12px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                <input type="month" id="mistineFilterBulan" class="form-control" style="width:160px;height:36px;"
+                  onchange="loadPaymentGudang()" placeholder="Pilih Bulan">
+                <select id="mistineFilterStatus" class="form-select" style="width:180px;height:36px;" onchange="filterMistineTable()">
+                  <option value="">Semua Status</option>
+                  <option value="sudah">✅ Sudah Input Resi</option>
+                  <option value="belum">⏳ Belum Input Resi</option>
+                </select>
+                <input type="text" id="mistineFilterSearch" class="form-control" placeholder="🔍 Cari distributor / No Mabang..."
+                  oninput="filterMistineTable()" style="width:260px;height:36px;">
               </div>
-              <!-- Product List -->
-              <div id="pgProductList" style="display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px 16px;"></div>
             </div>
 
-            <!-- Employee Transaction Table -->
+            <!-- Tabel -->
             <div class="card">
               <div class="card-header">
-                <div>
-                  <h4 id="pgTableTitle">🛒 Transaksi Karyawan</h4>
-                  <small id="pgTableSubtitle" style="color:var(--text-muted);font-size:12px;">Pilih product di atas
-                    untuk melihat transaksi karyawan</small>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                  <input type="text" id="pgSearchInput" class="form-control" placeholder="🔍 Cari karyawan..."
-                    oninput="filterPGTable()" style="width:220px;height:34px;font-size:13px;">
-                  <button class="btn btn-ghost btn-sm" onclick="loadPaymentGudang()">🔄 Refresh</button>
-                </div>
-              </div>
-              <div id="pgUserActionContainer" style="display:none;margin:15px;padding:15px;border-radius:8px;background:rgba(14,165,233,0.05);border:1px solid rgba(14,165,233,0.2);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                <div>
-                  <div style="font-weight:700;font-size:14px;color:var(--accent);" id="pgUserActionTitle">💳 Bayar Langsung</div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="pgUserActionMsg">Lakukan pembelian & pembayaran langsung menggunakan akun karyawan Anda.</div>
-                </div>
-                <button class="btn btn-primary" id="btnPgUserAction" onclick="triggerPGDirectPayment()">💳 Bayar Langsung</button>
+                <h4>� Daftar Distributor MISTINE</h4>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;" id="mistineTableInfo">Memuat data...</span>
               </div>
               <div class="table-wrap">
-                <table class="table table-hover table-striped align-middle mt-2">
+                <table class="table table-hover align-middle" style="margin-bottom:0;">
                   <thead>
                     <tr>
-                      <th>No</th>
-                      <th>Nama Karyawan</th>
-                      <th>Harga Product</th>
-                      <th>Status</th>
-                      <th>Metode</th>
-                      <th>Order ID</th>
-                      <th>Aksi</th>
+                      <th style="width:50px;">No</th>
+                      <th style="width:140px;">Order Queue Time</th>
+                      <th style="width:120px;">PIC Sales</th>
+                      <th>Nama Distributor</th>
+                      <th style="width:120px;">No Mabang</th>
+                      <th style="width:130px;">Metode Pengiriman</th>
+                      <th style="width:140px;">No Resi</th>
+                      <th style="width:130px;">Harga Ongkir</th>
+                      <th style="width:90px;text-align:center;">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody id="tablePGTransactions"></tbody>
+                  <tbody id="tableRekapOngkirMistine">
+                    <tr>
+                      <td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <div style="font-size:48px;margin-bottom:12px;opacity:0.3;">📦</div>
+                        <div style="font-size:14px;font-weight:600;">Memuat data dari ANTRIAN MISTINE...</div>
+                      </td>
+                    </tr>
+                  </tbody>
                   <tfoot>
                     <tr style="background:var(--bg-panel-light);font-weight:700;">
-                      <td colspan="2" style="text-align:right;padding:12px 16px;color:var(--text-muted);">TOTAL</td>
-                      <td id="pgFooterTotal" style="padding:12px 16px;color:var(--accent);">Rp 0</td>
-                      <td colspan="4"></td>
+                      <td colspan="7" style="text-align:right;padding:12px 16px;color:var(--text-muted);">TOTAL ONGKIR</td>
+                      <td id="mistineFooterTotal" style="padding:12px 16px;color:var(--accent);font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;">Rp 0</td>
+                      <td></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -7790,6 +7794,26 @@
             </div>
           </div>
 
+          <div class="modal-overlay" id="modalEditOngkirMistine">
+            <div class="custom-modal" style="width:400px;">
+              <button class="modal-close" onclick="closeModal('modalEditOngkirMistine')">✕</button>
+              <h3>💰 Update Ongkir MISTINE</h3>
+              <input type="hidden" id="ongkirMistineRowNumber">
+              <div class="mb-3">
+                <label class="form-label">No Resi</label>
+                <input type="text" class="form-control" id="ongkirMistineResi" placeholder="Input manual No Resi">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Harga Ongkir</label>
+                <input type="number" class="form-control" id="ongkirMistineHarga" placeholder="Input manual Harga">
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('modalEditOngkirMistine')">Batal</button>
+                <button class="btn btn-primary" onclick="submitRekapOngkirMistine()">💾 Simpan Data</button>
+              </div>
+            </div>
+          </div>
+
           <div class="modal-overlay" id="modalExportLembur">
             <div class="custom-modal" style="width:400px;"><button class="modal-close"
                 onclick="closeModal('modalExportLembur')">✕</button>
@@ -8079,7 +8103,7 @@
           <div class="modal-overlay" id="modalPaymentGudang">
             <div class="custom-modal" style="width:480px;max-width:95vw;">
               <button class="modal-close" onclick="closeModal('modalPaymentGudang')">✕</button>
-              <h3 id="pgModalTitle">🛒 Buat Product Toko Gudang</h3>
+              <h3 id="pgModalTitle">💄 Buat Product MISTINE</h3>
               <div class="row mb-3">
                 <div class="col-md mb-2">
                   <label class="form-label">Nama Product <span style="color:var(--red);">*</span></label>
@@ -8125,7 +8149,7 @@
           <div class="modal-overlay" id="modalPaymentGudangParticipants">
             <div class="custom-modal" style="width:760px;max-width:95vw;">
               <button class="modal-close" onclick="closeModal('modalPaymentGudangParticipants')">✕</button>
-              <h3 id="pgParticipantsTitle">Transaksi Karyawan Toko Gudang</h3>
+              <h3 id="pgParticipantsTitle">Transaksi Payment MISTINE</h3>
               <div style="margin-bottom:12px;color:var(--text-muted);font-size:13px;" id="pgPaymentInfo"></div>
               <div class="table-wrap" style="max-height:380px;overflow:auto;">
                 <table class="table table-hover table-striped align-middle mt-2">
@@ -8378,7 +8402,7 @@
                 <button class="btn btn-primary" onclick="saveMidtransConfig()">💾 Simpan Konfigurasi</button>
               </div>
             </div>
-          </div>
+          </div> -->
 
           <!-- ===================== MODAL VIEW BUKTI PETTY CASH ===================== -->
           <div class="modal-overlay" id="modalViewPCBukti">
@@ -9973,10 +9997,10 @@
             </div>
           </div>
 
-          <!-- Section 4: Keuangan & Toko Gudang -->
+          <!-- Section 4: Keuangan & MISTINE -->
           <div class="permission-section mb-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 16px;">
             <div style="font-weight: 700; color: #fbbf24; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid rgba(251, 191, 36, 0.15); padding-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-              <span>💰</span> Keuangan & Toko Gudang
+              <span>💄</span> Keuangan & MISTINE
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;">
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="kasGudang"> Kas Gudang</label>
@@ -9984,16 +10008,17 @@
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="expense"> Expense List</label>
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="pettyCash"> Petty Cash</label>
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="laporanKerja"> Laporan Kerja</label>
-              <label class="form-label" style="margin: 0; font-size: 12px; color: var(--teal); font-weight:600;"><input type="checkbox" value="paymentGudang"> 🛒 Toko Gudang</label>
+              <label class="form-label" style="margin: 0; font-size: 12px; color: var(--teal); font-weight:600;"><input type="checkbox" value="paymentGudang"> 💄 Payment Gudang MISTINE</label>
+              <label class="form-label" style="margin: 0; font-size: 12px; color: var(--teal); font-weight:600;"><input type="checkbox" value="rekapOngkirMistine"> 💰 Rekap Ongkir MISTINE</label>
             </div>
-            <!-- Sub-Akses Toko Gudang -->
+            <!-- Sub-Akses MISTINE -->
             <div style="margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px;">
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgAddTransaction"> 🛒 Tambah Transaksi</label>
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgSettingPayment"> 🛒 Setting Payment</label>
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgToggleStatus"> 🛒 Close/Delete Product</label>
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgEditProduct"> 🛒 Edit Product</label>
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgUpdateStockHabis"> 🛒 Update Stock Habis</label>
-              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgMarkLunas"> 🛒 Mark Lunas</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgAddTransaction"> 💄 Tambah Transaksi</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgSettingPayment"> 💄 Setting Payment</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgToggleStatus"> 💄 Close/Delete Product</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgEditProduct"> 💄 Edit Product</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgUpdateStockHabis"> 💄 Update Stock Habis</label>
+              <label class="form-label" style="margin: 0; font-size: 11px; color: var(--accent);"><input type="checkbox" value="pgMarkLunas"> 💄 Mark Lunas</label>
             </div>
           </div>
 
@@ -11253,13 +11278,13 @@
         kasGudang: "Kas Gudang",
         teamBuilding: "Team Building",
         expense: "Expense List",
-        paymentGudang: "Toko Gudang",
-        pgAddTransaction: "Tambah Transaksi Toko Gudang",
-        pgSettingPayment: "Setting Payment Toko Gudang",
-        pgToggleStatus: "Close/Buka Product Toko Gudang",
-        pgEditProduct: "Edit Product Toko Gudang",
-        pgUpdateStockHabis: "Update Stock Habis Toko Gudang",
-        pgMarkLunas: "Mark Lunas Toko Gudang",
+        paymentGudang: "Payment Gudang MISTINE",
+        pgAddTransaction: "Tambah Transaksi MISTINE",
+        pgSettingPayment: "Setting Payment MISTINE",
+        pgToggleStatus: "Close/Buka Product MISTINE",
+        pgEditProduct: "Edit Product MISTINE",
+        pgUpdateStockHabis: "Update Stock Habis MISTINE",
+        pgMarkLunas: "Mark Lunas MISTINE",
         laporanKerja: "Laporan Kerja",
         grafikLaporan: "Grafik Laporan",
         handover: "Stock Control",
@@ -11677,13 +11702,13 @@
         kasGudang: "Warehouse Cash",
         teamBuilding: "Team Building",
         expense: "Expense List",
-        paymentGudang: "Toko Gudang",
-        pgAddTransaction: "Add Transaction (Toko Gudang)",
-        pgSettingPayment: "Setting Payment (Toko Gudang)",
-        pgToggleStatus: "Close/Buka Product (Toko Gudang)",
-        pgEditProduct: "Edit Product (Toko Gudang)",
-        pgUpdateStockHabis: "Update Stock Habis (Toko Gudang)",
-        pgMarkLunas: "Mark Lunas (Toko Gudang)",
+        paymentGudang: "Payment Gudang MISTINE",
+        pgAddTransaction: "Add Transaction (MISTINE)",
+        pgSettingPayment: "Setting Payment (MISTINE)",
+        pgToggleStatus: "Close/Buka Product (MISTINE)",
+        pgEditProduct: "Edit Product (MISTINE)",
+        pgUpdateStockHabis: "Update Stock Habis (MISTINE)",
+        pgMarkLunas: "Mark Lunas (MISTINE)",
         laporanKerja: "Daily Report",
         grafikLaporan: "Report Graph",
         handover: "Stock Control",
@@ -12102,13 +12127,13 @@
         kasGudang: "仓库现金",
         teamBuilding: "团队建设",
         expense: "费用列表",
-        paymentGudang: "Toko Gudang",
-        pgAddTransaction: "添加交易 (Toko Gudang)",
-        pgSettingPayment: "支付设置 (Toko Gudang)",
-        pgToggleStatus: "关闭/打开产品 (Toko Gudang)",
-        pgEditProduct: "编辑产品 (Toko Gudang)",
-        pgUpdateStockHabis: "更新无库存 (Toko Gudang)",
-        pgMarkLunas: "标记为已付 (Toko Gudang)",
+        paymentGudang: "Payment Gudang MISTINE",
+        pgAddTransaction: "添加交易 (MISTINE)",
+        pgSettingPayment: "支付设置 (MISTINE)",
+        pgToggleStatus: "关闭/打开产品 (MISTINE)",
+        pgEditProduct: "编辑产品 (MISTINE)",
+        pgUpdateStockHabis: "更新无库存 (MISTINE)",
+        pgMarkLunas: "标记为已付 (MISTINE)",
         laporanKerja: "工作报告",
         grafikLaporan: "报告图表",
         handover: "库存控制",
@@ -12634,16 +12659,17 @@
 
     let currentUser = null;
     let karyawanData = [];
-    let paymentGudangData = [];
-    let paymentGudangEmployeeData = [];
-    let paymentGudangSelectedEmployees = new Set();
-    let paymentParticipantData = [];
-    let paymentSelectedId = '';
-    let pgActiveProductId = '';
-    let pgActiveProductFilter = 'Aktif';
-    let pgEditingProductId = ''; // Empty if creating new
-    let pgFilteredTransactions = [];
-    let midtransClientKey = '';
+    // Variabel Payment Gudang (Toko Produk) - DINONAKTIFKAN karena fitur dihapus
+    // let paymentGudangData = [];
+    // let paymentGudangEmployeeData = [];
+    // let paymentGudangSelectedEmployees = new Set();
+    // let paymentParticipantData = [];
+    // let paymentSelectedId = '';
+    // let pgActiveProductId = '';
+    // let pgActiveProductFilter = 'Aktif';
+    // let pgEditingProductId = '';
+    // let pgFilteredTransactions = [];
+    // let midtransClientKey = '';
 
     // === GLOBAL LOADING SYSTEM ===
     function showLoading(msg = 'Memproses data...') {
@@ -13022,7 +13048,7 @@
       if (!currentUser) return false;
       if (currentUser.role === 'admin') return true;
       const perms = getCurrentUserPermissions();
-      return perms.includes('lihatAntrianDistributor') || perms.includes('editAntrianDistributor') || perms.includes('lihatDashboardLateShipment') || perms.includes('antrianDistributor');
+      return perms.includes('lihatAntrianDistributor') || perms.includes('editAntrianDistributor') || perms.includes('lihatDashboardLateShipment') || perms.includes('antrianDistributor') || perms.includes('rekapOngkirMistine');
     }
 
     function canEditDistributorQueue() {
@@ -13037,6 +13063,13 @@
       if (currentUser.role === 'admin') return true;
       const perms = getCurrentUserPermissions();
       return perms.includes('lihatDashboardLateShipment') || perms.includes('antrianDistributor');
+    }
+
+    function canUpdateLateNote() {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      const perms = getCurrentUserPermissions();
+      return perms.includes('editSLARule') || perms.includes('lihatDashboardLateShipment') || perms.includes('editAntrianDistributor');
     }
 
     function canEditSLARule() {
@@ -13315,7 +13348,8 @@
     }
 
     const pageTitles = {
-      dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', expense: '💸 Expense List', pettyCash: '🪙 Petty Cash', paymentGudang: '🛒 Toko Gudang',
+      dashboard: '📊 Dashboard', kasGudang: '💰 Kas Gudang', teamBuilding: '🤝 Team Building', expense: '💸 Expense List', pettyCash: '🪙 Petty Cash', paymentGudang: '💄 MISTINE',
+      rekapOngkirMistine: '💰 Rekap Ongkir MISTINE',
       karyawan: '👥 Data Karyawan', laporanKerja: '📝 Input Laporan Kerja', grafikLaporan: '📈 Dashboard Laporan Kerja',
       handover: '📦 Laporan Stock Control', klaim: '⚠️ Laporan Klaim Paket', tugasProject: '📋 Tugas Project',
       ijin: '✉️ Pengajuan Ijin & Cuti', lembur: '⏱️ Pengajuan Lembur', pengajuanAsset: '📦 Pengajuan Asset',
@@ -13359,7 +13393,10 @@
         if (role !== 'admin' && !isHR && !isViceSPV && !allowedMenus.includes('kelolaUser')) return toast('Akses dilarang', 'error');
       }
       if (name === 'paymentGudang' && !hasPermission('paymentGudang')) {
-        return toast('Akses Toko Gudang dilarang', 'error');
+        return toast('Akses MISTINE dilarang', 'error');
+      }
+      if (name === 'rekapOngkirMistine' && !hasPermission('rekapOngkirMistine')) {
+        return toast('Akses Rekap Ongkir dilarang', 'error');
       }
       if (name === 'antrianDistributor' && !canViewDistributorQueue()) {
         return toast('Akses Antrian Distributor dilarang', 'error');
@@ -13379,7 +13416,7 @@
         titleEl.setAttribute('data-page-key', name);
         // Page icon mapping
         const pageIcons = {
-          dashboard: '📊', kasGudang: '💰', teamBuilding: '🤝', expense: '💸', pettyCash: '🪙', paymentGudang: '🛒', karyawan: '👥',
+          dashboard: '📊', kasGudang: '💰', teamBuilding: '🤝', expense: '💸', pettyCash: '🪙', paymentGudang: '💄', rekapOngkirMistine: '💰', karyawan: '👥',
           laporanKerja: '📝', grafikLaporan: '📈', handover: '📦', klaim: '⚠️', tugasProject: '📋',
           ijin: '✉️', lembur: '⏱️', pengajuanAsset: '📦', organisasi: '🏗️', sop: '📋',
           users: '⚙️', stock: '📦', stockOpname: '⚖️', packingList: '📋', inbound: '📥',
@@ -14573,993 +14610,202 @@
     }
 
     function loadPaymentGudang() {
-      loadMidtransConfig();
-      // Manage individual buttons' visibility based on permissions
-      const btnAddTx = document.getElementById('btnPgAddTransaction');
-      if (btnAddTx) {
-        btnAddTx.style.display = hasPermission('pgAddTransaction') ? 'inline-block' : 'none';
+      // Langsung load rekap ongkir MISTINE
+      loadRekapOngkirMistine();
+    }
+
+    // ============================================================
+    // REKAP ONGKIR MISTINE
+    // ============================================================
+
+    let mistineRekapData = []; // Cache data mistine
+
+    function loadRekapOngkirMistine() {
+      const body = document.getElementById('tableRekapOngkirMistine');
+      const bulanFilter = document.getElementById('mistineFilterBulan');
+      
+      // Set default bulan ke bulan ini jika kosong
+      if (bulanFilter && !bulanFilter.value) {
+        const now = new Date();
+        bulanFilter.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       }
-      const btnSetting = document.getElementById('btnPgSettingPayment');
-      if (btnSetting) {
-        btnSetting.style.display = hasPermission('pgSettingPayment') ? 'inline-block' : 'none';
-      }
-      const btnCreate = document.getElementById('btnPgCreateProduct');
-      if (btnCreate) {
-        btnCreate.style.display = hasPermission('paymentGudang') ? 'inline-block' : 'none';
-      }
+      
+      const bulan = bulanFilter ? bulanFilter.value : '';
+      
+      if (body) body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);"><div style="font-size:48px;margin-bottom:12px;opacity:0.3;">⏳</div><div style="font-size:14px;font-weight:600;">Memuat data dari ANTRIAN MISTINE...</div></td></tr>';
+
       google.script.run.withSuccessHandler(res => {
         if (!res.success) {
-          toast(res.message || 'Gagal memuat data');
+          toast(res.message || 'Gagal memuat data rekap ongkir', 'error');
+          if (body) body.innerHTML = '<tr><td colspan="9" class="empty-state" style="text-align:center;padding:40px;color:var(--red);">❌ Gagal memuat data</td></tr>';
           return;
         }
-        paymentGudangData = res.data || [];
-        renderPGProducts();
-        
-        let filtered = paymentGudangData;
-        if (pgActiveProductFilter === 'Aktif') {
-          filtered = paymentGudangData.filter(p => p.status === 'Aktif');
-        } else if (pgActiveProductFilter === 'Stock Habis') {
-          filtered = paymentGudangData.filter(p => p.status === 'Stock Habis');
-        }
-        
-        if (filtered.length && !pgActiveProductId) {
-          selectPGProduct(filtered[0].id);
-        } else if (pgActiveProductId) {
-          const found = filtered.find(p => p.id === pgActiveProductId);
-          if (found) {
-            selectPGProduct(pgActiveProductId);
-          } else if (filtered.length) {
-            selectPGProduct(filtered[0].id);
-          } else {
-            pgActiveProductId = '';
-            renderPGTable([], null);
-            updatePGStats([], null);
-            const userActionContainer = document.getElementById('pgUserActionContainer');
-            if (userActionContainer) userActionContainer.style.display = 'none';
-          }
-        }
-      }).getPaymentGudangFull();
+        mistineRekapData = res.data || [];
+        renderRekapOngkirMistine(mistineRekapData);
+        updateMistineStats(mistineRekapData);
+      }).getRekapOngkirMistineData(bulan);
     }
 
-    function renderPGProducts() {
-      const wrap = document.getElementById('pgProductList');
+    function updateMistineStats(data) {
+      const total = data.length;
+      const sudahResi = data.filter(d => d.nomorResi && d.nomorResi !== '-' && d.nomorResi !== 'null').length;
+      const belumResi = total - sudahResi;
+      const totalOngkir = data.reduce((sum, d) => sum + (parseFloat(d.hargaOngkir) || 0), 0);
       
-      let filtered = paymentGudangData;
-      if (pgActiveProductFilter === 'Aktif') {
-        filtered = paymentGudangData.filter(p => p.status === 'Aktif');
-      } else if (pgActiveProductFilter === 'Stock Habis') {
-        filtered = paymentGudangData.filter(p => p.status === 'Stock Habis');
-      }
+      const elTotal = document.getElementById('mistineStatTotal');
+      const elResi = document.getElementById('mistineStatResi');
+      const elBelum = document.getElementById('mistineStatBelum');
+      const elOngkir = document.getElementById('mistineStatOngkir');
+      const elInfo = document.getElementById('mistineTableInfo');
+      
+      if (elTotal) elTotal.textContent = total;
+      if (elResi) elResi.textContent = sudahResi;
+      if (elBelum) elBelum.textContent = belumResi;
+      if (elOngkir) elOngkir.textContent = formatRp(totalOngkir);
+      if (elInfo) elInfo.textContent = `${total} data | ${sudahResi} sudah input resi | Total Ongkir: ${formatRp(totalOngkir)}`;
+    }
 
-      if (!filtered.length) {
-        let emptyMsg = 'Belum ada product.';
-        if (pgActiveProductFilter === 'Aktif') emptyMsg = 'Tidak ada product aktif.';
-        else if (pgActiveProductFilter === 'Stock Habis') emptyMsg = 'Tidak ada product dengan stock habis.';
-        wrap.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:8px;">${emptyMsg}</div>`;
+    function renderRekapOngkirMistine(data) {
+      const body = document.getElementById('tableRekapOngkirMistine');
+      const footer = document.getElementById('mistineFooterTotal');
+      if (!body) return;
+
+      if (!data.length) {
+        body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:60px;color:var(--text-muted);"><div style="font-size:64px;margin-bottom:16px;opacity:0.3;">📦</div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">Tidak Ada Data</div><div style="font-size:13px;">Belum ada antrian distributor MISTINE untuk bulan ini</div></td></tr>';
+        if (footer) footer.textContent = 'Rp 0';
         return;
       }
 
-      const canToggle = hasPermission('pgToggleStatus');
-      const canEdit = hasPermission('pgEditProduct');
-      wrap.innerHTML = filtered.map(p => {
-        const isActive = p.id === pgActiveProductId;
+      let totalOngkir = 0;
+      body.innerHTML = data.map((item, idx) => {
+        totalOngkir += parseFloat(item.hargaOngkir) || 0;
+        const hasResi = item.nomorResi && item.nomorResi !== '-' && item.nomorResi !== 'null' && item.nomorResi !== '';
+        const resiText = hasResi ? item.nomorResi : 'Belum Input';
+        const resiClass = hasResi ? 'badge-in' : 'badge-pending';
         
-        let statusColor = 'var(--gray)';
-        let cardBorderColor = isActive ? 'var(--accent)' : 'var(--border-color)';
-        let cardBackground = isActive ? 'rgba(245,158,11,0.05)' : 'var(--bg-panel-light)';
-        
-        if (p.status === 'Aktif') {
-          statusColor = 'var(--green)';
-        } else if (p.status === 'Stock Habis') {
-          statusColor = 'var(--red)';
-          if (isActive) {
-            cardBorderColor = 'var(--red)';
-            cardBackground = 'rgba(239, 68, 68, 0.05)';
-          }
-        }
-
-        const typeBadge = p.tipe === 'Pre-Order' ? ' <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,0.2);color:var(--accent);margin-left:4px;">PO</span>' : '';
-        const statusBadge = p.status === 'Stock Habis' 
-          ? ` <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(239, 68, 68, 0.2);color:var(--red);margin-left:4px;font-weight:700;">Habis</span>` 
-          : '';
-
-        return `<div onclick="selectPGProduct('${p.id}')" style="cursor:pointer;padding:12px 16px;border-radius:10px;border:2px solid ${cardBorderColor};background:${cardBackground};min-width:220px;transition:all 0.2s;box-shadow:var(--shadow-sm);">
-          <div style="font-weight:700;font-size:13px;color:${isActive ? (p.status === 'Stock Habis' ? 'var(--red)' : 'var(--accent)') : 'var(--text-main)'};">${p.nama || '-'}${typeBadge}${statusBadge}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Harga: ${formatRp(p.hargaPerOrang)}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-            <span style="font-size:11px;font-weight:700;color:${statusColor};">● ${p.status}</span>
-            <div style="display:${canToggle || canEdit ? 'flex' : 'none'};gap:4px;">
-              ${canEdit ? `<button class="btn btn-ghost btn-xs" style="padding:2px 6px;font-size:10px;" onclick="event.stopPropagation();openEditPGProductModal('${p.id}')">✏️</button>` : ''}
-              ${canToggle && p.status === 'Aktif' ? `<button class="btn btn-ghost btn-xs" style="padding:2px 6px;font-size:10px;" onclick="event.stopPropagation();togglePaymentGudangStatus('${p.id}','Nonaktif')">🔒</button>` : ''}
-              ${canToggle ? `<button class="btn btn-danger btn-xs" style="padding:2px 6px;font-size:10px;" onclick="event.stopPropagation();deletePaymentGudangConfirm('${p.id}')">🗑️</button>` : ''}
-            </div>
-          </div>
-        </div>`;
+        return `
+        <tr>
+          <td style="text-align:center;font-weight:600;color:var(--text-muted);">${idx + 1}</td>
+          <td style="font-size:13px;white-space:nowrap;">${item.orderQueueTime || '-'}</td>
+          <td style="font-size:13px;">${item.picSales || '-'}</td>
+          <td><strong style="font-size:14px;color:var(--text-main);">${item.namaDistributor || '-'}</strong></td>
+          <td style="font-size:13px;font-family:monospace;">${item.noMabang || '-'}</td>
+          <td style="font-size:12px;">${item.metodePengiriman || '-'}</td>
+          <td><span class="${resiClass}" style="font-size:11px;padding:4px 10px;">${resiText}</span></td>
+          <td><strong style="font-size:14px;font-family:'Outfit',sans-serif;color:var(--accent);">${formatRp(item.hargaOngkir)}</strong></td>
+          <td style="text-align:center;">
+            <button class="btn btn-primary btn-sm" onclick="openEditOngkirMistineModal(${item.rowNumber}, '${item.nomorResi || ''}', ${item.hargaOngkir || 0})" style="padding:5px 12px;font-size:11px;">✏️ Edit</button>
+          </td>
+        </tr>
+      `;
       }).join('');
+      
+      if (footer) footer.textContent = formatRp(totalOngkir);
     }
 
-    function setPGProductFilter(filterValue) {
-      pgActiveProductFilter = filterValue;
+    function filterMistineTable() {
+      const statusFilter = document.getElementById('mistineFilterStatus').value;
+      const searchTerm = (document.getElementById('mistineFilterSearch').value || '').toLowerCase();
+      const rows = document.querySelectorAll('#tableRekapOngkirMistine tr');
       
-      const btnActive = document.getElementById('btnPgFilterActive');
-      const btnOut = document.getElementById('btnPgFilterOut');
-      const btnAll = document.getElementById('btnPgFilterAll');
+      let visibleCount = 0;
+      let visibleOngkir = 0;
       
-      if (btnActive) btnActive.className = filterValue === 'Aktif' ? 'btn btn-primary btn-xs' : 'btn btn-outline-primary btn-xs';
-      if (btnOut) btnOut.className = filterValue === 'Stock Habis' ? 'btn btn-danger btn-xs' : 'btn btn-outline-danger btn-xs';
-      if (btnAll) btnAll.className = filterValue === 'Semua' ? 'btn btn-secondary btn-xs' : 'btn btn-outline-secondary btn-xs';
-      
-      renderPGProducts();
-      
-      let filtered = paymentGudangData;
-      if (pgActiveProductFilter === 'Aktif') {
-        filtered = paymentGudangData.filter(p => p.status === 'Aktif');
-      } else if (pgActiveProductFilter === 'Stock Habis') {
-        filtered = paymentGudangData.filter(p => p.status === 'Stock Habis');
-      }
-      
-      if (filtered.length) {
-        const found = filtered.find(p => p.id === pgActiveProductId);
-        if (!found) {
-          selectPGProduct(filtered[0].id);
-        }
-      } else {
-        pgActiveProductId = '';
-        renderPGTable([], null);
-        updatePGStats([], null);
-        const userActionContainer = document.getElementById('pgUserActionContainer');
-        if (userActionContainer) userActionContainer.style.display = 'none';
-      }
-    }
-
-    function selectPGProduct(id) {
-      pgActiveProductId = id;
-      const product = paymentGudangData.find(p => p.id === id);
-      const txs = (product?.participants || []);
-      renderPGProducts();
-      renderPGTable(txs, product);
-      updatePGStats(txs, product);
-
-      // Handle Direct Payment / Pre-Order Action Container
-      const userActionContainer = document.getElementById('pgUserActionContainer');
-      if (userActionContainer && product) {
-        if (product.status === 'Aktif') {
-          userActionContainer.style.display = 'flex';
-          const myParticipant = txs.find(t => String(t.namaKaryawan).toLowerCase() === String(currentUser?.nama || '').toLowerCase());
-          
-          if (product.tipe === 'Pre-Order') {
-            document.getElementById('pgUserActionTitle').innerHTML = '🛒 Pre-Order Product';
-            if (myParticipant) {
-              if (myParticipant.statusBayar === 'Lunas') {
-                document.getElementById('pgUserActionMsg').innerHTML = `Anda sudah melakukan Pre-Order untuk product ini. Status: <strong>✅ Lunas</strong>`;
-                document.getElementById('btnPgUserAction').style.display = 'none';
-              } else {
-                document.getElementById('pgUserActionMsg').innerHTML = `Anda memiliki tagihan Pre-Order untuk product ini sebesar <strong>${formatRp(product.hargaPerOrang)}</strong>.`;
-                const btn = document.getElementById('btnPgUserAction');
-                btn.style.display = 'inline-block';
-                btn.className = 'btn btn-teal';
-                btn.textContent = '💳 Bayar Sekarang';
-                const safeName = (myParticipant.namaKaryawan || '').replace(/'/g, "\\'");
-                btn.setAttribute('onclick', `openSelectPaymentMethodModal('${product.id}', '${myParticipant.id}', '${safeName}')`);
-              }
-            } else {
-              document.getElementById('pgUserActionMsg').innerHTML = `Product ini tersedia untuk Pre-Order. Silakan lakukan Pre-Order seharga <strong>${formatRp(product.hargaPerOrang)}</strong>.`;
-              const btn = document.getElementById('btnPgUserAction');
-              btn.style.display = 'inline-block';
-              btn.className = 'btn btn-teal';
-              btn.textContent = '🛒 Pre-Order Sekarang';
-              btn.setAttribute('onclick', `triggerPGDirectPayment('${product.id}')`);
-            }
-          } else {
-            // Reguler Product Direct Payment
-            document.getElementById('pgUserActionTitle').innerHTML = '💳 Bayar Langsung';
-            if (myParticipant) {
-              if (myParticipant.statusBayar === 'Lunas') {
-                document.getElementById('pgUserActionMsg').innerHTML = `Anda sudah membayar product ini. Status: <strong>✅ Lunas</strong>`;
-                document.getElementById('btnPgUserAction').style.display = 'none';
-              } else {
-                document.getElementById('pgUserActionMsg').innerHTML = `Anda memiliki tagihan untuk product ini sebesar <strong>${formatRp(product.hargaPerOrang)}</strong>.`;
-                const btn = document.getElementById('btnPgUserAction');
-                btn.style.display = 'inline-block';
-                btn.className = 'btn btn-primary';
-                btn.textContent = '💳 Bayar Sekarang';
-                const safeName = (myParticipant.namaKaryawan || '').replace(/'/g, "\\'");
-                btn.setAttribute('onclick', `openSelectPaymentMethodModal('${product.id}', '${myParticipant.id}', '${safeName}')`);
-              }
-            } else {
-              document.getElementById('pgUserActionMsg').innerHTML = `Beli product ini secara langsung seharga <strong>${formatRp(product.hargaPerOrang)}</strong> menggunakan akun Anda.`;
-              const btn = document.getElementById('btnPgUserAction');
-              btn.style.display = 'inline-block';
-              btn.className = 'btn btn-primary';
-              btn.textContent = '💳 Bayar Langsung';
-              btn.setAttribute('onclick', `triggerPGDirectPayment('${product.id}')`);
-            }
-          }
+      rows.forEach(row => {
+        if (row.querySelector('.empty-state') || row.cells.length < 9) return;
+        
+        const resi = (row.cells[6]?.textContent || '').toLowerCase();
+        const distributor = (row.cells[3]?.textContent || '').toLowerCase();
+        const noMabang = (row.cells[4]?.textContent || '').toLowerCase();
+        const ongkirText = row.cells[7]?.textContent || 'Rp 0';
+        const ongkirVal = parseFloat(ongkirText.replace(/[^0-9]/g, '')) || 0;
+        
+        const hasResi = !resi.includes('belum');
+        const matchStatus = !statusFilter || (statusFilter === 'sudah' && hasResi) || (statusFilter === 'belum' && !hasResi);
+        const matchSearch = !searchTerm || distributor.includes(searchTerm) || noMabang.includes(searchTerm);
+        
+        if (matchStatus && matchSearch) {
+          row.style.display = '';
+          visibleCount++;
+          visibleOngkir += ongkirVal;
         } else {
-          userActionContainer.style.display = 'none';
+          row.style.display = 'none';
         }
-      }
+      });
+      
+      const footer = document.getElementById('mistineFooterTotal');
+      if (footer) footer.textContent = formatRp(visibleOngkir);
+      
+      const info = document.getElementById('mistineTableInfo');
+      if (info) info.textContent = `${visibleCount} data ditampilkan | Total Ongkir: ${formatRp(visibleOngkir)}`;
     }
 
-    function triggerPGDirectPayment(productId) {
-      if (!currentUser?.nama) return toast('Nama pengguna tidak valid. Silakan login kembali.', 'error');
-      showLoading('Memproses pembayaran...');
+    function openEditOngkirMistineModal(rowNumber, resi, harga) {
+      setVal('ongkirMistineRowNumber', rowNumber);
+      setVal('ongkirMistineResi', (resi === 'null' || resi === 'undefined' || !resi) ? '' : resi);
+      setVal('ongkirMistineHarga', harga || 0);
+      openModal('modalEditOngkirMistine');
+    }
+
+    function submitRekapOngkirMistine() {
+      const rowNumber = v('ongkirMistineRowNumber');
+      const resi = v('ongkirMistineResi') || '';
+      const harga = parseFloat(v('ongkirMistineHarga')) || 0;
+
+      if (!rowNumber) return toast('Row number tidak valid', 'error');
+
+      const btn = document.querySelector('#modalEditOngkirMistine .btn-primary');
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+
       google.script.run.withSuccessHandler(res => {
-        hideLoading();
+        btn.disabled = false;
+        btn.textContent = oldText;
         if (!res.success) {
-          return toast(res.message || 'Gagal memproses pembayaran', 'error');
+          toast(res.message || 'Gagal menyimpan data', 'error');
+          return;
         }
-        loadPaymentGudang();
-        setTimeout(() => {
-          openSelectPaymentMethodModal(productId, res.participantId, currentUser.nama);
-        }, 800);
-      }).getOrCreateParticipantForUser(productId, currentUser.nama);
+        toast('✅ Data ongkir berhasil disimpan', 'success');
+        closeModal('modalEditOngkirMistine');
+        loadRekapOngkirMistine();
+      }).withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = oldText;
+        toast('Kesalahan sistem: ' + err.message, 'error');
+      }).saveRekapOngkirMistine(rowNumber, resi, harga, currentUser ? currentUser.username : 'System');
     }
 
-    function renderPGTable(txs, product) {
-      const tb = document.getElementById('tablePGTransactions');
-      const title = document.getElementById('pgTableTitle');
-      const sub = document.getElementById('pgTableSubtitle');
-
-      if (product) {
-        title.textContent = `🛒 Transaksi: ${product.nama}`;
-        sub.textContent = `Harga: ${formatRp(product.hargaPerOrang)} | Deadline: ${product.deadline || '-'} | Status: ${product.status}`;
+    function exportRekapOngkirMistine() {
+      if (!mistineRekapData || mistineRekapData.length === 0) {
+        return toast('Tidak ada data untuk diekspor', 'info');
       }
-
-      if (!txs.length) {
-        tb.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada transaksi karyawan di product ini</td></tr>';
-        document.getElementById('pgFooterTotal').textContent = 'Rp 0';
-        return;
-      }
-
-      const filtered = filterPGTransactionsBySearch(txs);
-      pgFilteredTransactions = filtered;
-      let totalPrice = 0;
-
-      tb.innerHTML = filtered.map((d, i) => {
-        totalPrice += product.hargaPerOrang;
-
-        const baseAmount = product.hargaPerOrang || 0;
-        const midtransAmount = Math.ceil(baseAmount / 0.993);
-        const fee = midtransAmount - baseAmount;
-        let priceDisplay = formatRp(baseAmount);
-        if (d.statusBayar === 'Lunas' && d.midtransTransactionId) {
-          const details = calculatePaymentMethodDetails(baseAmount, d.metodeBayar);
-          priceDisplay = `<div>${formatRp(baseAmount)}</div><div style="font-size:11px;color:var(--accent);margin-top:2px;">+ ${details.label}: ${formatRp(details.fee)}<br>Total: ${formatRp(details.total)}</div>`;
-        } else if (d.statusBayar !== 'Lunas') {
-          priceDisplay = `<div>${formatRp(baseAmount)}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Online (est): ${formatRp(baseAmount + 4500)}</div>`;
-        }
-
-        const safeName = (d.namaKaryawan || '').replace(/'/g, "\\'");
-        const canMarkLunas = hasPermission('pgMarkLunas');
-        const manualButton = (d.statusBayar === 'Lunas' || !canMarkLunas) ? '' : `<button class="btn btn-ghost btn-sm" onclick="openParticipantPaymentModal('${d.id}')">Mark Lunas</button>`;
-        const midtransButton = d.statusBayar === 'Lunas' ? '' : `<button class="btn btn-teal btn-sm" onclick="openSelectPaymentMethodModal('${pgActiveProductId}','${d.id}','${safeName}')">Bayar Online</button>`;
-        const refreshButton = d.midtransTransactionId ? `<button class="btn btn-ghost btn-sm" onclick="checkParticipantMidtransStatus('${d.midtransTransactionId}','${d.id}')">Refresh</button>` : '';
-
-        const statusBadge = d.statusBayar === 'Lunas' ? '<span class="badge badge-in">✅ Lunas</span>' : '<span class="badge badge-out">⏳ Belum</span>';
-
-        return `<tr>
-          <td style="color:var(--text-muted);font-size:12px;">${i + 1}</td>
-          <td>${d.namaKaryawan || '-'}</td>
-          <td class="rupiah" style="font-weight:700;line-height:1.2;">${priceDisplay}</td>
-          <td>${statusBadge}</td>
-          <td>${d.metodeBayar || '-'}</td>
-          <td>${d.midtransTransactionId || '-'}</td>
-          <td style="white-space:nowrap;display:flex;gap:4px;">
-            ${manualButton}
-            ${midtransButton}
-            ${refreshButton}
-          </td>
-        </tr>`;
-      }).join('');
-
-      document.getElementById('pgFooterTotal').textContent = formatRp(totalPrice);
-    }
-
-    function updatePGStats(txs, product) {
-      if (!product) {
-        document.getElementById('pgStatHarga').textContent = 'Rp 0';
-        document.getElementById('pgStatTotal').textContent = '0';
-        document.getElementById('pgStatLunas').textContent = '0';
-        document.getElementById('pgStatBelum').textContent = '0';
-        return;
-      }
-      const stats = product.stats || {};
-      document.getElementById('pgStatHarga').textContent = formatRp(product.hargaPerOrang);
-      document.getElementById('pgStatTotal').textContent = stats.total || 0;
-      document.getElementById('pgStatLunas').textContent = stats.lunas || 0;
-      document.getElementById('pgStatBelum').textContent = stats.belum || 0;
-    }
-
-    function filterPGTransactionsBySearch(txs) {
-      const query = (document.getElementById('pgSearchInput')?.value || '').toLowerCase().trim();
-      if (!query) return txs;
-      return txs.filter(t => (t.namaKaryawan || '').toLowerCase().includes(query));
-    }
-
-    function filterPGTable() {
-      if (!pgActiveProductId) return;
-      const product = paymentGudangData.find(p => p.id === pgActiveProductId);
-      if (!product) return;
-      const txs = product.participants || [];
-      renderPGTable(txs, product);
-    }
-
-    function ensurePGProductSelected() {
-      if (!pgActiveProductId) {
-        toast('Pilih product dulu', 'warning');
-        return false;
-      }
-      return true;
-    }
-
-    function openPaymentGudangAddTransactionModal() {
-      if (!ensurePGProductSelected()) return;
-      document.getElementById('pgAddNamaKaryawan').value = '';
-      document.getElementById('pgAddBulkNamaKaryawan').value = '';
-      switchPGAddMode('single');
-
-      // Load karyawan list if not already loaded, to support datalist autocompletion
-      if (!karyawanData || !karyawanData.length) {
-        google.script.run.withSuccessHandler(res => {
-          if (res.success) {
-            karyawanData = res.data || [];
-            updateKaryawanDatalist();
-          }
-        }).getKaryawan();
-      } else {
-        updateKaryawanDatalist();
-      }
-
-      openModal('modalPaymentGudangAddParticipant');
-    }
-
-    function switchPGAddMode(mode) {
-      const tabSingle = document.getElementById('tabAddPGSingle');
-      const tabBulk = document.getElementById('tabAddPGBulk');
-      const secSingle = document.getElementById('sectionPGAddSingle');
-      const secBulk = document.getElementById('sectionPGAddBulk');
-
-      if (mode === 'single') {
-        tabSingle.classList.add('active');
-        tabSingle.style.borderBottom = '2px solid var(--accent)';
-        tabSingle.style.color = 'var(--text-main)';
-        tabBulk.classList.remove('active');
-        tabBulk.style.borderBottom = 'none';
-        tabBulk.style.color = 'var(--text-muted)';
-        secSingle.style.display = 'block';
-        secBulk.style.display = 'none';
-      } else {
-        tabBulk.classList.add('active');
-        tabBulk.style.borderBottom = '2px solid var(--accent)';
-        tabBulk.style.color = 'var(--text-main)';
-        tabSingle.classList.remove('active');
-        tabSingle.style.borderBottom = 'none';
-        tabSingle.style.color = 'var(--text-muted)';
-        secSingle.style.display = 'none';
-        secBulk.style.display = 'block';
-      }
-    }
-
-    function submitPGAddParticipantSingle() {
-      const nama = document.getElementById('pgAddNamaKaryawan').value.trim();
-      if (!nama) return toast('Isi nama karyawan', 'error');
-
-      // Look up karyawanId from name
-      let karyawanId = '';
-      const found = karyawanData.find(k => (k.nama || '').toLowerCase() === nama.toLowerCase());
-      if (found) {
-        karyawanId = found.id || '';
-      }
-
-      const btn = document.getElementById('btnSubmitPGAddSingle');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
-
-      google.script.run.withSuccessHandler(res => {
-        if (btn) { btn.disabled = false; btn.textContent = '💾 Tambah Karyawan'; }
-        if (!res.success) return toast(res.message || 'Gagal menambahkan karyawan', 'error');
-
-        toast('Karyawan berhasil ditambahkan');
-        closeModal('modalPaymentGudangAddParticipant');
-        loadPaymentGudang(); // Reload payment data to refresh UI
-      }).addPaymentParticipant(pgActiveProductId, karyawanId, nama);
-    }
-
-    function submitPGAddParticipantBulk() {
-      const rawText = document.getElementById('pgAddBulkNamaKaryawan').value;
-      const names = rawText.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-      if (!names.length) return toast('Masukkan minimal satu nama karyawan', 'error');
-
-      const payload = names.map(name => {
-        const found = karyawanData.find(k => (k.nama || '').toLowerCase() === name.toLowerCase());
-        return {
-          id: found ? found.id : '',
-          nama: name
-        };
-      });
-
-      const btn = document.getElementById('btnSubmitPGAddBulk');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Mengimpor...'; }
-
-      google.script.run.withSuccessHandler(res => {
-        if (btn) { btn.disabled = false; btn.textContent = '📥 Impor Nama Karyawan'; }
-        if (!res.success) return toast(res.message || 'Gagal mengimpor karyawan', 'error');
-
-        toast(`Berhasil mengimpor ${res.count} karyawan`);
-        closeModal('modalPaymentGudangAddParticipant');
-        loadPaymentGudang(); // Reload payment data to refresh UI
-      }).addPaymentParticipantsBulk(pgActiveProductId, payload);
-    }
-
-    function openCreatePGProductModal() {
-      pgEditingProductId = '';
-      document.getElementById('pgModalTitle').textContent = '🛒 Buat Product Toko Gudang';
-      document.getElementById('pgNama').value = '';
-      document.getElementById('pgHargaPerOrang').value = '';
-      document.getElementById('pgTipe').value = 'Reguler';
-      document.getElementById('pgStatusContainer').style.display = 'none';
-      openModal('modalPaymentGudang');
-    }
-
-    function openEditPGProductModal(id) {
-      const product = paymentGudangData.find(p => p.id === id);
-      if (!product) return toast('Product tidak ditemukan', 'error');
       
-      pgEditingProductId = id;
-      document.getElementById('pgModalTitle').textContent = '✏️ Edit Product Toko Gudang';
-      document.getElementById('pgNama').value = product.nama || '';
-      document.getElementById('pgHargaPerOrang').value = formatRp(product.hargaPerOrang).replace('Rp ', '');
-      document.getElementById('pgTipe').value = product.tipe || 'Reguler';
+      const headers = ["No","Order Queue Time","PIC Sales","Nama Distributor","No Mabang","Metode Pengiriman","No Resi","Harga Ongkir"];
+      const rows = mistineRekapData.map((d, idx) => [
+        idx + 1,
+        d.orderQueueTime || '-',
+        d.picSales || '-',
+        d.namaDistributor || '-',
+        d.noMabang || '-',
+        d.metodePengiriman || '-',
+        d.nomorResi || 'Belum Input',
+        d.hargaOngkir || 0
+      ]);
       
-      const statusContainer = document.getElementById('pgStatusContainer');
-      if (statusContainer) {
-        statusContainer.style.display = 'block';
-        document.getElementById('pgStatus').value = product.status || 'Aktif';
-        
-        // Disable "Stock Habis" option if user doesn't have pgUpdateStockHabis permission
-        const optionStockHabis = document.querySelector('#pgStatus option[value="Stock Habis"]');
-        if (optionStockHabis) {
-          optionStockHabis.disabled = !hasPermission('pgUpdateStockHabis');
-        }
-      }
-      openModal('modalPaymentGudang');
-    }
-
-    function submitPaymentGudang() {
-      const nama = document.getElementById('pgNama').value.trim();
-      const hargaPerOrang = getRpValue('pgHargaPerOrang');
-      const tipe = document.getElementById('pgTipe').value;
-      if (!nama) return toast('Isi nama product', 'error');
-      if (!hargaPerOrang || hargaPerOrang <= 0) return toast('Harga product harus diisi', 'error');
-
-      const btn = document.getElementById('btnSavePaymentGudang');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
-
-      if (pgEditingProductId) {
-        const status = document.getElementById('pgStatus').value;
-        if (status === 'Stock Habis' && !hasPermission('pgUpdateStockHabis')) {
-          if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan'; }
-          return toast('Anda tidak memiliki hak akses untuk mengupdate status Stock Habis', 'error');
-        }
-        google.script.run.withSuccessHandler(res => {
-          if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan'; }
-          if (!res.success) {
-            toast(res.message || 'Gagal memperbarui product', 'error');
-            return;
-          }
-          toast('Product pembayaran berhasil diperbarui');
-          closeModal('modalPaymentGudang');
-          loadPaymentGudang();
-        }).updatePaymentGudang(pgEditingProductId, nama, '', hargaPerOrang, '', tipe, status);
-      } else {
-        google.script.run.withSuccessHandler(res => {
-          if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan'; }
-          if (!res.success) {
-            toast(res.message || 'Gagal membuat product', 'error');
-            return;
-          }
-          toast('Product pembayaran berhasil dibuat');
-          closeModal('modalPaymentGudang');
-          loadPaymentGudang();
-        }).addPaymentGudang(nama, '', hargaPerOrang, '', currentUser?.username || 'system', tipe);
-      }
-    }
-
-    function viewPaymentParticipants(paymentId) {
-      paymentSelectedId = paymentId;
-      const payment = paymentGudangData.find(p => p.id === paymentId);
-      if (!payment) return toast('Data pembayaran tidak ditemukan', 'error');
-      paymentParticipantData = payment.participants || [];
-      document.getElementById('pgParticipantsTitle').textContent = `Transaksi Karyawan: ${payment.nama || '-'} (${paymentParticipantData.length})`;
-      document.getElementById('pgPaymentInfo').textContent = `Harga Product: ${formatRp(payment.hargaPerOrang)} | Deadline: ${payment.deadline || '-'} | Status: ${payment.status}`;
-      renderPaymentParticipantTable();
-      openModal('modalPaymentGudangParticipants');
-    }
-
-    function renderPaymentParticipantTable() {
-      const tbody = document.getElementById('tablePaymentParticipants');
-      if (!tbody) return;
-      const payment = paymentGudangData.find(p => p.id === paymentSelectedId) || {};
-      if (!paymentParticipantData.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Belum ada peserta terdaftar</td></tr>';
-        return;
-      }
-      tbody.innerHTML = paymentParticipantData.map((p, idx) => {
-        const baseAmount = payment.hargaPerOrang || 0;
-        const midtransAmount = Math.ceil(baseAmount / 0.993);
-        const fee = midtransAmount - baseAmount;
-        let priceDisplay = formatRp(baseAmount);
-        if (p.statusBayar === 'Lunas' && p.midtransTransactionId) {
-          const details = calculatePaymentMethodDetails(baseAmount, p.metodeBayar);
-          priceDisplay = `<div>${formatRp(baseAmount)}</div><div style="font-size:11px;color:var(--accent);margin-top:2px;">+ ${details.label}: ${formatRp(details.fee)}<br>Total: ${formatRp(details.total)}</div>`;
-        } else if (p.statusBayar !== 'Lunas') {
-          priceDisplay = `<div>${formatRp(baseAmount)}</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Online (est): ${formatRp(baseAmount + 4500)}</div>`;
-        }
-
-        const safeName = (p.namaKaryawan || '').replace(/'/g, "\\'");
-        const manualButton = p.statusBayar === 'Lunas' ? '' : `<button class="btn btn-ghost btn-sm" onclick="openParticipantPaymentModal('${p.id}')">Mark Lunas</button>`;
-        const midtransButton = p.statusBayar === 'Lunas' ? '' : `<button class="btn btn-teal btn-sm" onclick="openSelectPaymentMethodModal('${paymentSelectedId}','${p.id}','${safeName}')">Bayar Online</button>`;
-        const refreshButton = p.midtransTransactionId ? `<button class="btn btn-ghost btn-sm" onclick="checkParticipantMidtransStatus('${p.midtransTransactionId}','${p.id}')">Refresh</button>` : '';
-        return `<tr>
-          <td>${idx + 1}</td>
-          <td>${p.namaKaryawan || '-'}</td>
-          <td style="line-height:1.2;">${priceDisplay}</td>
-          <td>${p.statusBayar || 'Belum Bayar'}</td>
-          <td>${p.metodeBayar || '-'}</td>
-          <td>${p.midtransTransactionId || '-'}</td>
-          <td style="white-space:nowrap;">
-            ${manualButton}
-            ${midtransButton}
-            ${refreshButton}
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    function openParticipantPaymentModal(participantId) {
-      const participant = paymentParticipantData.find(p => p.id === participantId);
-      if (!participant) return toast('Peserta tidak ditemukan', 'error');
-      document.getElementById('pgParticipantId').value = participant.id;
-      document.getElementById('pgParticipantName').textContent = participant.namaKaryawan || '-';
-      document.getElementById('pgMetodeBayar').value = participant.metodeBayar || 'Transfer Bank';
-      document.getElementById('pgBuktiUrl').value = participant.buktiUrl || '';
-      document.getElementById('btnPayViaMidtrans').style.display = midtransClientKey && participant.statusBayar !== 'Lunas' ? 'inline-flex' : 'none';
-      openModal('modalParticipantPayment');
-    }
-
-    function saveParticipantPaymentStatus() {
-      const participantId = document.getElementById('pgParticipantId').value;
-      const metode = document.getElementById('pgMetodeBayar').value;
-      const buktiUrl = document.getElementById('pgBuktiUrl').value.trim();
-      if (!participantId) return toast('Tidak ada peserta terpilih', 'error');
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message || 'Gagal menyimpan status', 'error');
-        toast('Status peserta diupdate menjadi Lunas');
-        closeModal('modalParticipantPayment');
-        loadPaymentGudang();
-        if (document.getElementById('modalPaymentGudangParticipants').classList.contains('active')) {
-          viewPaymentParticipants(paymentSelectedId);
-        }
-      }).updateParticipantPaymentStatus(participantId, 'Lunas', metode, buktiUrl, '');
-    }
-
-    function payParticipantViaMidtrans(paymentId, participantId, customerName, paymentMethodType) {
-      if (!paymentId || !participantId) return toast('Data pembayaran tidak lengkap', 'error');
-      if (!paymentMethodType) paymentMethodType = 'va';
-      showLoading('Membuat transaksi pembayaran...');
-      const payment = paymentGudangData.find(p => p.id === paymentId);
-      const baseAmount = payment ? payment.hargaPerOrang : 0;
-
-      let amount = baseAmount;
-      if (paymentMethodType === 'va') {
-        amount = baseAmount + 4500;
-      } else if (paymentMethodType === 'qr') {
-        amount = Math.ceil(baseAmount / 0.993);
-      } else if (paymentMethodType === 'gopay') {
-        amount = Math.ceil(baseAmount / 0.98);
-      } else if (paymentMethodType === 'shopeepay') {
-        amount = Math.ceil(baseAmount / 0.98);
-      } else if (paymentMethodType === 'ovo') {
-        amount = Math.ceil(baseAmount / 0.97);
-      } else if (paymentMethodType === 'cstore') {
-        amount = baseAmount + 5000;
-      }
-
-      google.script.run.withSuccessHandler(configRes => {
-        if (!configRes.success) {
-          hideLoading();
-          return toast(configRes.message || 'Gagal memuat konfigurasi Midtrans', 'error');
-        }
-        midtransClientKey = configRes.config.clientKey || '';
-        if (!midtransClientKey) {
-          hideLoading();
-          return toast('Client Key Midtrans belum disimpan', 'error');
-        }
-
-        prepareMidtransSnap(midtransClientKey, configRes.config.isProduction).then(() => {
-          google.script.run.withSuccessHandler(txRes => {
-            if (!txRes.success) {
-              hideLoading();
-              return toast(txRes.message || 'Gagal membuat transaksi Midtrans', 'error');
-            }
-
-            // Verify transaction was created
-            if (!txRes.token) {
-              hideLoading();
-              return toast('Snap Token tidak diterima dari server', 'error');
-            }
-
-            console.log('Snap Token received:', txRes.token);
-            console.log('Order ID:', txRes.orderId);
-
-            if (!window.snap) {
-              hideLoading();
-              return toast('Midtrans Snap tidak tersedia. Reload halaman dan coba lagi.', 'error');
-            }
-
-            hideLoading();
-
-            // Call snap.pay with the token
-            window.snap.pay(txRes.token, {
-              onSuccess: function (result) {
-                toast('Pembayaran berhasil!');
-
-                let method = 'Online';
-                if (result.payment_type === 'bank_transfer') {
-                  if (result.va_numbers && result.va_numbers.length > 0) {
-                    method = result.va_numbers[0].bank.toUpperCase();
-                  } else {
-                    method = 'Virtual Account';
-                  }
-                } else if (result.payment_type === 'qris') {
-                  method = 'QRIS';
-                } else if (result.payment_type === 'gopay') {
-                  method = 'GoPay';
-                } else if (result.payment_type === 'shopeepay') {
-                  method = 'ShopeePay';
-                } else if (result.payment_type === 'echannel') {
-                  method = 'Mandiri';
-                } else if (result.payment_type === 'permata_va') {
-                  method = 'Permata';
-                } else if (result.payment_type === 'bca_klikpay') {
-                  method = 'BCA KlikPay';
-                } else if (result.payment_type === 'cstore') {
-                  if (result.store) {
-                    method = result.store.toUpperCase();
-                  } else {
-                    method = 'Minimarket';
-                  }
-                } else if (result.payment_type) {
-                  method = result.payment_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                }
-
-                google.script.run.withSuccessHandler(res => {
-                  if (res.success) {
-                    toast('Status karyawan diupdate menjadi Lunas');
-                    loadPaymentGudang();
-                    if (document.getElementById('modalPaymentGudangParticipants') && document.getElementById('modalPaymentGudangParticipants').classList.contains('active')) {
-                      viewPaymentParticipants(paymentSelectedId);
-                    }
-                  }
-                }).updateParticipantPaymentStatus(participantId, 'Lunas', method, '', txRes.orderId);
-              },
-              onPending: function (result) {
-                toast('Pembayaran dalam status pending. Silakan cek status kembali.');
-                google.script.run.withSuccessHandler(res => {
-                  loadPaymentGudang();
-                }).checkMidtransStatus(txRes.orderId);
-              },
-              onError: function (error) {
-                console.error('Midtrans snap.pay error:', error);
-                toast('Midtrans error: ' + (error && error.message ? error.message : 'Gagal memproses pembayaran'), 'error');
-              },
-              onClose: function () {
-                toast('Transaksi Midtrans dibatalkan oleh pengguna');
-              }
-            });
-          }).createMidtransTransaction(paymentId, participantId, amount, customerName, '', paymentMethodType);
-        }).catch(err => {
-          hideLoading();
-          console.error('Midtrans Snap loading error:', err);
-          toast(err.message || 'Gagal memuat Midtrans Snap', 'error');
-        });
-      }).getMidtransConfig();
-    }
-
-    function prepareMidtransSnap(clientKey, isProduction) {
-      return new Promise((resolve, reject) => {
-        const scriptUrl = isProduction
-          ? 'https://app.midtrans.com/snap/snap.js'
-          : 'https://app.sandbox.midtrans.com/snap/snap.js';
-
-        // Check if snap is already loaded
-        if (window.snap) {
-          const existing = document.querySelector('script[data-midtrans-snap]');
-          if (existing && existing.src === scriptUrl && existing.getAttribute('data-client-key') === clientKey) {
-            return resolve();
-          }
-          if (existing) existing.remove();
-          delete window.snap;
-        }
-
-        // Remove existing script if any
-        const existing = document.querySelector('script[data-midtrans-snap]');
-        if (existing) existing.remove();
-
-        // Create and load the Midtrans Snap script
-        const script = document.createElement('script');
-        script.src = scriptUrl;
-        script.setAttribute('data-client-key', clientKey);
-        script.setAttribute('data-midtrans-snap', 'true');
-
-        script.onload = () => {
-          if (window.snap) {
-            midtransClientKey = clientKey;
-            resolve();
-          } else {
-            reject(new Error('Midtrans Snap tidak tersedia setelah loading'));
-          }
-        };
-
-        script.onerror = () => reject(new Error('Gagal memuat Midtrans Snap JS dari CDN'));
-        document.body.appendChild(script);
-      });
-    }
-
-    function loadMidtransConfig() {
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return;
-        const cfg = res.config || {};
-        midtransClientKey = cfg.clientKey || '';
-        const serverKeyInput = document.getElementById('midtransServerKey');
-        const clientKeyInput = document.getElementById('midtransClientKey');
-        const envProduction = document.getElementById('midtransEnvProd');
-        const envSandbox = document.getElementById('midtransEnvSandbox');
-        if (serverKeyInput) serverKeyInput.value = cfg.serverKey || '';
-        if (clientKeyInput) clientKeyInput.value = cfg.clientKey || '';
-        if (envProduction && envSandbox) {
-          if (cfg.isProduction) envProduction.checked = true;
-          else envSandbox.checked = true;
-        }
-      }).getMidtransConfig();
-    }
-
-    function saveMidtransConfig() {
-      const serverKey = document.getElementById('midtransServerKey').value.trim();
-      const clientKey = document.getElementById('midtransClientKey').value.trim();
-      const isProduction = document.getElementById('midtransEnvProd').checked;
-      if (!serverKey || !clientKey) return toast('Isi Server Key dan Client Key Midtrans', 'error');
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message || 'Gagal menyimpan konfigurasi', 'error');
-        toast('Konfigurasi Midtrans tersimpan');
-        midtransClientKey = clientKey;
-        closeModal('modalMidtransConfig');
-      }).saveMidtransConfig(serverKey, clientKey, isProduction, currentUser?.username || 'system');
-    }
-
-    function togglePaymentGudangStatus(paymentId, status) {
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message || 'Gagal mengubah status', 'error');
-        toast('Status event diupdate');
-        loadPaymentGudang();
-      }).updatePaymentGudangStatus(paymentId, status);
-    }
-
-    function deletePaymentGudangConfirm(paymentId) {
-      if (!confirm('Hapus product toko gudang ini?')) return;
-      google.script.run.withSuccessHandler(res => {
-        if (!res.success) return toast(res.message || 'Gagal menghapus product', 'error');
-        toast('Event berhasil dihapus');
-        loadPaymentGudang();
-      }).deletePaymentGudang(paymentId);
-    }
-
-    function checkParticipantMidtransStatus(orderId, participantId) {
-      if (!orderId) return toast('Transaksi Midtrans tidak tersedia', 'error');
-      showLoading('Memeriksa status...');
-      google.script.run.withSuccessHandler(res => {
-        hideLoading();
-        if (!res.success) return toast(res.message || 'Gagal memeriksa status', 'error');
-        const status = res.status || 'unknown';
-        toast('Status transaksi: ' + status);
-        if (['settlement', 'capture'].includes(status)) {
-          const method = parseMidtransPaymentMethod(res.data);
-          google.script.run.withSuccessHandler(updateRes => {
-            if (updateRes.success) {
-              toast('Peserta ditandai Lunas otomatis');
-              loadPaymentGudang();
-            }
-          }).updateParticipantPaymentStatus(participantId, 'Lunas', method, '', orderId);
-        }
-      }).checkMidtransStatus(orderId);
-    }
-
-    // Dynamic fee calculator details helper
-    function calculatePaymentMethodDetails(baseAmount, method) {
-      let fee = 0;
-      let total = baseAmount;
-      let label = 'Fee';
-
-      if (!method) return { fee, total, label };
-
-      const upper = method.toUpperCase();
-      if (upper === 'GOPAY' || upper === 'SHOPEEPAY' || upper === 'QRIS') {
-        total = Math.ceil(baseAmount / 0.98);
-        fee = total - baseAmount;
-        label = `Fee ${method} (2%)`;
-      } else if (upper === 'OVO') {
-        total = Math.ceil(baseAmount / 0.97);
-        fee = total - baseAmount;
-        label = 'Fee OVO (3%)';
-      } else if (upper === 'ALFAMART' || upper === 'INDOMARET' || upper === 'MINIMARKET') {
-        fee = 5000;
-        total = baseAmount + fee;
-        label = `Fee ${method}`;
-      } else if (upper.includes('VA') || ['BCA', 'BNI', 'BRI', 'MANDIRI', 'PERMATA', 'VIRTUAL ACCOUNT'].includes(upper)) {
-        fee = 4500;
-        total = baseAmount + fee;
-        label = `Fee ${method} (Flat)`;
-      } else {
-        fee = 0;
-        total = baseAmount;
-        label = 'Fee';
-      }
-      return { fee, total, label };
-    }
-
-    let currentOnlinePaymentInfo = null;
-    let selectedOnlinePaymentMethod = 'va';
-
-    function openSelectPaymentMethodModal(paymentId, participantId, customerName) {
-      const payment = paymentGudangData.find(p => p.id === paymentId);
-      if (!payment) return toast('Data pembayaran tidak ditemukan', 'error');
-
-      const baseAmount = payment.hargaPerOrang || 0;
-
-      currentOnlinePaymentInfo = {
-        paymentId: paymentId,
-        participantId: participantId,
-        customerName: customerName,
-        baseAmount: baseAmount
-      };
-
-      // Calculate rates
-      const vaTotal = baseAmount + 4500;
-      const qrTotal = Math.ceil(baseAmount / 0.993);
-      const gopayTotal = Math.ceil(baseAmount / 0.98);
-      const shopeepayTotal = Math.ceil(baseAmount / 0.98);
-      const ovoTotal = Math.ceil(baseAmount / 0.97);
-      const cstoreTotal = baseAmount + 5000;
-
-      // Set prices in modal
-      document.getElementById('pgOptVaPrice').textContent = formatRp(vaTotal);
-      document.getElementById('pgOptQrPrice').textContent = formatRp(qrTotal);
-      document.getElementById('pgOptGoPayPrice').textContent = formatRp(gopayTotal);
-      document.getElementById('pgOptShopeePayPrice').textContent = formatRp(shopeepayTotal);
-      document.getElementById('pgOptOvoPrice').textContent = formatRp(ovoTotal);
-      document.getElementById('pgOptCstorePrice').textContent = formatRp(cstoreTotal);
-
-      // Reset selection
-      selectOnlinePaymentMethodOption('va');
-
-      openModal('modalSelectPaymentMethod');
-    }
-
-    function selectOnlinePaymentMethodOption(methodType) {
-      selectedOnlinePaymentMethod = methodType;
-
-      // Highlight card
-      const methods = ['va', 'qr', 'gopay', 'shopeepay', 'ovo', 'cstore'];
-      methods.forEach(m => {
-        const el = document.getElementById('pgOpt' + (m === 'shopeepay' ? 'Shoeepay' : (m === 'gopay' ? 'Gopay' : (m === 'cstore' ? 'Cstore' : (m === 'ovo' ? 'Ovo' : (m === 'qr' ? 'Qr' : 'Va'))))));
-        if (el) {
-          if (m === methodType) {
-            el.style.borderColor = 'var(--accent)';
-            el.style.background = 'rgba(245,158,11,0.05)';
-          } else {
-            el.style.borderColor = 'var(--border-color)';
-            el.style.background = 'transparent';
-          }
-        }
-      });
-
-      // Update Summary
-      if (!currentOnlinePaymentInfo) return;
-      const base = currentOnlinePaymentInfo.baseAmount;
-      let fee = 0;
-      let total = base;
-      let feeLabel = 'Biaya Tambahan';
-
-      if (methodType === 'va') {
-        fee = 4500;
-        total = base + fee;
-        feeLabel = 'Biaya Tambahan VA';
-      } else if (methodType === 'qr') {
-        total = Math.ceil(base / 0.993);
-        fee = total - base;
-        feeLabel = 'Biaya Tambahan QRIS (0.7%)';
-      } else if (methodType === 'gopay') {
-        total = Math.ceil(base / 0.98);
-        fee = total - base;
-        feeLabel = 'Biaya Tambahan GoPay (2%)';
-      } else if (methodType === 'shopeepay') {
-        total = Math.ceil(base / 0.98);
-        fee = total - base;
-        feeLabel = 'Biaya Tambahan ShopeePay (2%)';
-      } else if (methodType === 'ovo') {
-        total = Math.ceil(base / 0.97);
-        fee = total - base;
-        feeLabel = 'Biaya Tambahan OVO (3%)';
-      } else if (methodType === 'cstore') {
-        fee = 5000;
-        total = base + fee;
-        feeLabel = 'Biaya Tambahan Alfamart/Indomaret';
-      }
-
-      document.getElementById('pgSummaryBasePrice').textContent = formatRp(base);
-      document.getElementById('pgSummaryFeeLabel').textContent = feeLabel;
-      document.getElementById('pgSummaryFeeAmount').textContent = '+ ' + formatRp(fee);
-      document.getElementById('pgSummaryTotalPrice').textContent = formatRp(total);
-    }
-
-    function submitOnlinePaymentWithSelectedMethod() {
-      if (!currentOnlinePaymentInfo) return;
-      closeModal('modalSelectPaymentMethod');
-
-      const info = currentOnlinePaymentInfo;
-      const methodType = selectedOnlinePaymentMethod;
-
-      payParticipantViaMidtrans(info.paymentId, info.participantId, info.customerName, methodType);
-    }
-
-    function parseMidtransPaymentMethod(result) {
-      if (!result) return 'Online';
-      let method = 'Online';
-      if (result.payment_type === 'bank_transfer') {
-        if (result.va_numbers && result.va_numbers.length > 0) {
-          method = result.va_numbers[0].bank.toUpperCase();
-        } else if (result.permata_va_number) {
-          method = 'PERMATA';
-        } else {
-          method = 'Virtual Account';
-        }
-      } else if (result.payment_type === 'qris') {
-        method = 'QRIS';
-      } else if (result.payment_type === 'gopay') {
-        method = 'GoPay';
-      } else if (result.payment_type === 'shopeepay') {
-        method = 'ShopeePay';
-      } else if (result.payment_type === 'echannel') {
-        method = 'Mandiri';
-      } else if (result.payment_type === 'permata_va') {
-        method = 'Permata';
-      } else if (result.payment_type === 'bca_klikpay') {
-        method = 'BCA KlikPay';
-      } else if (result.payment_type === 'cstore') {
-        if (result.store) {
-          method = result.store.toUpperCase();
-        } else {
-          method = 'Minimarket';
-        }
-      } else if (result.payment_type) {
-        method = result.payment_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      }
-      return method;
-    }
-
-    function openModalPaymentConfig() {
-      openModal('modalMidtransConfig');
-      loadMidtransConfig();
-    }
-
-    function openModalParticipantPayment() {
-      openModal('modalParticipantPayment');
-    }
-
-    function maybeLoadPaymentGudangOnPage() {
-      if (document.getElementById('page-paymentGudang') && document.getElementById('page-paymentGudang').classList.contains('active')) {
-        loadPaymentGudang();
-      }
+      // Header dengan BOM untuk Excel UTF-8
+      const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      const bulan = document.getElementById('mistineFilterBulan').value || 'All';
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Rekap_Ongkir_MISTINE_${bulan}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast('📥 File berhasil didownload', 'success');
     }
 
     function renderPCPeriods() {
@@ -24083,7 +23329,7 @@
     }
 
     function openEditLateCatatanModal(rowNumber) {
-      if (!canEditSLARule()) return toast('Anda tidak punya hak update keterangan late', 'error');
+      if (!canUpdateLateNote()) return toast('Anda tidak punya hak update keterangan late', 'error');
       var item = distributorQueueData.find(function (d) { return Number(d.rowNumber) === Number(rowNumber); });
       if (!item) return toast('Data antrian tidak ditemukan', 'error');
       setVal('catatanLateRowNumber', rowNumber);
@@ -24096,7 +23342,7 @@
     }
 
     function saveCatatanLate() {
-      if (!canEditSLARule()) return toast('Anda tidak punya hak update keterangan late', 'error');
+      if (!canUpdateLateNote()) return toast('Anda tidak punya hak update keterangan late', 'error');
       var rowNumber = v('catatanLateRowNumber');
       var poNumber = v('catatanLatePoNumber');
       var sourceSheet = v('catatanLateSourceSheet');
@@ -24866,7 +24112,7 @@
           <td><strong style="color:var(--red);">${item.sla?.lateDays || 0} hari</strong></td>
           <td><small>${queueCell(item.catatanLate || '-')}</small></td>
           <td>${statusBadge}</td>
-          <td>${canEditSLARule() ? `<button class="btn btn-ghost btn-sm" onclick="openEditLateCatatanModal(${item.rowNumber})">📝 Edit Keterangan</button>` : '-'}</td>
+          <td>${canUpdateLateNote() ? `<button class="btn btn-ghost btn-sm" onclick="openEditLateCatatanModal(${item.rowNumber})">📝 Edit Keterangan</button>` : '-'}</td>
         </tr>
       `;
       }).join('');
