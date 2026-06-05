@@ -89,7 +89,8 @@ const DISTRIBUTOR_QUEUE_HEADERS = [
   'GDRIVE',
   'Delivery Bill',
   'nomor resi',
-  'Bukti Pengiriman'
+  'Bukti Pengiriman',
+  'Harga Ongkir'
 ];
 
 // ============================================================
@@ -2950,8 +2951,10 @@ function formatDistributorQueueDate(value, withTime) {
   return Utilities.formatDate(dateObj, Session.getScriptTimeZone() || 'Asia/Jakarta', withTime ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
 }
 
-function evaluateDistributorQueueSLA(item) {
-  const slaSettings = getDistributorQueueSLASettings().data || { dueDays: 1, ruleDescription: 'SLA H+1 dari Order queue time' };
+function evaluateDistributorQueueSLA(item, slaSettings) {
+  if (!slaSettings) {
+    slaSettings = getDistributorQueueSLASettings().data || { dueDays: 1, ruleDescription: 'SLA H+1 dari Order queue time' };
+  }
   const orderDate = parseDistributorQueueDate(item.orderQueueTime) || parseDistributorQueueDate(item.timeWib);
   if (!orderDate) {
     return {
@@ -3338,7 +3341,8 @@ function buildDistributorQueueRowValues(payload) {
     payload.gdrive || '',
     payload.deliveryBill || '',
     payload.nomorResi || '',
-    payload.buktiPengiriman || ''
+    payload.buktiPengiriman || '',
+    payload.hargaOngkir || ''
   ];
 }
 
@@ -3494,6 +3498,25 @@ function getDistributorQueueData() {
     
     console.log('Loading max', MAX_ITEMS_PER_SHEET, 'items per sheet from', sheets.length, 'sheets');
     
+    // Load Late Shipment notes map
+    const lateNotesMap = {};
+    const slaSettings = getDistributorQueueSLASettings().data;
+    try {
+      const lateSheet = getSheet(CONFIG.SHEETS.LATE_SHIPMENT);
+      const lateData = lateSheet.getDataRange().getValues();
+      for (let i = 1; i < lateData.length; i++) {
+        const po = String(lateData[i][1] || '').trim();
+        const source = String(lateData[i][2] || '').trim();
+        if (po) {
+          lateNotesMap[po + '|' + source] = {
+            id: lateData[i][0],
+            note: lateData[i][4],
+            status: lateData[i][5]
+          };
+        }
+      }
+    } catch (err) { console.error('Error loading late notes:', err); }
+
     // Baca dari semua sheet dengan jatah yang sama
     for (let s = 0; s < sheets.length; s++) {
       const sheetConfig = sheets[s];
@@ -3527,16 +3550,20 @@ function getDistributorQueueData() {
           if (data[i].join('').trim() === '') continue;
           
           try {
+            const poNum = String(data[i][6] || '');
+            const sourceLabel = sheetConfig.label;
+            const lateNote = lateNotesMap[poNum + '|' + sourceLabel] || { id: '', note: '', status: '' };
+
             const item = {
               rowNumber: startRow + i,
-              sourceSheet: sheetConfig.label,
+              sourceSheet: sourceLabel,
               no: String(data[i][0] || ''),
               orderQueueTime: formatDistributorQueueDate(data[i][1], false),
               picSales: String(data[i][2] || ''),
               namaDistributor: String(data[i][3] || ''),
               alamat: String(data[i][4] || ''),
               noHp: String(data[i][5] || ''),
-              poNumber: String(data[i][6] || ''),
+              poNumber: poNum,
               noMabang: String(data[i][7] || ''),
               metodePengiriman: String(data[i][8] || ''),
               ongkirDibayarOleh: String(data[i][9] || ''),
@@ -3554,11 +3581,14 @@ function getDistributorQueueData() {
               deliveryBill: String(data[i][21] || ''),
               nomorResi: String(data[i][22] || ''),
               buktiPengiriman: String(data[i][23] || ''),
-              catatanLate: '',
-              catatanLateStatus: '',
-              catatanLateId: '',
+              catatanLate: lateNote.note || '',
+              catatanLateStatus: lateNote.status || '',
+              catatanLateId: lateNote.id || '',
               sla: { status: 'Pending', isLate: false, dueDate: '', completionDate: '', daysRemaining: 0 }
             };
+            
+            // Calculate SLA
+              item.sla = evaluateDistributorQueueSLA(item, slaSettings);
             
             rows.push(item);
             sheetItemCount++;
@@ -3585,6 +3615,8 @@ function getDistributorQueueData() {
     
     // Hitung dashboard
     const today = startOfDayLocal(new Date());
+    const lateItems = rows.filter(function(item) { return item.sla && item.sla.isLate; });
+    
     const dashboard = {
       total: rows.length,
       selesai: rows.filter(function(item) { return !!(item.shipDate || item.tanggalSelesaiPacking); }).length,
@@ -3610,11 +3642,11 @@ function getDistributorQueueData() {
         const orderDate = parseDistributorQueueDate(item.orderQueueTime);
         return orderDate ? isWithinCurrentMonthLocal(orderDate, today) : false;
       }).length,
-      pending: 0,
-      onTime: 0,
-      late: 0,
+      pending: rows.filter(function(item) { return item.sla && item.sla.status === 'Pending'; }).length,
+      onTime: rows.filter(function(item) { return item.sla && item.sla.status === 'On Time'; }).length,
+      late: lateItems.length,
       dueToday: 0,
-      lateItems: []
+      lateItems: lateItems
     };
     
     console.log('Success! Returning', rows.length, 'items');
@@ -8948,7 +8980,7 @@ function addPaymentGudang(nama, deskripsi, hargaPerOrang, deadline, createdBy, t
 }
 
 /**
- * Get or create participant for Toko Gudang, syncing with employee account if necessary
+ * Get or create participant for MISTINE, syncing with employee account if necessary
  */
 function getOrCreateParticipantForUser(paymentId, karyawanNama) {
   try {
@@ -9315,7 +9347,7 @@ function createMidtransTransaction(paymentId, participantId, amount, customerNam
         id: paymentId,
         price: amount,
         quantity: 1,
-        name: 'Toko Gudang'
+        name: 'MISTINE'
       }]
     };
 
@@ -9848,6 +9880,91 @@ function saveRosterSpecialDates(jsonStr, username) {
     }
 
     return { success: true, message: 'Jadwal khusus berhasil disimpan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+// ============================================================
+// REKAP ONGKIR MISTINE
+// ============================================================
+
+function getRekapOngkirMistineData(bulanFilter) {
+  try {
+    const ss = getDistributorQueueSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE);
+    if (!sheet) return { success: false, message: 'Sheet ANTRIAN MISTINE tidak ditemukan' };
+
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+
+    // Parse bulan filter (format: YYYY-MM)
+    let filterYear = null, filterMonth = null;
+    if (bulanFilter && bulanFilter.includes('-')) {
+      const parts = bulanFilter.split('-');
+      filterYear = parseInt(parts[0]);
+      filterMonth = parseInt(parts[1]);
+    }
+
+    // Header index mapping (berdasarkan DISTRIBUTOR_QUEUE_HEADERS)
+    // Index 22: nomor resi (kolom W), Index 24: Harga Ongkir (kolom Y)
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+      
+      // Filter berdasarkan bulan jika ada
+      if (filterYear && filterMonth) {
+        const orderDate = data[i][1];
+        if (orderDate) {
+          let dateObj;
+          if (orderDate instanceof Date) {
+            dateObj = orderDate;
+          } else {
+            dateObj = new Date(orderDate);
+          }
+          
+          if (dateObj && !isNaN(dateObj.getTime())) {
+            const rowYear = dateObj.getFullYear();
+            const rowMonth = dateObj.getMonth() + 1;
+            if (rowYear !== filterYear || rowMonth !== filterMonth) continue;
+          }
+        }
+      }
+      
+      result.push({
+        rowNumber: i + 1,
+        orderQueueTime: formatDistributorQueueDate(data[i][1], false),
+        picSales: String(data[i][2] || ''),
+        namaDistributor: String(data[i][3] || ''),
+        noMabang: String(data[i][7] || ''),
+        metodePengiriman: String(data[i][8] || ''),
+        nomorResi: String(data[i][22] || ''),
+        hargaOngkir: parseFloat(data[i][24] || 0), // Index 24 = Kolom Y (Harga Ongkir)
+        poNumber: String(data[i][6] || '')
+      });
+    }
+
+    return { success: true, data: result.reverse() }; // Terbaru di atas
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function saveRekapOngkirMistine(rowNumber, nomorResi, hargaOngkir, updatedBy) {
+  try {
+    const ss = getDistributorQueueSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE);
+    if (!sheet) return { success: false, message: 'Sheet ANTRIAN MISTINE tidak ditemukan' };
+
+    const rNum = parseInt(rowNumber);
+    if (isNaN(rNum) || rNum < 2) return { success: false, message: 'Row number tidak valid' };
+
+    // Kolom 23 = W (nomor resi), Kolom 25 = Y (Harga Ongkir)
+    sheet.getRange(rNum, 23).setValue(nomorResi || ''); // Kolom W
+    sheet.getRange(rNum, 25).setValue(parseFloat(hargaOngkir) || 0); // Kolom Y
+
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Data ongkir berhasil diperbarui' };
   } catch (e) {
     return { success: false, message: e.message };
   }
