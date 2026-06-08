@@ -658,10 +658,12 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
         const isHR = (userRole === 'HR' || userRole === 'Supervisor HR' || userRole.includes('HR'));
 
         let authorized = isAdmin;
+        
+        // Cek otorisasi berdasarkan status saat ini
         if (currentStatus === 'Pending Team Leader' && (isTL || isAdmin)) authorized = true;
-        if (currentStatus === 'Pending Vice Supervisor' && (isVice || isAdmin)) authorized = true;
-        if (currentStatus === 'Pending Supervisor' && (isSPV || isAdmin)) authorized = true;
-        if (currentStatus === 'Pending HR' && (isHR || isAdmin)) authorized = true;
+        else if (currentStatus === 'Pending Vice Supervisor' && (isVice || isAdmin)) authorized = true;
+        else if (currentStatus === 'Pending Supervisor' && (isSPV || isAdmin)) authorized = true;
+        else if (currentStatus === 'Pending HR' && (isHR || isAdmin)) authorized = true;
 
         if (!authorized) return { success: false, message: 'Anda tidak memiliki wewenang untuk tahap approval ini (' + currentStatus + ').' };
 
@@ -669,12 +671,16 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
         if (action === 'Reject') {
           newStatus = 'Ditolak';
         } else if (action === 'Approve') {
-          if (isAdmin) newStatus = 'Disetujui'; // Admin bypasses flow
-          else if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
-          else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
-          else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
-          else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
-          else newStatus = 'Disetujui'; 
+          if (isAdmin) {
+            newStatus = 'Disetujui'; // Admin bypasses flow
+          } else {
+            // Alur Sinkron: TL -> Vice SPV -> SPV -> HR -> Disetujui
+            if (currentStatus === 'Pending Team Leader') newStatus = 'Pending Vice Supervisor';
+            else if (currentStatus === 'Pending Vice Supervisor') newStatus = 'Pending Supervisor';
+            else if (currentStatus === 'Pending Supervisor') newStatus = 'Pending HR';
+            else if (currentStatus === 'Pending HR') newStatus = 'Disetujui';
+            else newStatus = 'Disetujui';
+          }
         }
         
         sheet.getRange(i + 1, statusCol).setValue(newStatus);
@@ -949,14 +955,21 @@ function deleteIjin(id) {
 // ============================================================
 // PENGAJUAN LEMBUR
 // ============================================================
-function getLembur() {
+function getLembur(bulanFilter) {
   try {
     const ss = getSpreadsheet();
     const tz = Session.getScriptTimeZone();
     
     // 1. Fetch Roster Settings
-    const settingsRes = getRosterSettings();
-    const settings = settingsRes.success ? settingsRes.data : { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
+    let settings = { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
+    try {
+      const settingsRes = getRosterSettings();
+      if (settingsRes && settingsRes.success && settingsRes.data) {
+        settings = settingsRes.data;
+      }
+    } catch (e) {
+      console.warn('Gagal mengambil roster settings, menggunakan default:', e.message);
+    }
     
     // 2. Fetch Division Maps from multiple fallbacks
     const divMap = {};
@@ -1158,49 +1171,51 @@ function getLembur() {
 
     // 5. Load Overtime requests
     const sheet = getSheet(CONFIG.SHEETS.LEMBUR);
-    const data = sheet.getDataRange().getValues();
+    if (!sheet) return { success: false, message: "Sheet Lembur tidak ditemukan" };
+    
+    const data = (sheet.getLastRow() > 0) ? sheet.getDataRange().getValues() : [];
     const result = [];
+    if (data.length <= 1) return { success: true, data: [] };
+
+    // Filter bulan di server jika parameter bulanFilter ada (format YYYY-MM)
+    let filterYear = null, filterMonth = null;
+    if (bulanFilter && bulanFilter.trim() !== "" && bulanFilter.includes('-')) {
+      const parts = bulanFilter.split('-');
+      filterYear = parseInt(parts[0]);
+      filterMonth = parseInt(parts[1]);
+    }
+
+    // Gunakan cache untuk scheduled times agar tidak mencari berulang kali dalam loop
+    const scheduledCache = {};
+
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
       
-      const tgl = data[i][1] instanceof Date ? Utilities.formatDate(data[i][1], tz, 'yyyy-MM-dd') : String(data[i][1]);
+      const rawTgl = data[i][1];
+      let tgl = "";
+      let rowYear = 0, rowMonth = 0;
+
+      if (rawTgl instanceof Date) {
+        tgl = Utilities.formatDate(rawTgl, tz, 'yyyy-MM-dd');
+        rowYear = rawTgl.getFullYear();
+        rowMonth = rawTgl.getMonth() + 1;
+      } else {
+        tgl = String(rawTgl);
+        const parts = tgl.split('-');
+        if (parts.length >= 2) {
+          rowYear = parseInt(parts[0]);
+          rowMonth = parseInt(parts[1]);
+        }
+      }
+
+      // OPTIMASI: Hanya proses data yang sesuai filter bulan
+      if (filterYear && filterMonth) {
+        if (rowYear !== filterYear || rowMonth !== filterMonth) continue;
+      }
+      
       const nama = data[i][2];
       const nameKey = String(nama || '').trim().toLowerCase();
       const divisi = data[i][3] || divMap[nameKey] || '';
-      
-      // Scheduled times
-      const scheduledOut = getScheduledOutServer(nama, tgl, divisi);
-      const scheduledIn = getScheduledInServer(scheduledOut, divisi);
-      
-      // Actual times
-      const actualTimes = getAbsensiInOutServer(nama, tgl, scheduledIn, scheduledOut);
-      
-      // Verify
-      let statusVerifikasi = 'Tidak Lolos';
-      if (scheduledOut === 'OFF') {
-        statusVerifikasi = actualTimes.outTime !== '-' ? 'Lolos' : 'Tidak Lolos';
-      } else if (actualTimes.outTime !== '-') {
-        let expectedOutMnt = _parseTimeToMinutes(scheduledOut);
-        if (_parseTimeToMinutes(scheduledIn) > expectedOutMnt) {
-          expectedOutMnt += 1440;
-        }
-        const OTMinutes = Math.round(parseFloat(data[i][4] || 0) * 60);
-        expectedOutMnt += OTMinutes;
-        
-        let actualOutMnt = _parseTimeToMinutes(actualTimes.outTime);
-        if (actualTimes.outDateStr !== tgl) {
-          actualOutMnt += 1440;
-        }
-        
-        if (actualOutMnt >= expectedOutMnt) {
-          statusVerifikasi = 'Lolos';
-        }
-      }
-      
-      let jamAbsen = '-';
-      if (actualTimes.inTime !== '-' || actualTimes.outTime !== '-') {
-        jamAbsen = `IN: ${actualTimes.inTime} | OUT: ${actualTimes.outTime}`;
-      }
       
       result.push({
         id: data[i][0],
@@ -1212,9 +1227,7 @@ function getLembur() {
         status: data[i][6],
         createdBy: data[i][7],
         createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8]),
-        history: data[i][9] || '[]',
-        jamAbsen: jamAbsen,
-        statusVerifikasi: statusVerifikasi
+        history: data[i][9] || '[]'
       });
     }
     return { success: true, data: result };
@@ -6178,89 +6191,7 @@ function getAbsensiInOut(ss, tz, nama, tanggal, scheduledIn, scheduledOut) {
   return { inTime, outTime, outDateStr };
 }
 
-function getAbsensiKaryawanOnePerson(nama, tanggal) {
-  try {
-    const ss = getSpreadsheet();
-    const tz = Session.getScriptTimeZone();
-    
-    const nameLower = String(nama || '').trim().toLowerCase();
-    let divisi = '';
-    
-    const orgSheet = ss.getSheetByName(CONFIG.SHEETS.ORGANISASI);
-    if (orgSheet) {
-      const orgData = orgSheet.getDataRange().getValues();
-      for (let i = 1; i < orgData.length; i++) {
-        if (orgData[i][1] && String(orgData[i][1]).trim().toLowerCase() === nameLower) {
-          divisi = String(orgData[i][2] || '');
-          break;
-        }
-      }
-    }
-    if (!divisi) {
-      const karSheet = ss.getSheetByName(CONFIG.SHEETS.KARYAWAN);
-      if (karSheet) {
-        const karData = karSheet.getDataRange().getValues();
-        for (let i = 1; i < karData.length; i++) {
-          if (karData[i][1] && String(karData[i][1]).trim().toLowerCase() === nameLower) {
-            divisi = String(karData[i][3] || '');
-            break;
-          }
-        }
-      }
-    }
-    if (!divisi) {
-      const uSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
-      if (uSheet) {
-        const uData = uSheet.getDataRange().getValues();
-        for (let i = 1; i < uData.length; i++) {
-          if (uData[i][3] && String(uData[i][3]).trim().toLowerCase() === nameLower) {
-            divisi = String(uData[i][7] || '');
-            break;
-          }
-        }
-      }
-    }
-    
-    const scheduledOut = getScheduledClockOut(nama, tanggal, divisi);
-    let scheduledIn = "08:00";
-    if (scheduledOut !== "OFF") {
-      const settingsRes = getRosterSettings();
-      const settings = settingsRes.success ? settingsRes.data : { pagiIn:"08:00", pagiOut:"17:00", malamIn:"20:00", malamOut:"05:00" };
-      if (scheduledOut === settings.pagiOut) {
-        scheduledIn = settings.pagiIn;
-      } else if (scheduledOut === settings.malamOut) {
-        scheduledIn = settings.malamIn;
-      } else {
-        const sheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL_SHIFT);
-        if (sheet && sheet.getLastRow() > 1) {
-          const data = sheet.getDataRange().getValues();
-          for (let i = 1; i < data.length; i++) {
-            if (!data[i][0]) continue;
-            if (divisi && data[i][2] !== divisi) continue;
-            const aktif = data[i][7];
-            if (String(aktif).toLowerCase() === 'ya' || aktif === true || String(aktif).toLowerCase() === 'true') {
-              if (String(data[i][5]) === scheduledOut) {
-                scheduledIn = String(data[i][4]);
-                break;
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    const times = getAbsensiInOut(ss, tz, nama, tanggal, scheduledIn, scheduledOut);
-    
-    return { 
-      success: true, 
-      inTime: times.inTime, 
-      outTime: times.outTime, 
-      outDateStr: times.outDateStr,
-      scheduledIn: scheduledIn,
-      scheduledOut: scheduledOut
-    };
-  } catch(e) { return { success: false, message: e.message }; }
-}
+
 
 function addAbsensiKaryawan(karyawanId, nama, divisi, jabatan, tipe, jam, tanggal, keterangan, requesterUsername) {
   if (requesterUsername && !checkPermission(requesterUsername, 'absensiKaryawan')) {
@@ -6868,103 +6799,63 @@ function doPost(e) {
   var rawContent = e.postData.contents;
 
   // 2. Coba baca sebagai JSON (Untuk Web ERP Anda)
+  var body;
   try {
-    var body = JSON.parse(rawContent);
-    var func = body.func;
-    var args = body.args || [];
-    var result;
-
-    const context = typeof globalThis !== 'undefined' ? globalThis : this;
-
-    if (func === 'syncFingerprintData') {
-      result = syncFingerprintData(args[0] || []);
-    } else if (func === 'addAbsensiKaryawan') {
-      result = addAbsensiKaryawan.apply(null, args);
-    } else if (func === 'saveReturnDistributorBulk') {
-      result = saveReturnDistributorBulk(args[0] || []);
-    } else if (func === 'saveReturnDistributor') {
-      result = saveReturnDistributor(args[0]);
-    } else if (func === 'getReturnDistributor') {
-      result = getReturnDistributor();
-    } else if (func === 'getReturnDistributorDetail') {
-      result = getReturnDistributorDetail(args[0]);
-    } else if (func === 'deleteReturnDistributor') {
-      result = deleteReturnDistributor(args[0]);
-    } else if (func === 'getReturnDistributorSettings') {
-      result = getReturnDistributorSettings();
-    } else if (func === 'saveReturnDistributorSettings') {
-      result = saveReturnDistributorSettings(args[0], args[1], args[2]);
-    } else if (func === 'getReturnDistributorPICSales') {
-      result = getReturnDistributorPICSales();
-    } else if (func === 'saveReturnDistributorPICSales') {
-      result = saveReturnDistributorPICSales(args[0]);
-    } else if (func && typeof context[func] === 'function') {
-      result = context[func].apply(null, args);
-    } else {
-      result = { success: false, message: 'Fungsi tidak dikenal: ' + func };
-    }
-
-    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-
-  } catch (err) {
+    body = JSON.parse(rawContent);
+  } catch (parseErr) {
     // ===========================================================
     // JIKA BUKAN JSON (ERROR PARSE), INI PASTI DARI MESIN X900
     // ===========================================================
     try {
-      // Paksa sistem untuk memanggil ID yang ada di CONFIG
       var ss = getSpreadsheet();
-      
-      // Buat atau cari sheet untuk log data mentah dari mesin
       var logSheetName = "LogMesinX900";
       var logSheet = ss.getSheetByName(logSheetName);
-      
       if (!logSheet) {
         logSheet = ss.insertSheet(logSheetName);
         logSheet.appendRow(["Waktu Terima", "Data Mentah (Raw Text) dari Mesin"]);
         logSheet.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#1a3a5c").setFontColor("#ffffff");
       }
-
-      // Simpan apa adanya ke sheet agar kita tahu strukturnya
       logSheet.appendRow([new Date(), rawContent]);
-
-      // PARSING OTOMATIS DATA X900
-      // Contoh format: "123 2024-11-20 08:00:00 0" (ID Tanggal Jam Status)
-      // Status 0=Check-In, 1=Check-Out (Umumnya)
       var rows_raw = rawContent.split('\n');
       var records_to_sync = [];
-      
       rows_raw.forEach(function(line) {
         var cleanLine = line.trim();
         if (!cleanLine) return;
-        
-        // Split by space, tab, or comma
         var parts = cleanLine.split(/[\s,]+/);
         if (parts.length >= 3) {
-          var fpId = parts[0];
-          var tgl = parts[1];
-          var jam = parts[2];
-          var statusX = parts[3] || "0"; // Default 0 (IN)
-          
           records_to_sync.push({
-            fingerprintId: fpId,
-            tanggal: tgl,
-            jam: jam,
-            tipe: (statusX == "0" || statusX.toLowerCase() == "in") ? "IN" : "OUT"
+            fingerprintId: parts[0],
+            tanggal: parts[1],
+            jam: parts[2],
+            tipe: (parts[3] == "0" || (parts[3]||"").toLowerCase() == "in") ? "IN" : "OUT"
           });
         }
       });
-
-      if (records_to_sync.length > 0) {
-        syncFingerprintData(records_to_sync);
-      }
-
-      // WAJIB KEMBALIKAN TEKS "OK" AGAR MESIN ABSENSI MERASA SUKSES
+      if (records_to_sync.length > 0) syncFingerprintData(records_to_sync);
       return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
-
     } catch (logErr) {
-      // Jika terjadi error saat menyimpan ke sheet, tetap balas OK agar mesin tidak hang
       return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
     }
+  }
+
+  // 3. Eksekusi fungsi jika data adalah JSON valid
+  try {
+    var func = body.func;
+    var args = body.args || [];
+    var result;
+    const context = typeof globalThis !== 'undefined' ? globalThis : this;
+
+    if (func && typeof context[func] === 'function') {
+      result = context[func].apply(null, args);
+    } else {
+      result = { success: false, message: 'Fungsi tidak dikenal: ' + func };
+    }
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (execErr) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: false, 
+      message: 'Server Execution Error: ' + execErr.message 
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
