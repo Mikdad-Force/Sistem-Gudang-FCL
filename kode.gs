@@ -58,7 +58,8 @@ const CONFIG = {
     PETTY_CASH_PERIOD: 'PettyCashPeriod',
     PAYMENT_GUDANG: 'PaymentGudang',
     PAYMENT_GUDANG_PARTICIPANTS: 'PaymentGudangParticipants',
-    MIDTRANS_CONFIG: 'MidtransConfig'
+    MIDTRANS_CONFIG: 'MidtransConfig',
+    PAYMENT_KOL_INSTANT: 'PaymentKOLInstant'
   },
   DRIVE_FOLDER_ID: '14u5aMQltzyc7BCw3-87p25mqPeYf9weC',
   BOOKING_PAYMENT_FOLDER_ID: '1rPn5Fq0KvwKCgx1rlCCBm2C1fGrfM6Oo',  // Folder untuk Bukti Pembayaran Booking Mobil
@@ -90,7 +91,8 @@ const DISTRIBUTOR_QUEUE_HEADERS = [
   'Delivery Bill',
   'nomor resi',
   'Bukti Pengiriman',
-  'Harga Ongkir'
+  'Harga Ongkir',
+  'Harga Ongkir Ekspedisi'
 ];
 
 // ============================================================
@@ -172,6 +174,7 @@ function setupDatabase() {
   setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG, ['id', 'nama', 'deskripsi', 'hargaPerOrang', 'deadline', 'status', 'createdBy', 'createdAt', 'midtransOrderId', 'midtransStatus', 'tipe']);
   setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, ['id', 'paymentId', 'karyawanId', 'namaKaryawan', 'statusBayar', 'tanggalBayar', 'metodeBayar', 'buktiUrl', 'midtransTransactionId']);
   setupSheet(ss, CONFIG.SHEETS.MIDTRANS_CONFIG, ['id', 'serverKey', 'clientKey', 'isProduction', 'updatedBy', 'updatedAt']);
+  setupSheet(ss, CONFIG.SHEETS.PAYMENT_KOL_INSTANT, ['id', 'tanggal', 'noOrder', 'noResi', 'harga', 'createdBy', 'createdAt']);
 
   setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
   setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
@@ -9889,6 +9892,51 @@ function saveRosterSpecialDates(jsonStr, username) {
 // REKAP ONGKIR MISTINE
 // ============================================================
 
+// Helper untuk membersihkan nilai angka dari sheet (menangani format Rp, titik, koma)
+function parseSheetNumber(val) {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  
+  let str = String(val).trim();
+  if (str === '' || str === '-' || str === 'null') return 0;
+  
+  // Ambil hanya angka, titik, dan koma
+  let clean = str.replace(/[^0-9,.]/g, '');
+  
+  // Logika cerdas untuk membedakan pemisah ribuan dan desimal
+  if (clean.includes('.') && clean.includes(',')) {
+    // Jika ada keduanya, biasanya format ID (titik=ribu, koma=desimal) atau US (kebalikannya)
+    if (clean.indexOf('.') < clean.indexOf(',')) {
+      // ID Style: 1.234.567,89
+      clean = clean.replace(/\./g, '').replace(',', '.');
+    } else {
+      // US Style: 1,234,567.89
+      clean = clean.replace(/,/g, '');
+    }
+  } else if (clean.includes(',')) {
+    // Hanya ada koma
+    let parts = clean.split(',');
+    if (parts[parts.length - 1].length === 3) {
+      // Kemungkinan besar pemisah ribuan: 95,000
+      clean = clean.replace(/,/g, '');
+    } else {
+      // Kemungkinan besar desimal: 95,5
+      clean = clean.replace(',', '.');
+    }
+  } else if (clean.includes('.')) {
+    // Hanya ada titik
+    let parts = clean.split('.');
+    if (parts[parts.length - 1].length === 3) {
+      // Kemungkinan besar pemisah ribuan: 95.000
+      clean = clean.replace(/\./g, '');
+    }
+    // Jika bukan 3 digit, biarkan titik sebagai desimal
+  }
+  
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : num;
+}
+
 function getRekapOngkirMistineData(bulanFilter) {
   try {
     const ss = getDistributorQueueSpreadsheet();
@@ -9907,7 +9955,7 @@ function getRekapOngkirMistineData(bulanFilter) {
     }
 
     // Header index mapping (berdasarkan DISTRIBUTOR_QUEUE_HEADERS)
-    // Index 22: nomor resi (kolom W), Index 24: Harga Ongkir (kolom Y)
+    // Index 22: nomor resi (kolom W), Index 24: Harga Ongkir (kolom Y), Index 25: Harga Ongkir Ekspedisi (kolom Z)
     
     for (let i = 1; i < data.length; i++) {
       if (data[i].join('').trim() === '') continue;
@@ -9939,7 +9987,8 @@ function getRekapOngkirMistineData(bulanFilter) {
         noMabang: String(data[i][7] || ''),
         metodePengiriman: String(data[i][8] || ''),
         nomorResi: String(data[i][22] || ''),
-        hargaOngkir: parseFloat(data[i][24] || 0), // Index 24 = Kolom Y (Harga Ongkir)
+        hargaOngkir: parseSheetNumber(data[i][24]), // Kolom Y
+        hargaOngkirEkspedisi: parseSheetNumber(data[i][25]), // Kolom Z
         poNumber: String(data[i][6] || '')
       });
     }
@@ -9950,7 +9999,7 @@ function getRekapOngkirMistineData(bulanFilter) {
   }
 }
 
-function saveRekapOngkirMistine(rowNumber, nomorResi, hargaOngkir, updatedBy) {
+function saveRekapOngkirMistine(rowNumber, nomorResi, hargaOngkir, hargaOngkirEkspedisi, updatedBy) {
   try {
     const ss = getDistributorQueueSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEETS.DISTRIBUTOR_QUEUE_MISTINE);
@@ -9959,9 +10008,17 @@ function saveRekapOngkirMistine(rowNumber, nomorResi, hargaOngkir, updatedBy) {
     const rNum = parseInt(rowNumber);
     if (isNaN(rNum) || rNum < 2) return { success: false, message: 'Row number tidak valid' };
 
-    // Kolom 23 = W (nomor resi), Kolom 25 = Y (Harga Ongkir)
+    // Kolom 23 = W (nomor resi), Kolom 25 = Y (Harga Ongkir), Kolom 26 = Z (Harga Ongkir Ekspedisi)
     sheet.getRange(rNum, 23).setValue(nomorResi || ''); // Kolom W
-    sheet.getRange(rNum, 25).setValue(parseFloat(hargaOngkir) || 0); // Kolom Y
+    const rangeOngkir = sheet.getRange(rNum, 25);
+    const rangeEkspedisi = sheet.getRange(rNum, 26);
+    
+    rangeOngkir.setValue(parseFloat(hargaOngkir) || 0);
+    rangeEkspedisi.setValue(parseFloat(hargaOngkirEkspedisi) || 0);
+    
+    // Set format Rupiah
+    rangeOngkir.setNumberFormat('"Rp"#,##0');
+    rangeEkspedisi.setNumberFormat('"Rp"#,##0');
 
     SpreadsheetApp.flush();
     return { success: true, message: 'Data ongkir berhasil diperbarui' };
@@ -9969,3 +10026,100 @@ function saveRekapOngkirMistine(rowNumber, nomorResi, hargaOngkir, updatedBy) {
     return { success: false, message: e.message };
   }
 }
+
+// ============================================================
+// PAYMENT KOL INSTANT (MISTINE)
+// ============================================================
+
+function getPaymentKOLInstantData(bulanFilter) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_KOL_INSTANT);
+    if (!sheet) return { success: false, message: 'Sheet Payment KOL Instant tidak ditemukan' };
+
+    const data = sheet.getDataRange().getValues();
+    const result = [];
+
+    // Parse bulan filter (format: YYYY-MM)
+    let filterYear = null, filterMonth = null;
+    if (bulanFilter && bulanFilter.includes('-')) {
+      const parts = bulanFilter.split('-');
+      filterYear = parseInt(parts[0]);
+      filterMonth = parseInt(parts[1]);
+    }
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i].join('').trim() === '') continue;
+
+      const tgl = data[i][1];
+      if (filterYear && filterMonth && tgl) {
+        const dateObj = (tgl instanceof Date) ? tgl : new Date(tgl);
+        if (dateObj && !isNaN(dateObj.getTime())) {
+          if (dateObj.getFullYear() !== filterYear || (dateObj.getMonth() + 1) !== filterMonth) continue;
+        }
+      }
+
+      result.push({
+        id: data[i][0],
+        tanggal: tgl,
+        noOrder: String(data[i][2] || ''),
+        noResi: String(data[i][3] || ''),
+        harga: parseSheetNumber(data[i][4]),
+        createdBy: data[i][5],
+        createdAt: data[i][6]
+      });
+    }
+
+    return { success: true, data: result.reverse() };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function savePaymentKOLInstant(id, noOrder, noResi, harga, createdBy) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.PAYMENT_KOL_INSTANT);
+    if (!sheet) return { success: false, message: 'Sheet tidak ditemukan' };
+
+    const now = new Date();
+    const tgl = now.toISOString().split('T')[0]; // Default tanggal hari ini
+
+    if (id) {
+      // Edit
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(id)) {
+          sheet.getRange(i + 1, 3).setValue(noOrder || '');
+          sheet.getRange(i + 1, 4).setValue(noResi || '');
+          const rangeHarga = sheet.getRange(i + 1, 5);
+          rangeHarga.setValue(parseFloat(harga) || 0);
+          rangeHarga.setNumberFormat('"Rp"#,##0');
+          SpreadsheetApp.flush();
+          return { success: true, message: 'Data berhasil diperbarui' };
+        }
+      }
+      return { success: false, message: 'ID tidak ditemukan' };
+    } else {
+      // Add
+      const newId = generateId();
+      const lastRow = sheet.getLastRow();
+      sheet.appendRow([
+        newId,
+        tgl,
+        noOrder || '',
+        noResi || '',
+        parseFloat(harga) || 0,
+        createdBy || '',
+        now.toISOString()
+      ]);
+      sheet.getRange(lastRow + 1, 5).setNumberFormat('"Rp"#,##0');
+      return { success: true, message: 'Data berhasil ditambahkan' };
+    }
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function deletePaymentKOLInstant(id) {
+  return deleteRow(CONFIG.SHEETS.PAYMENT_KOL_INSTANT, id);
+}
+
