@@ -4444,9 +4444,6 @@
             <div class="nav-section" data-i18n="utama">Utama</div>
             <div class="nav-item active" onclick="showPage('dashboard')" data-i18n="dashboard"><span
                 class="icon">📊</span> Dashboard</div>
-            <div class="nav-item" id="navCentralApproval" onclick="showPage('approval')" style="display:none;"><span
-                class="icon">✅</span> Approval <span class="badge-count" id="badgeTotalApproval"
-                style="display:none;">0</span></div>
 
             <div class="nav-section" data-i18n="keuangan">Keuangan</div>
             <div class="nav-item" onclick="showPage('kasGudang')" data-i18n="kasGudang"><span class="icon">💰</span> Kas
@@ -4466,9 +4463,6 @@
                 class="icon">📈</span> Grafik Laporan</div>
             <div class="nav-item" onclick="showPage('handover')" data-i18n="handover"><span class="icon">📦</span> Stock
               Control</div>
-            <div class="nav-item" onclick="showPage('approvalCenter')"
-              style="background: rgba(14, 165, 233, 0.08); border-left-color: var(--teal);"><span class="icon">✅</span>
-              Pusat Approval</div>
             <div class="nav-item" onclick="showPage('klaim')" data-i18n="klaim"><span class="icon">⚠️</span> Klaim Paket
             </div>
             <div class="nav-item" onclick="showPage('tugasProject')" data-i18n="tugasProject"><span
@@ -4755,186 +4749,6 @@
               </div>
             </div>
           </div>
-          <!-- Centralized Approval Page -->
-          <div class="page" id="page-approval">
-            <!-- Header Section -->
-            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-              <div>
-                <h3 style="margin: 0; font-size: 24px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
-                  <span style="font-size: 28px;">✅</span> Pusat Approval
-                </h3>
-                <p style="margin: 4px 0 0; color: var(--text-muted); font-size: 13px;">
-                  Kelola semua pengajuan yang memerlukan persetujuan Anda secara efisien
-                </p>
-              </div>
-              <button class="btn btn-ghost btn-sm" onclick="loadCentralizedApprovals()" style="height: fit-content;">
-                🔄 Refresh
-              </button>
-            </div>
-
-            <!-- Statistics Cards -->
-            <div class="stats-grid mb-4" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px;">
-              <div class="stat-card" style="padding: 18px; background: linear-gradient(135deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.02)); border-color: rgba(148, 163, 184, 0.2);">
-                <div class="stat-label" style="font-size: 11px; margin-bottom: 8px;">📊 Total Pending</div>
-                <div class="stat-value" id="statApprTotal" style="font-size: 32px; font-weight: 800;">0</div>
-                <div class="stat-icon" style="opacity: 0.2;">📋</div>
-              </div>
-              <div class="stat-card blue" style="padding: 18px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.02)); border-color: rgba(59, 130, 246, 0.2);">
-                <div class="stat-label" style="font-size: 11px; margin-bottom: 8px;">🏖️ Ijin/Cuti</div>
-                <div class="stat-value blue" id="statApprIjin" style="font-size: 32px; font-weight: 800; color: #3b82f6;">0</div>
-                <div class="stat-icon" style="opacity: 0.2;">📅</div>
-              </div>
-              <div class="stat-card amber" style="padding: 18px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.02)); border-color: rgba(245, 158, 11, 0.2);">
-                <div class="stat-label" style="font-size: 11px; margin-bottom: 8px;">⏰ Lembur</div>
-                <div class="stat-value amber" id="statApprLembur" style="font-size: 32px; font-weight: 800;">0</div>
-                <div class="stat-icon" style="opacity: 0.2;">🌙</div>
-              </div>
-              <div class="stat-card teal" style="padding: 18px; background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.02)); border-color: rgba(14, 165, 233, 0.2);">
-                <div class="stat-label" style="font-size: 11px; margin-bottom: 8px;">🏢 Asset</div>
-                <div class="stat-value teal" id="statApprAsset" style="font-size: 32px; font-weight: 800; color: var(--teal);">0</div>
-                <div class="stat-icon" style="opacity: 0.2;">📦</div>
-              </div>
-              <div class="stat-card red" style="padding: 18px; background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.02)); border-color: rgba(239, 68, 68, 0.2);">
-                <div class="stat-label" style="font-size: 11px; margin-bottom: 8px;">📦 Stock Opname</div>
-                <div class="stat-value red" id="statApprOpname" style="font-size: 32px; font-weight: 800; color: var(--red);">0</div>
-                <div class="stat-icon" style="opacity: 0.2;">📊</div>
-              </div>
-            </div>
-
-            <!-- Main Approval Table -->
-            <div class="card" style="border-color: var(--border-light); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);">
-              <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                  <h4 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main);">
-                    📋 Daftar Pengajuan
-                  </h4>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="searchApproval" placeholder="🔍 Cari nama, kategori..." 
-                      style="width: 220px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px;"
-                      oninput="filterApprovalTable()">
-                    <select id="filterApprovalStatus" onchange="filterApprovalTable()" 
-                      style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-size: 13px;">
-                      <option value="">Semua Status</option>
-                      <option value="Pending Team Leader">Pending Team Leader</option>
-                      <option value="Pending Vice Supervisor">Pending Vice Supervisor</option>
-                      <option value="Pending Supervisor">Pending Supervisor</option>
-                      <option value="Pending HR">Pending HR</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div class="table-wrap" style="border-radius: 0 0 12px 12px; overflow: hidden;">
-                <table class="table table-hover align-middle" style="margin-bottom: 0;">
-                  <thead>
-                    <tr>
-                      <th style="width: 110px;">Tanggal</th>
-                      <th style="width: 130px;">Kategori</th>
-                      <th style="width: 180px;">Nama Staff</th>
-                      <th>Detail / Keterangan</th>
-                      <th style="width: 160px;">Status Approval</th>
-                      <th style="width: 180px; text-align: center;">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tableCentralApproval">
-                    <tr>
-                      <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                        <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.3;">⏳</div>
-                        <div style="font-size: 14px; font-weight: 600;">Memuat data approval...</div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- ===== APPROVAL MASSAL (Semua Role Approval) ===== -->
-            <div id="bulkApprovalPanel" class="card mt-4"
-              style="display:none; border-color:#06b6d444; background:linear-gradient(135deg,#06b6d408,#1a3a5c33);">
-              <div class="card-header"
-                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <div>
-                  <h4 style="margin:0;">⚡ Approval Massal</h4>
-                  <div id="bulkRoleBadge" style="margin-top:4px; font-size:11px; color:var(--text-muted);"></div>
-                </div>
-                <span class="text-muted" style="font-size:12px;">Setujui banyak pengajuan sekaligus berdasarkan filter</span>
-              </div>
-              <div class="p-4">
-                <!-- Filter Bar -->
-                <div class="row g-3 mb-3 align-items-end">
-                  <div class="col-md-3 col-sm-6">
-                    <label class="form-label" style="font-size:12px;">📅 Filter Tanggal</label>
-                    <input type="date" id="bulkFilterDate" class="form-control" onchange="filterBulkData()">
-                  </div>
-                  <div class="col-md-3 col-sm-6">
-                    <label class="form-label" style="font-size:12px;">🏢 Filter Divisi</label>
-                    <select id="bulkFilterDivision" class="form-select" onchange="filterBulkData()">
-                      <option value="">Semua Divisi</option>
-                      <option value="Marketplace">Marketplace</option>
-                      <option value="Return">Return</option>
-                      <option value="KOL">KOL</option>
-                      <option value="Distributor">Distributor</option>
-                      <option value="Inbound">Inbound</option>
-                      <option value="Gudang">Gudang</option>
-                      <option value="Logistik">Logistik</option>
-                      <option value="HR / Kantor">HR / Kantor</option>
-                      <option value="Lainnya">Lainnya</option>
-                    </select>
-                  </div>
-                  <div class="col-md-3 col-sm-6">
-                    <label class="form-label" style="font-size:12px;">📋 Filter Kategori</label>
-                    <select id="bulkFilterKategori" class="form-select" onchange="filterBulkData()">
-                      <option value="">Semua Kategori</option>
-                      <option value="ijin">Ijin/Cuti</option>
-                      <option value="lembur">Lembur</option>
-                      <option value="asset">Asset</option>
-                      <option value="opname">Stock Opname</option>
-                    </select>
-                  </div>
-                  <div class="col-md-3 col-sm-6">
-                    <label class="form-label" style="font-size:12px;">🔍 Cari Nama</label>
-                    <input type="text" id="bulkFilterSearch" class="form-control" placeholder="Nama staff..." oninput="filterBulkData()">
-                  </div>
-                </div>
-
-                <!-- Tombol Aksi Sesuai Jabatan -->
-                <div id="bulkActionButtons" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; align-items:center;">
-                  <span style="font-size:12px; color:var(--text-muted); font-weight:700; flex-shrink:0;">AKSI:</span>
-                  <!-- Tombol akan di-render oleh JS sesuai jabatan -->
-                </div>
-
-                <!-- Info bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-                  <div style="font-size:12px; color:var(--text-muted);">
-                    Menampilkan <strong id="bulkVisibleCount">0</strong> pengajuan
-                    &nbsp;·&nbsp; <span id="bulkCheckCount">0</span> terpilih
-                  </div>
-                  <div style="display:flex; gap:8px;">
-                    <label style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; cursor:pointer;">
-                      <input type="checkbox" id="bulkCheckAll" onchange="toggleAllBulk(this)"> Pilih Semua
-                    </label>
-                  </div>
-                </div>
-
-                <!-- Tabel -->
-                <div class="table-wrap" style="max-height:420px; overflow-y:auto;">
-                  <table class="table table-hover align-middle" style="font-size:13px;">
-                    <thead>
-                      <tr>
-                        <th style="width:40px; text-align:center;">✓</th>
-                        <th>Tgl</th>
-                        <th>Kategori</th>
-                        <th>Nama Staff</th>
-                        <th>Divisi</th>
-                        <th>Tahap Approval</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tableBulkApproval"></tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Dashboard -->
           <div class="page active" id="page-dashboard">
 
@@ -6213,9 +6027,9 @@
                   <option value="Teknisi">Teknisi</option>
                   <option value="Vice SPV">Vice SPV</option>
                 </select>
+                <input type="month" id="lemburFilterBulan" class="form-control" style="width:160px; height:32px; font-size:13px; display:none;" onchange="loadLembur()">
                 <button class="btn btn-warning btn-sm" id="btnTglMerahSetting" onclick="openTglMerahSetting()"
                   style="display:none;">⚙️ Pengaturan Libur</button>
-                <button class="btn btn-teal btn-sm" id="btnAjukanTglMerah" onclick="openLemburTglMerah()">☀️ Lembur Tgl Merah</button>
                 <button class="btn btn-ghost btn-sm" id="btnExportLembur" onclick="openModal('modalExportLembur')"
                   style="display:none;">📤 Ekspor Excel</button>
                 <button class="btn btn-primary btn-sm" onclick="openLemburNormal()">+ Ajukan Lembur</button>
@@ -6259,7 +6073,6 @@
                     <th>Tanggal</th>
                     <th>Nama Karyawan</th>
                     <th>Divisi</th>
-                    <th>Jam Absen Masuk Dan Pulang</th>
                     <th>Jam Lembur</th>
                     <th>Keterangan Tugas</th>
                     <th>Status Approval</th>
@@ -9874,17 +9687,13 @@
         <div class="col-md mb-2"><label class="form-label">Jumlah Jam Lembur</label>
           <div class="input-group">
             <input type="number" step="0.5" class="form-control" id="lbJumlahJam" readonly
-              style="background:#0ea5e910; font-weight:700; color:var(--accent);" oninput="updateLemburVerificationDisplay()">
+              style="background:#0ea5e910; font-weight:700; color:var(--accent);">
             <span class="input-group-text"
               style="background:transparent; border:1px solid #ffffff18; color:var(--gray);">Jam</span>
           </div>
           <div style="font-size:11px; color:var(--gray); margin-top:4px;">*Otomatis sesuai Laporan Kerja</div>
         </div>
-<div class="row mb-3" id="lbAbsenInfoWrap" style="display:none;">
-  <div class="col-md mb-2">
-    <span id="lbAbsenInfo" style="font-size:12px; color:var(--gray);">🕒 Memuat jam absensi...</span>
-  </div>
-</div>
+
       </div>
       <div class="row mb-3">
         <div class="col-md mb-2"><label class="form-label">Keterangan / Tugas Lembur</label><input type="text"
@@ -10372,6 +10181,7 @@
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--teal);"><input type="checkbox" value="aksesViceSpv"> ⚖️ Approval Vice SPV</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--accent);"><input type="checkbox" value="aksesSpv"> ⚖️ Approval SPV</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--amber);"><input type="checkbox" value="aksesHr"> ⚖️ Approval HR</label>
+              <label class="form-label" style="margin: 0; font-size: 12px; color: var(--green);"><input type="checkbox" value="aksesApprovalAsset"> ⚖️ Approval Asset</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--green);"><input type="checkbox" value="aksesApprovalAssetOpname"> 🏪 Approval Asset SO</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--accent);"><input type="checkbox" value="aksesApprovalStockControl"> ⚖️ Approval Stock Control</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--orange);"><input type="checkbox" value="aksesLemburLangsung"> ⏱️ Lembur Langsung</label>
@@ -11446,10 +11256,15 @@
 
             fetch(GAS_WEBAPP_URL, {
               method: 'POST',
+              mode: 'cors',
+              redirect: 'follow',
               body: JSON.stringify({ func: funcName, args: args }),
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' } // text/plain digunakan untuk bypass preflight CORS
+              headers: { 'Content-Type': 'text/plain' } // text/plain digunakan untuk bypass preflight CORS
             })
-              .then(res => res.json())
+              .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+              })
               .then(data => {
                 if (successCb) successCb(data);
               })
@@ -17318,26 +17133,56 @@
 
       switchLemburTab('list');
 
-
-
-      // Visibilitas tombol Pengaturan Tanggal Merah (Admin, TL, HR, atau Izin Khusus)
+      // Visibilitas tombol Pengaturan Tanggal Merah
       const role = (currentUser?.role || '').toLowerCase();
       let allowedMenus = []; try { allowedMenus = JSON.parse(currentUser.permissions || '[]'); } catch (e) { }
       const canManageTM = (role === 'admin' || role.includes('team leader') || role === 'tl' || role.includes('hr') || allowedMenus.includes('pengaturanTglMerah'));
       const btnTM = document.getElementById('btnTglMerahSetting');
       if (btnTM) btnTM.style.display = canManageTM ? 'inline-block' : 'none';
 
+      // Tampilkan Semua Tanggal - Abaikan filter bulan
+      const filterBulanEl = document.getElementById('lemburFilterBulan');
+      if (filterBulanEl) filterBulanEl.style.display = 'none'; // Sembunyikan filter karena diminta tampilkan semua
 
-      google.script.run.withSuccessHandler(resLembur => {
-        if (resLembur.success) lemburDataAll = resLembur.data;
-        google.script.run.withSuccessHandler(resLap => {
-          laporanKerjaData = resLap.data || [];
-          google.script.run.withSuccessHandler(resTM => {
-            if (resTM.success) tglMerahDataAll = resTM.data || [];
+      google.script.run
+        .withSuccessHandler(resLembur => {
+          if (resLembur && resLembur.success) {
+            lemburDataAll = resLembur.data || [];
+          } else {
+            console.error('Gagal memuat data lembur:', resLembur?.message);
+            lemburDataAll = [];
+          }
+          
+          google.script.run.withSuccessHandler(resLap => {
+            laporanKerjaData = (resLap && resLap.data) ? resLap.data : [];
+            
+            google.script.run.withSuccessHandler(resTM => {
+              if (resTM && resTM.success) {
+                tglMerahDataAll = resTM.data || [];
+              } else {
+                tglMerahDataAll = [];
+              }
+              renderLemburTable();
+            }).withFailureHandler(err => {
+              console.error('Error getTglMerahData:', err);
+              tglMerahDataAll = [];
+              renderLemburTable();
+            }).getTglMerahData();
+            
+          }).withFailureHandler(err => {
+            console.error('Error getLaporanKerja:', err);
+            laporanKerjaData = [];
             renderLemburTable();
-          }).getTglMerahData();
-        }).getLaporanKerja();
-      }).getLembur();
+          }).getLaporanKerja();
+          
+        })
+        .withFailureHandler(err => {
+          console.error('Critical Error getLembur:', err);
+          toast('Gagal memuat data lembur dari server', 'error');
+          lemburDataAll = [];
+          renderLemburTable();
+        })
+        .getLembur(""); // Kirim kosong agar server mengembalikan semua data
     }
 
 
@@ -17373,6 +17218,9 @@
 
       (laporanKerjaData || []).forEach(l => {
         if (!l.staffLemburNames || !l.tanggal) return;
+        
+        // Filter bulan dihapus agar tampil semua tanggal
+
         const names = l.staffLemburNames.split(',').map(n => n.trim());
         names.forEach(name => {
           if (!name) return;
@@ -17395,7 +17243,11 @@
                 jumlahJam: l.jamLembur || 0
               };
             } else {
-              missingMap[key].jumlahJam = Math.max(missingMap[key].jumlahJam, l.jamLembur || 0);
+              // Akumulasi jam lembur jika ada di beberapa laporan kerja pada hari yang sama
+              missingMap[key].jumlahJam += (l.jamLembur || 0);
+              if (l.divisi && !missingMap[key].divisi.includes(l.divisi)) {
+                missingMap[key].divisi += ', ' + l.divisi;
+              }
             }
           }
         });
@@ -17408,7 +17260,19 @@
 
       // 2. Filter Submitted Overtime Data
       let displayData = lemburDataAll;
-      if (!isPimpinan) {
+      
+      // Role pimpinan (TL, Vice SPV, SPV, HR) bisa melihat semua data lembur untuk diproses
+      const isLeaderRole = (
+        role.includes('Team Leader') || 
+        role === 'TL' || 
+        role === 'Vice Supervisor' || 
+        role === 'Vice SPV' || 
+        role === 'Supervisor' || 
+        role === 'SPV' || 
+        role === 'HR'
+      );
+
+      if (!isAdmin && !isLeaderRole) {
         displayData = lemburDataAll.filter(d => (d.nama || '').toLowerCase() === myName);
       }
       if (filterDiv) {
@@ -17490,23 +17354,10 @@
             actionHtml += `<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`;
           }
 
-          let verifyHtml = '';
-          if (d.jamAbsen && d.jamAbsen !== '-') {
-            if (d.statusVerifikasi === 'Lolos') {
-              verifyHtml = `<br><span class="badge-approved" style="font-size:10px; margin-top:4px; display:inline-block; background:rgba(16,185,129,0.15); color:var(--green); padding:1px 6px; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">Lolos Verifikasi</span>`;
-            } else {
-              verifyHtml = `<br><span class="badge-rejected" style="font-size:10px; margin-top:4px; display:inline-block; background:rgba(239,68,68,0.15); color:var(--red); padding:1px 6px; border-radius:4px; border:1px solid rgba(239,68,68,0.3);">Tidak Lolos Verifikasi</span>`;
-            }
-          }
-
           tb.innerHTML += `<tr>
             <td>${formatDate(d.tanggal)}</td>
             <td><strong>${d.nama}</strong></td>
             <td>${d.divisi}</td>
-            <td>
-              <span style="color:var(--text);font-weight:600">🕒 ${d.jamAbsen || '-'}</span>
-              ${verifyHtml}
-            </td>
             <td><span style="color:var(--accent);font-weight:700">⌛ ${d.jumlahJam} Jam</span></td>
             <td>${d.keterangan}</td>
             <td><span class="${stsCls}">${d.status}</span></td>
@@ -17588,7 +17439,6 @@
 
       info.style.display = 'none'; ok.style.display = 'none';
       if (!t) return;
-      loadJamAbsensiForLembur(t, myName);
 
       const lapForDate = laporanKerjaData.filter(d => d.tanggal === t);
       let names = [];
@@ -17728,8 +17578,10 @@
         if (l.staffLemburNames) {
           const names = l.staffLemburNames.split(',').map(x => x.trim().toLowerCase());
           if (names.includes(nama.toLowerCase())) {
-            jamFound = parseFloat(l.jamLembur) || 0;
-            divFound = l.divisi;
+            // Akumulasi jam jika nama muncul di beberapa divisi/shift laporan kerja
+            jamFound += parseFloat(l.jamLembur) || 0;
+            if (!divFound) divFound = l.divisi; 
+            else if (l.divisi && !divFound.includes(l.divisi)) divFound += ', ' + l.divisi;
           }
         }
       });
@@ -17761,95 +17613,8 @@
       updateLemburVerificationDisplay();
     }
 
-    let _lastLemburAbsenRes = null;
 
-    function parseTimeToMinutes(timeStr) {
-      if (!timeStr || timeStr === '-') return 0;
-      const parts = timeStr.trim().split(':');
-      if (parts.length >= 2) {
-        return (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
-      }
-      return 0;
-    }
 
-    function formatMntToTime(mnt) {
-      let m = mnt % 1440;
-      let h = Math.floor(m / 60);
-      let min = m % 60;
-      return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
-    }
-
-    function verifyOvertimeClient(res, jamLembur) {
-      if (!res || !res.success) return { verified: false, text: 'Tidak Terverifikasi' };
-      if (res.scheduledOut === 'OFF') {
-        return { verified: res.outTime !== '-', text: res.outTime !== '-' ? 'Lolos Verifikasi (OFF)' : 'Belum Absen Pulang' };
-      }
-      if (res.outTime === '-') {
-        return { verified: false, text: 'Belum Absen Pulang' };
-      }
-      
-      const inMnt = parseTimeToMinutes(res.scheduledIn || "08:00");
-      const outMnt = parseTimeToMinutes(res.scheduledOut || "17:00");
-      
-      let expectedOutMnt = outMnt;
-      if (inMnt > outMnt) {
-        expectedOutMnt += 1440;
-      }
-      
-      const OTMinutes = Math.round(parseFloat(jamLembur || 0) * 60);
-      expectedOutMnt += OTMinutes;
-      
-      let actualOutMnt = parseTimeToMinutes(res.outTime);
-      if (res.outDateStr !== v('lbTanggal')) {
-        actualOutMnt += 1440;
-      }
-      
-      const ok = (actualOutMnt >= expectedOutMnt);
-      return {
-        verified: ok,
-        text: ok ? 'Lolos Verifikasi Absen' : `Tidak Lolos Verifikasi (Harus pulang min: ${formatMntToTime(expectedOutMnt)})`
-      };
-    }
-
-    function updateLemburVerificationDisplay() {
-      const infoSpan = document.getElementById('lbAbsenInfo');
-      if (!infoSpan || !_lastLemburAbsenRes) return;
-      
-      const res = _lastLemburAbsenRes;
-      const jamLembur = parseFloat(v('lbJumlahJam') || 0);
-      const verify = verifyOvertimeClient(res, jamLembur);
-      
-      let badgeCls = verify.verified ? 'badge-approved' : 'badge-rejected';
-      let badgeStyle = verify.verified ? 'background:rgba(16,185,129,0.15); color:var(--green); border: 1px solid rgba(16,185,129,0.3);' : 'background:rgba(239,68,68,0.15); color:var(--red); border: 1px solid rgba(239,68,68,0.3);';
-      
-      infoSpan.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <div>🕒 <strong>Jam Absensi Hari Ini:</strong> IN: <span style="font-weight:700;">${res.inTime}</span> | OUT: <span style="font-weight:700;">${res.outTime}</span> (Jadwal Pulang: ${res.scheduledOut})</div>
-          <div style="margin-top:2px;">
-            <span class="${badgeCls}" style="padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; ${badgeStyle}">${verify.text}</span>
-          </div>
-        </div>
-      `;
-    }
-
-    function loadJamAbsensiForLembur(tanggal, nama) {
-      const infoWrap = document.getElementById('lbAbsenInfoWrap');
-      const infoSpan = document.getElementById('lbAbsenInfo');
-      if (!infoWrap || !infoSpan) return;
-      
-      infoSpan.innerHTML = '🕒 Memuat jam absensi...';
-      infoWrap.style.display = 'block';
-      _lastLemburAbsenRes = null;
-
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          _lastLemburAbsenRes = res;
-          updateLemburVerificationDisplay();
-        } else {
-          infoSpan.innerHTML = `🕒 <strong>Jam Absensi Hari Ini:</strong> -`;
-        }
-      }).getAbsensiKaryawanOnePerson(nama, tanggal);
-    }
 
     function submitLembur() {
       const t = v('lbTanggal'), n = v('lbNama'), d = v('lbDivisi'), jj = v('lbJumlahJam'), k = v('lbKeterangan');
@@ -20510,13 +20275,13 @@
       // checks.forEach(c => c.checked = false); // Opsional: Hapus komentar jika ingin reset total tiap ganti role
 
       if (r === 'HR') {
-        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor'].forEach(set);
+        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor', 'aksesApprovalAsset'].forEach(set);
       } else if (r === 'Supervisor') {
-        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
+        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
       } else if (r === 'Vice Supervisor') {
-        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi'].forEach(set);
+        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
       } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
-        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan'].forEach(set);
+        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
       }
     }
     function toggleCustomRole() { const s = v('uRole'); document.getElementById('uRoleCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
