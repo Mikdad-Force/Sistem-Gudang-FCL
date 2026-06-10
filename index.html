@@ -1293,6 +1293,37 @@
       transform: translateY(-1px);
     }
 
+    /* ---- APPROVAL BUTTON ANIMATIONS ---- */
+    @keyframes buttonClick {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.92); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes approveSuccess {
+      0% { transform: scale(1); background-color: inherit; }
+      30% { transform: scale(1.1); background-color: #10b981; color: white; }
+      100% { transform: scale(1); background-color: inherit; }
+    }
+
+    @keyframes rejectAnimation {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-3px); }
+      40%, 80% { transform: translateX(3px); }
+    }
+
+    .btn-appr-animate {
+      animation: buttonClick 0.25s ease-in-out;
+    }
+
+    .btn-appr-success {
+      animation: approveSuccess 0.6s ease-in-out;
+    }
+
+    .btn-appr-reject {
+      animation: rejectAnimation 0.4s ease-in-out;
+    }
+
     .status-badge-mini {
       width: 8px;
       height: 8px;
@@ -5446,6 +5477,7 @@
                       <th data-i18n="lembur">Lembur</th>
                       <th>Alasan Lembur</th>
                       <th data-i18n="phl">PHL</th>
+                      <th>Staff Masuk</th>
                       <th>Total Orang Masuk</th>
                       <th data-i18n="totalOrder">Total Order/PO/Inb</th>
                       <th data-i18n="qty">Qty</th>
@@ -13832,12 +13864,25 @@
 
       const btn = event ? event.target : null;
       const oldTxt = btn ? btn.textContent : '';
-      if (btn && btn.tagName === 'BUTTON') { btn.disabled = true; btn.innerHTML = '⏳'; }
+      if (btn && btn.tagName === 'BUTTON') { 
+        btn.classList.add('btn-appr-animate');
+        btn.disabled = true; 
+        btn.innerHTML = '⏳'; 
+      }
 
       toast('⏳ Memproses approval...', 'success');
 
       google.script.run.withSuccessHandler(res => {
-        if (btn && btn.tagName === 'BUTTON') { btn.disabled = false; btn.textContent = oldTxt; }
+        if (btn && btn.tagName === 'BUTTON') { 
+          btn.classList.remove('btn-appr-animate');
+          if (res.success) {
+            if (action === 'Approve') {
+              btn.classList.add('btn-appr-success');
+            } else {
+              btn.classList.add('btn-appr-reject');
+            }
+          }
+        }
         if (res.success) {
           toast('Approval diproses ✅');
           const t = tipe.toLowerCase();
@@ -13856,7 +13901,13 @@
             loadCentralizedApprovals();
           }
           checkPendingApprovals();
-        } else toast(res.message, 'error');
+        } else {
+          if (btn && btn.tagName === 'BUTTON') { 
+            btn.disabled = false; 
+            btn.textContent = oldTxt; 
+          }
+          toast(res.message, 'error');
+        }
       }).processApprovalStatus(tipe.toLowerCase(), id, action, currentUser.nama, currentUser.role, reason, nama, tanggal);
     }
 
@@ -14656,7 +14707,9 @@
               lapHariIni.forEach(l => {
                 const div = l.divisi || 'Lainnya';
                 if (!divSummary[div]) divSummary[div] = { p: 0, o: 0 };
-                divSummary[div].p += (parseInt(l.totalOrang) || 0) + (parseInt(l.totalStaff) || 0) + (parseInt(l.totalAdmin) || 0);
+                const staffMasuk = (parseInt(l.totalOrang) || 0) + (parseInt(l.totalAdmin) || 0);
+                const totalMasuk = staffMasuk + (parseInt(l.totalPHL) || 0);
+                divSummary[div].p += totalMasuk;
                 if (div === 'Distributor' || div === 'Distributor SBY' || div === 'Distributor Surabaya') {
                   divSummary[div].o += (parseInt(l.totalQty) || 0);
                 } else {
@@ -18581,6 +18634,7 @@
             totalJamKerja: 0,
             jamLembur: 0,
             totalPHL: 0,
+            totalStaffMasuk: 0,
             totalOrangMasuk: 0,
             totalOrder: 0,
             totalPO: 0,
@@ -18603,7 +18657,9 @@
         g.totalJamKerja += (d.totalJamKerja || 0);
         g.jamLembur += (d.jamLembur || 0);
         g.totalPHL += (d.totalPHL || 0);
-        g.totalOrangMasuk += ((d.totalOrang || 0) + (d.totalAdmin || 0));
+        const currentStaffMasuk = (d.totalOrang || 0) + (d.totalAdmin || 0);
+        g.totalStaffMasuk += currentStaffMasuk;
+        g.totalOrangMasuk += (currentStaffMasuk + (d.totalPHL || 0));
         if (d.alasanLembur) g.alasanLembur.add(d.alasanLembur);
         g.totalOrder += (d.totalOrder || 0);
         g.totalPO += (d.totalPo || 0);
@@ -18658,6 +18714,7 @@
         ${alasanHtml || '<span style="color:var(--gray); font-size:11px;">-</span>'}
       </td>
       <td align="center">${g.totalPHL} Org</td>
+      <td align="center"><strong>${g.totalStaffMasuk}</strong> Org</td>
       <td align="center" style="color:var(--green); font-weight:700;">${g.totalOrangMasuk} Org</td>
       <td align="center">
         <div style="color:var(--teal); font-weight:700;">${totalOutput.toLocaleString('id-ID')}</div>
@@ -18686,8 +18743,10 @@
         <small style="color:var(--gray)">PIC: ${r.pic}</small>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
-        <div>Pekerja: ${r.totalOrang} | Admin: ${r.totalAdmin || 0}</div>
-        <div>PHL: ${r.totalPHL || 0} | Lembur: ${r.jamLembur} Jam</div>
+        <div>Staff: <b>${(r.totalOrang || 0) + (r.totalAdmin || 0)}</b> <span style="font-size:10px; color:var(--gray)">(${r.totalOrang}p + ${r.totalAdmin || 0}a)</span></div>
+        <div>PHL: <b>${r.totalPHL || 0}</b></div>
+        <div>Total Masuk: <b style="color:var(--green)">${((r.totalOrang || 0) + (r.totalAdmin || 0)) + (r.totalPHL || 0)}</b></div>
+        <div>Lembur: ${r.jamLembur} Jam</div>
         <div style="grid-column: span 2; border-top:1px solid #ffffff0a; padding-top:5px; margin-top:5px;">
           Output: <b>${['Distributor', 'Distributor SBY', 'Distributor Surabaya'].includes(r.divisi) ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)}</b> 
           ${!['Inbound', 'Return', 'KOL'].includes(r.divisi) ? `| KPI: <b>${r.totalJamKerja > 0 ? ((['Distributor', 'Distributor SBY', 'Distributor Surabaya'].includes(r.divisi) ? r.totalQty : (r.totalOrder || r.totalPO || r.totalInbound || 0)) / r.totalJamKerja).toFixed(3) : 0}</b>` : ''}
@@ -18848,8 +18907,10 @@
     function delLaporanKerja(id) { if (confirm('Hapus?')) google.script.run.withSuccessHandler(res => { if (res.success) { toast('Dihapus'); loadLaporanKerja(); } else toast(res.message, 'error'); }).deleteLaporanKerja(id); }
     function showDetailLaporan(id) {
       const d = laporanKerjaData.find(x => x.id === id); if (!d) return;
+      const staffMasuk = (parseInt(d.totalOrang) || 0) + (parseInt(d.totalAdmin) || 0);
+      const totalMasuk = staffMasuk + (parseInt(d.totalPHL) || 0);
       document.getElementById('detailLapTitle').textContent = `Laporan ${d.divisi} - ${formatDate(d.tanggal)}`;
-      document.getElementById('detailLapContent').innerHTML = `<b>PIC:</b> ${d.pic}<br><b>Pekerja Utama:</b> ${d.totalOrang} | <b>Admin:</b> ${d.totalAdmin || 0}<br><b>Total Jam Kerja:</b> ${d.totalJamKerja} Jam<br><b>Total Order:</b> ${d.totalOrder} ${!['Inbound', 'Return', 'KOL'].includes(d.divisi) ? `| <b>KPI:</b> ${d.totalJamKerja > 0 ? (d.totalOrder / d.totalJamKerja).toFixed(3) : 0}` : ''}<br><b>Kendala & Detail:</b><br><pre style="white-space:pre-wrap;background:#0f2040;padding:10px;border-radius:8px;border:1px solid #ffffff15;margin-top:5px;font-family:inherit;">${d.kendala || '-'}</pre>`;
+      document.getElementById('detailLapContent').innerHTML = `<b>PIC:</b> ${d.pic}<br><b>Staff Masuk:</b> ${staffMasuk} <span style="font-size:11px; color:var(--gray)">(${d.totalOrang}p + ${d.totalAdmin || 0}a)</span><br><b>PHL:</b> ${d.totalPHL || 0} | <b>Total Masuk:</b> <b style="color:var(--green)">${totalMasuk}</b><br><b>Total Jam Kerja:</b> ${d.totalJamKerja} Jam<br><b>Total Order:</b> ${d.totalOrder} ${!['Inbound', 'Return', 'KOL'].includes(d.divisi) ? `| <b>KPI:</b> ${d.totalJamKerja > 0 ? (d.totalOrder / d.totalJamKerja).toFixed(3) : 0}` : ''}<br><b>Kendala & Detail:</b><br><pre style="white-space:pre-wrap;background:#0f2040;padding:10px;border-radius:8px;border:1px solid #ffffff15;margin-top:5px;font-family:inherit;">${d.kendala || '-'}</pre>`;
       openModal('modalDetailLaporan');
     }
 
@@ -18898,7 +18959,9 @@
       filtered.forEach(d => {
         if (summary[d.divisi]) {
           summary[d.divisi].rep++;
-          summary[d.divisi].p += (d.totalOrang + (d.totalAdmin || 0));
+          const staffMasuk = (d.totalOrang || 0) + (d.totalAdmin || 0);
+          const totalMasuk = staffMasuk + (d.totalPHL || 0);
+          summary[d.divisi].p += totalMasuk;
           summary[d.divisi].l += d.jamLembur;
           summary[d.divisi].j += d.totalJamKerja;
 
@@ -19746,12 +19809,28 @@
     }
 
     function updateStockControlStatus(id, st) {
+      const btn = event ? event.target : null;
+      if (btn && btn.tagName === 'BUTTON') {
+        btn.classList.add('btn-appr-animate');
+        btn.disabled = true;
+      }
+      
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
+          if (btn && btn.tagName === 'BUTTON') {
+            btn.classList.remove('btn-appr-animate');
+            if (st === 'Disetujui') {
+              btn.classList.add('btn-appr-success');
+            }
+          }
           toast('Status Berhasil Diperbarui');
           loadStockControl();
           loadDashboardStock();
         } else {
+          if (btn && btn.tagName === 'BUTTON') {
+            btn.classList.remove('btn-appr-animate');
+            btn.disabled = false;
+          }
           toast(res.message, 'error');
         }
       }).updateStockControlStatus(id, st);
@@ -24842,12 +24921,35 @@
 
     function processDashboardAppr(tipe, id, action, pemohon, tanggal) {
       // Tanpa Pop-Up Konfirmasi Sesuai Permintaan
+      const btn = event ? event.target : null;
+      
+      // Add click animation immediately
+      if (btn && btn.tagName === 'BUTTON') {
+        btn.classList.add('btn-appr-animate');
+        btn.disabled = true;
+      }
+
       toast(`⏳ Memproses ${action}...`, 'info');
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
+          // Add success/reject animation
+          if (btn && btn.tagName === 'BUTTON') {
+            btn.classList.remove('btn-appr-animate');
+            if (action === 'Approve') {
+              btn.classList.add('btn-appr-success');
+            } else {
+              btn.classList.add('btn-appr-reject');
+            }
+          }
           toast(`✅ Berhasil ${action === 'Approve' ? 'disetujui' : 'ditolak'}`, 'success');
-          loadApprovalDashboard(); // Reload data
+          setTimeout(() => {
+            loadApprovalDashboard(); // Reload data
+          }, 500);
         } else {
+          if (btn && btn.tagName === 'BUTTON') {
+            btn.classList.remove('btn-appr-animate');
+            btn.disabled = false;
+          }
           toast('Gagal: ' + res.message, 'error');
         }
       }).processApprovalStatus(tipe, id, action, currentUser.nama, currentUser.role, '', pemohon, tanggal);
@@ -25558,8 +25660,34 @@
       }
     }
     function procOpname(id, st) {
+      const btn = event ? event.target : null;
+      if (btn && btn.tagName === 'BUTTON') {
+        btn.classList.add('btn-appr-animate');
+        btn.disabled = true;
+      }
+      
       if (confirm('Konfirmasi ' + st + ' opname ini?' + (st === 'Approved' ? ' Stok master akan diperbarui.' : '')))
-        google.script.run.withSuccessHandler(res => { if (res.success) { toast('Berhasil diproses'); loadStockOpname(); loadStock(); } else toast(res.message, 'error'); })
+        google.script.run.withSuccessHandler(res => { 
+          if (res.success) { 
+            if (btn && btn.tagName === 'BUTTON') {
+              btn.classList.remove('btn-appr-animate');
+              if (st === 'Approved') {
+                btn.classList.add('btn-appr-success');
+              } else {
+                btn.classList.add('btn-appr-reject');
+              }
+            }
+            toast('Berhasil diproses'); 
+            loadStockOpname(); 
+            loadStock(); 
+          } else {
+            if (btn && btn.tagName === 'BUTTON') {
+              btn.classList.remove('btn-appr-animate');
+              btn.disabled = false;
+            }
+            toast(res.message, 'error'); 
+          } 
+        })
           .approveStockOpname(id, st, currentUser.username);
     }
 
@@ -27258,7 +27386,7 @@
               </th>
             </tr>
             <tr style="background-color:#0ea5e9;color:white;font-weight:bold;">
-              <th>Tanggal</th><th>PIC</th><th>Divisi</th><th>Jumlah Orang Masuk</th><th>Jumlah Orang Lembur</th><th>Jumlah Orang PHL</th><th>Jam Kerja</th><th>Total Jam Lembur</th><th>Total Order</th><th>Qty</th><th>KPI</th><th>Orang Pengurangan</th><th>Jam Pengurangan</th><th>Orang Perbantuan</th><th>Jam Perbantuan</th><th>Alasan Pengurangan</th>
+              <th>Tanggal</th><th>PIC</th><th>Divisi</th><th>Staff Masuk</th><th>PHL</th><th>Total Orang Masuk</th><th>Jumlah Orang Lembur</th><th>Jam Kerja</th><th>Total Jam Lembur</th><th>Total Order</th><th>Qty</th><th>KPI</th><th>Orang Pengurangan</th><th>Jam Pengurangan</th><th>Orang Perbantuan</th><th>Jam Perbantuan</th><th>Alasan Pengurangan</th>
             </tr>
           </thead>
           <tbody>`;
@@ -27269,8 +27397,12 @@
         let orgKurang = d.pengurangan > 0 ? 1 : 0;
         let orgBantu = d.perbantuan > 0 ? 1 : 0;
         let totalJamLembur = (parseInt(d.totalStaff) || 0) * (parseFloat(d.jamLembur) || 0);
+        
+        let staffMasuk = (parseInt(d.totalOrang) || 0) + (parseInt(d.totalAdmin) || 0);
+        let phl = parseInt(d.totalPHL) || 0;
+        let totalMasuk = staffMasuk + phl;
 
-        html += `<tr><td>${d.tanggal || '-'}</td><td>${d.pic || '-'}</td><td>${d.divisi || '-'}</td><td>${(parseInt(d.totalOrang) || 0) + (parseInt(d.totalAdmin) || 0)}</td><td>${d.totalStaff || 0}</td><td>${d.totalPHL || 0}</td><td>${d.totalJamKerja || 0}</td><td>${totalJamLembur}</td><td>${d.divisi === 'Distributor' || d.divisi === 'Distributor SBY' ? 0 : output}</td><td>${d.totalQty || 0}</td><td>${kpi}</td><td>${orgKurang}</td><td>${d.pengurangan || 0}</td><td>${orgBantu}</td><td>${d.perbantuan || 0}</td><td>${d.alasanPengurangan || '-'}</td></tr>`;
+        html += `<tr><td>${d.tanggal || '-'}</td><td>${d.pic || '-'}</td><td>${d.divisi || '-'}</td><td>${staffMasuk}</td><td>${phl}</td><td>${totalMasuk}</td><td>${d.totalStaff || 0}</td><td>${d.totalJamKerja || 0}</td><td>${totalJamLembur}</td><td>${d.divisi === 'Distributor' || d.divisi === 'Distributor SBY' ? 0 : output}</td><td>${d.totalQty || 0}</td><td>${kpi}</td><td>${orgKurang}</td><td>${d.pengurangan || 0}</td><td>${orgBantu}</td><td>${d.perbantuan || 0}</td><td>${d.alasanPengurangan || '-'}</td></tr>`;
       });
 
       html += `</tbody></table></body></html>`;
