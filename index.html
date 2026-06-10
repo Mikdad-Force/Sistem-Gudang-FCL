@@ -4471,6 +4471,7 @@
                 class="icon">🚗</span> Booking Mobil</div>
 
             <div class="nav-section" data-i18n="sdm">SDM</div>
+            <div class="nav-item" id="navApprovalDashboard" onclick="showPage('approvalDashboard')"><span class="icon">⚖️</span> Dashboard Approval</div>
             <div class="nav-item" onclick="showPage('karyawan')" data-i18n="karyawan"><span class="icon">👥</span> Data
               Karyawan</div>
             <div class="nav-item" onclick="showPage('ijin')" data-i18n="ijin"><span class="icon">✉️</span> Pengajuan
@@ -4558,6 +4559,100 @@
           </div>
         </div>
         <div class="content">
+          <!-- PAGE: APPROVAL DASHBOARD -->
+          <div class="page" id="page-approvalDashboard">
+            <div class="stats-grid mb-3">
+              <div class="stat-card amber" onclick="switchApprovalTab('lembur')">
+                <div class="stat-label">Pending Lembur</div>
+                <div class="stat-value amber" id="apprStatLembur">0</div>
+                <div class="stat-icon">⏱️</div>
+              </div>
+              <div class="stat-card green" onclick="switchApprovalTab('ijin')">
+                <div class="stat-label">Pending Ijin/Cuti</div>
+                <div class="stat-value green" id="apprStatIjin">0</div>
+                <div class="stat-icon">✉️</div>
+              </div>
+              <div class="stat-card teal" onclick="switchApprovalTab('asset')">
+                <div class="stat-label">Pending Asset</div>
+                <div class="stat-value teal" id="apprStatAsset">0</div>
+                <div class="stat-icon">📦</div>
+              </div>
+              <div class="stat-card red" onclick="switchApprovalTab('stockOpname')">
+                <div class="stat-label">Pending SO & Control</div>
+                <div class="stat-value red" id="apprStatSO">0</div>
+                <div class="stat-icon">⚖️</div>
+              </div>
+            </div>
+
+            <div class="kar-tabs mb-3">
+              <button class="kar-tab active" id="tabApprLembur" onclick="switchApprovalTab('lembur')">⏱️ Lembur</button>
+              <button class="kar-tab" id="tabApprIjin" onclick="switchApprovalTab('ijin')">✉️ Ijin/Cuti</button>
+              <button class="kar-tab" id="tabApprAsset" onclick="switchApprovalTab('asset')">📦 Asset</button>
+              <button class="kar-tab" id="tabApprSO" onclick="switchApprovalTab('stockOpname')">⚖️ Stock Opname</button>
+              <button class="kar-tab" id="tabApprSOAsset" onclick="switchApprovalTab('assetOpname')">📷 SO Asset</button>
+            </div>
+
+            <div id="panelApprLembur" class="approval-panel">
+              <div class="card">
+                <div class="card-header"><h4>⏱️ Persetujuan Lembur</h4></div>
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead><tr><th>Tanggal</th><th>Nama</th><th>Divisi</th><th>Jam</th><th>Absen</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="bodyApprLembur"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="panelApprIjin" class="approval-panel" style="display:none;">
+              <div class="card">
+                <div class="card-header"><h4>✉️ Persetujuan Ijin/Cuti</h4></div>
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead><tr><th>Tanggal</th><th>Nama</th><th>Jenis</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="bodyApprIjin"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="panelApprAsset" class="approval-panel" style="display:none;">
+              <div class="card">
+                <div class="card-header"><h4>📦 Persetujuan Pengajuan Asset</h4></div>
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead><tr><th>Tanggal</th><th>Pemohon</th><th>Asset</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="bodyApprAsset"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="panelApprStockOpname" class="approval-panel" style="display:none;">
+              <div class="card">
+                <div class="card-header"><h4>⚖️ Persetujuan Stock Opname & Control</h4></div>
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead><tr><th>Tanggal</th><th>PIC</th><th>Area/Item</th><th>Selisih</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="bodyApprSO"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="panelApprAssetOpname" class="approval-panel" style="display:none;">
+              <div class="card">
+                <div class="card-header"><h4>📷 Persetujuan Stock Opname Asset</h4></div>
+                <div class="table-wrap">
+                  <table class="table table-hover align-middle">
+                    <thead><tr><th>Tanggal</th><th>Auditor</th><th>Divisi</th><th>Progress</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody id="bodyApprSOAsset"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- PAGE: ABSENSI KARYAWAN -->
           <div class="page" id="page-absensiKaryawan">
             <div class="fp-info-box mb-3">
@@ -6074,6 +6169,7 @@
                     <th>Nama Karyawan</th>
                     <th>Divisi</th>
                     <th>Jam Lembur</th>
+                    <th>Absen</th>
                     <th>Keterangan Tugas</th>
                     <th>Status Approval</th>
                     <th>Aksi</th>
@@ -10190,6 +10286,7 @@
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--amber);"><input type="checkbox" value="kelolaUser"> ⚙️ Kelola Akun User</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--orange);"><input type="checkbox" value="pengaturanTglMerah"> ⏱️ Pengaturan Lembur</label>
               <label class="form-label" style="margin: 0; font-size: 12px; color: var(--accent);"><input type="checkbox" value="dashboardValidasiLembur"> 📊 Validasi Lembur</label>
+              <label class="form-label" style="margin: 0; font-size: 12px; color: var(--accent);"><input type="checkbox" value="approvalDashboard"> ⚖️ Dashboard Approval</label>
             </div>
           </div>
 
@@ -13351,6 +13448,8 @@
         document.getElementById('navUsers').style.display = 'flex';
         document.getElementById('navReturnDistributor').style.display = 'flex';
         document.getElementById('navCentralApproval').style.display = 'flex';
+        const navApprDash = document.getElementById('navApprovalDashboard');
+        if (navApprDash) navApprDash.style.display = 'flex';
         showPage('dashboard');
       }
       setToday();
@@ -13484,6 +13583,7 @@
       retur: '↩️ Retur Barang', order: '🛒 Orderan', antrianDistributor: '🚚 Antrian Distributor', analisis: '📈 Analisis Pemakaian Stok',
       assetWarehouse: '🏪 Asset Warehouse',
       bookingMobil: '🚗 Booking Mobil',
+      approvalDashboard: '⚖️ Dashboard Approval',
       approval: '✅ Pusat Approval'
     };
     const pageLoaders = {
@@ -13493,6 +13593,7 @@
       pengajuanAsset: loadAsset,
       organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, antrianDistributor: loadDistributorQueue, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
       returnDistributor: loadReturnDistributor,
+      approvalDashboard: loadApprovalDashboard,
       approval: loadCentralizedApprovalsOptimized, approvalCenter: renderApprovalCenter
     };
 
@@ -17354,11 +17455,14 @@
             actionHtml += `<button class="btn btn-danger btn-sm" onclick="delLembur('${d.id}')">Batal</button>`;
           }
 
+          const absenInfo = `<div style="font-size:10px; color:var(--gray);">IN: ${d.inTime || '-'}</div><div style="font-size:10px; color:var(--gray);">OUT: ${d.outTime || '-'}</div>`;
+
           tb.innerHTML += `<tr>
             <td>${formatDate(d.tanggal)}</td>
             <td><strong>${d.nama}</strong></td>
             <td>${d.divisi}</td>
             <td><span style="color:var(--accent);font-weight:700">⌛ ${d.jumlahJam} Jam</span></td>
+            <td>${absenInfo}</td>
             <td>${d.keterangan}</td>
             <td><span class="${stsCls}">${d.status}</span></td>
             <td style="display:flex; gap:5px;">${actionHtml}</td>
@@ -20275,13 +20379,13 @@
       // checks.forEach(c => c.checked = false); // Opsional: Hapus komentar jika ingin reset total tiap ganti role
 
       if (r === 'HR') {
-        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor', 'aksesApprovalAsset'].forEach(set);
+        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
       } else if (r === 'Supervisor') {
-        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
+        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
       } else if (r === 'Vice Supervisor') {
-        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
+        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
       } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
-        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengajuanAsset', 'aksesApprovalAsset'].forEach(set);
+        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
       }
     }
     function toggleCustomRole() { const s = v('uRole'); document.getElementById('uRoleCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
@@ -24650,6 +24754,103 @@
       const ws = XLSX.utils.aoa_to_sheet(headers.concat(data));
       XLSX.utils.book_append_sheet(wb, ws, "Template Order");
       XLSX.writeFile(wb, "Template_Order_FCL.xlsx");
+    }
+
+    // --- APPROVAL DASHBOARD FUNCTIONS ---
+    let _approvalData = { lembur: [], ijin: [], asset: [], stockOpname: [], assetOpname: [] };
+    let _activeApprovalTab = 'lembur';
+
+    function switchApprovalTab(tab) {
+      _activeApprovalTab = tab;
+      document.querySelectorAll('.kar-tab').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('tabAppr' + tab.charAt(0).toUpperCase() + tab.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.querySelectorAll('.approval-panel').forEach(p => p.style.display = 'none');
+      const activePanel = document.getElementById('panelAppr' + (tab === 'stockOpname' ? 'StockOpname' : tab.charAt(0).toUpperCase() + tab.slice(1)));
+      if (activePanel) activePanel.style.display = 'block';
+      
+      renderApprovalDashboardData();
+    }
+
+    function loadApprovalDashboard() {
+      toast('⏳ Memuat data approval...', 'info');
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          _approvalData = res.data;
+          updateApprovalStats();
+          renderApprovalDashboardData();
+        } else {
+          toast('Gagal memuat data approval: ' + (res?.message || 'Unknown error'), 'error');
+        }
+      }).getApprovalDashboardData(currentUser.role);
+    }
+
+    function updateApprovalStats() {
+      const getCount = (arr) => (arr || []).length;
+      setVal('apprStatLembur', getCount(_approvalData.lembur));
+      setVal('apprStatIjin', getCount(_approvalData.ijin));
+      setVal('apprStatAsset', getCount(_approvalData.asset));
+      setVal('apprStatSO', getCount(_approvalData.stockOpname) + getCount(_approvalData.assetOpname));
+    }
+
+    function renderApprovalDashboardData() {
+      const tab = _activeApprovalTab;
+      const data = _approvalData[tab] || [];
+      const bodyId = 'bodyAppr' + (tab === 'stockOpname' ? 'SO' : tab.charAt(0).toUpperCase() + tab.slice(1));
+      const body = document.getElementById(bodyId);
+      if (!body) return;
+
+      if (!data.length) {
+        body.innerHTML = `<tr><td colspan="10" class="empty-state">Tidak ada data pending untuk ${tab}</td></tr>`;
+        return;
+      }
+
+      body.innerHTML = data.map(item => {
+        let cells = '';
+        const id = item.id || item.rowNumber || '';
+        const status = item.status || 'Pending';
+        
+        if (tab === 'lembur') {
+          const absenInfo = `<div style="font-size:10px; color:var(--gray);">IN: ${item.inTime || '-'}</div><div style="font-size:10px; color:var(--gray);">OUT: ${item.outTime || '-'}</div>`;
+          cells = `<td>${item.tanggal}</td><td>${item.nama}</td><td>${item.divisi}</td><td>${item.jumlahJam}</td><td>${absenInfo}</td><td>${status}</td>`;
+        } else if (tab === 'ijin') {
+          cells = `<td>${item.tanggal}</td><td>${item.nama}</td><td>${item.jenis}</td><td>${item.keterangan || '-'}</td><td>${status}</td>`;
+        } else if (tab === 'asset') {
+          cells = `<td>${item.tanggal}</td><td>${item.nama}</td><td>${item.jenisAsset}</td><td>${item.estimasiHarga}</td><td>${status}</td>`;
+        } else if (tab === 'stockOpname') {
+          const pic = item.pic || item.createdBy || '';
+          const areaItem = item.area || (item.sku ? `${item.sku} - ${item.nama}` : '');
+          cells = `<td>${item.tanggal}</td><td>${pic}</td><td>${areaItem}</td><td>${item.selisih || '-'}</td><td>${status}</td>`;
+        } else if (tab === 'assetOpname') {
+          cells = `<td>${item.tanggal}</td><td>${item.createdBy}</td><td>${item.divisi}</td><td>${item.terscan} / ${item.totalAsset}</td><td>${status}</td>`;
+        }
+
+        // Penentuan Label Tombol Berdasarkan Status
+        let apprLabel = '✔️ Setuju';
+        if (status === 'Pending Team Leader') apprLabel = '✔️ Setuju TL';
+        else if (status === 'Pending Vice Supervisor') apprLabel = '✔️ Setuju Vice SPV';
+        else if (status === 'Pending Supervisor') apprLabel = '✔️ Setuju SPV';
+        else if (status === 'Pending HR') apprLabel = '✔️ Setuju HR';
+
+        const btnAppr = `<button class="btn btn-success btn-sm me-1" onclick="processDashboardAppr('${tab}', '${id}', 'Approve', '${item.nama || item.pemohon || item.pic || item.auditor || item.createdBy}', '${item.tanggal}')">${apprLabel}</button>`;
+        const btnRej = `<button class="btn btn-danger btn-sm" onclick="processDashboardAppr('${tab}', '${id}', 'Reject', '${item.nama || item.pemohon || item.pic || item.auditor || item.createdBy}', '${item.tanggal}')">✖️ Tolak</button>`;
+        
+        return `<tr>${cells}<td>${btnAppr}${btnRej}</td></tr>`;
+      }).join('');
+    }
+
+    function processDashboardAppr(tipe, id, action, pemohon, tanggal) {
+      // Tanpa Pop-Up Konfirmasi Sesuai Permintaan
+      toast(`⏳ Memproses ${action}...`, 'info');
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          toast(`✅ Berhasil ${action === 'Approve' ? 'disetujui' : 'ditolak'}`, 'success');
+          loadApprovalDashboard(); // Reload data
+        } else {
+          toast('Gagal: ' + res.message, 'error');
+        }
+      }).processApprovalStatus(tipe, id, action, currentUser.nama, currentUser.role, '', pemohon, tanggal);
     }
 
     function doExportOrder() {
