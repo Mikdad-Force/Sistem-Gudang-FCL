@@ -755,6 +755,47 @@ function getBulkApprovalData() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
+function getApprovalDashboardData(userRole) {
+  try {
+    const res = getPendingApprovals();
+    if (!res.success) return res;
+
+    const isAdmin = (userRole === 'admin' || userRole === 'Super Admin');
+    const isTL = (userRole === 'Team Leader' || userRole === 'TL' || userRole.includes('Team Leader'));
+    const isVice = (userRole === 'Vice Supervisor' || userRole === 'Vice SPV' || userRole === 'Vice VPV' || userRole.includes('Vice'));
+    const isSPV = (userRole === 'Supervisor' || userRole === 'SPV' || userRole === 'Supervisor HR' || (userRole.includes('Supervisor') && !userRole.includes('Vice')));
+    const isHR = (userRole === 'HR' || userRole === 'Supervisor HR' || userRole.includes('HR'));
+
+    const filterPending = (list) => {
+      return (list || []).filter(item => {
+        const status = item.status || 'Pending Team Leader';
+        
+        if (isAdmin) return status.toLowerCase().includes('pending');
+        
+        if (status === 'Pending Team Leader' && isTL) return true;
+        if (status === 'Pending Vice Supervisor' && isVice) return true;
+        if (status === 'Pending Supervisor' && isSPV) return true;
+        if (status === 'Pending HR' && isHR) return true;
+        
+        return false;
+      });
+    };
+
+    return {
+      success: true,
+      data: {
+        lembur: filterPending(res.lembur),
+        ijin: filterPending(res.ijin),
+        asset: filterPending(res.asset),
+        stockOpname: filterPending(res.stockOpname),
+        assetOpname: filterPending(res.assetOpname)
+      }
+    };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
 /**
  * Memproses approval banyak item sekaligus (Batch)
  * @param {Array} items - List of {tipe, id, action, nama, tanggal}
@@ -1217,6 +1258,11 @@ function getLembur(bulanFilter) {
       const nameKey = String(nama || '').trim().toLowerCase();
       const divisi = data[i][3] || divMap[nameKey] || '';
       
+      // Sinkronisasi data absensi
+      const schOut = getScheduledOutServer(nama, tgl, divisi);
+      const schIn = getScheduledInServer(schOut, divisi);
+      const abs = getAbsensiInOutServer(nama, tgl, schIn, schOut);
+
       result.push({
         id: data[i][0],
         tanggal: tgl,
@@ -1227,7 +1273,9 @@ function getLembur(bulanFilter) {
         status: data[i][6],
         createdBy: data[i][7],
         createdAt: data[i][8] instanceof Date ? data[i][8].toISOString() : String(data[i][8]),
-        history: data[i][9] || '[]'
+        history: data[i][9] || '[]',
+        inTime: abs.inTime,
+        outTime: abs.outTime
       });
     }
     return { success: true, data: result };
