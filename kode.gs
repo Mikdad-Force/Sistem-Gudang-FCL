@@ -4748,6 +4748,17 @@ function getKaryawanFullData() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 
+function getLemburFullData() {
+  try {
+    return {
+      success: true,
+      lembur: getLembur(""),
+      laporan: getLaporanKerja(),
+      tglMerah: getTglMerahData()
+    };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 // ============================================================
 // ASSET WAREHOUSE
 // ============================================================
