@@ -17286,6 +17286,26 @@
       if (!karyawanData.length && isPimpinan) loadKaryawan();
 
       switchLemburTab('list');
+      
+      // Loading Indicator (Sama kaya Karyawan/Approval)
+      const tbLembur = document.getElementById('tableLembur');
+      const tbBelum = document.getElementById('tableLemburBelum');
+      if (tbLembur) {
+        tbLembur.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">
+              <div style="font-size: 14px; font-weight: 600;">⚡ Memuat data lembur...</div>
+            </td>
+          </tr>`;
+      }
+      if (tbBelum) {
+        tbBelum.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">
+              <div style="font-size: 14px; font-weight: 600;">⚡ Memuat data...</div>
+            </td>
+          </tr>`;
+      }
 
       // Visibilitas tombol Pengaturan Tanggal Merah
       const role = (currentUser?.role || '').toLowerCase();
@@ -17296,47 +17316,32 @@
 
       // Tampilkan Semua Tanggal - Abaikan filter bulan
       const filterBulanEl = document.getElementById('lemburFilterBulan');
-      if (filterBulanEl) filterBulanEl.style.display = 'none'; // Sembunyikan filter karena diminta tampilkan semua
+      if (filterBulanEl) filterBulanEl.style.display = 'none';
 
-      google.script.run
-        .withSuccessHandler(resLembur => {
-          if (resLembur && resLembur.success) {
-            lemburDataAll = resLembur.data || [];
-          } else {
-            console.error('Gagal memuat data lembur:', resLembur?.message);
-            lemburDataAll = [];
-          }
-          
-          google.script.run.withSuccessHandler(resLap => {
-            laporanKerjaData = (resLap && resLap.data) ? resLap.data : [];
-            
-            google.script.run.withSuccessHandler(resTM => {
-              if (resTM && resTM.success) {
-                tglMerahDataAll = resTM.data || [];
-              } else {
-                tglMerahDataAll = [];
-              }
-              renderLemburTable();
-            }).withFailureHandler(err => {
-              console.error('Error getTglMerahData:', err);
-              tglMerahDataAll = [];
-              renderLemburTable();
-            }).getTglMerahData();
-            
-          }).withFailureHandler(err => {
-            console.error('Error getLaporanKerja:', err);
-            laporanKerjaData = [];
-            renderLemburTable();
-          }).getLaporanKerja();
-          
-        })
-        .withFailureHandler(err => {
-          console.error('Critical Error getLembur:', err);
-          toast('Gagal memuat data lembur dari server', 'error');
-          lemburDataAll = [];
-          renderLemburTable();
-        })
-        .getLembur(""); // Kirim kosong agar server mengembalikan semua data
+      google.script.run.withSuccessHandler(res => {
+        if (!res.success) {
+          toast('Gagal memuat data lembur', 'error');
+          return;
+        }
+
+        // 1. Data Lembur
+        if (res.lembur && res.lembur.success) lemburDataAll = res.lembur.data || [];
+        else lemburDataAll = [];
+
+        // 2. Data Laporan Kerja
+        if (res.laporan && res.laporan.success) laporanKerjaData = res.laporan.data || [];
+        else laporanKerjaData = [];
+
+        // 3. Data Tanggal Merah
+        if (res.tglMerah && res.tglMerah.success) tglMerahDataAll = res.tglMerah.data || [];
+        else tglMerahDataAll = [];
+
+        renderLemburTable();
+      }).withFailureHandler(err => {
+        console.error('Critical Error getLemburFullData:', err);
+        toast('Gagal memuat data lembur dari server', 'error');
+        renderLemburTable();
+      }).getLemburFullData();
     }
 
 
