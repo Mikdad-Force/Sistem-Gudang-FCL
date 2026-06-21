@@ -621,6 +621,30 @@
       letter-spacing: -0.2px;
     }
 
+    .kpi-question-card {
+      background: var(--bg-panel-light);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-question-title {
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .kpi-question-card .form-check {
+      margin-bottom: 10px;
+    }
+
+    #kpiGrade {
+      background: var(--bg-panel-light);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-main);
+    }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

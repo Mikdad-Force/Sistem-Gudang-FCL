@@ -148,6 +148,7 @@
                 class="icon">⚖️</span> Dashboard Approval</div>
             <div class="nav-item" onclick="showPage('karyawan')" data-i18n="karyawan"><span class="icon">👥</span> Data
               Karyawan</div>
+            <div class="nav-item" onclick="showPage('kpiKaryawan')" data-i18n="kpiKaryawan"><span class="icon">📝</span> KPI Karyawan</div>
             <div class="nav-item" onclick="showPage('ijin')" data-i18n="ijin"><span class="icon">✉️</span> Pengajuan
               Ijin/Cuti</div>
             <div class="nav-item" onclick="showPage('lembur')" data-i18n="lembur"><span class="icon">⏱️</span> Pengajuan
@@ -256,6 +257,10 @@
                 <div class="stat-value red" id="apprStatSO">0</div>
                 <div class="stat-icon">⚖️</div>
               </div>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px;">
+              <button class="btn btn-secondary btn-sm" id="btnApprovalOpnameReports" onclick="openOpnameReportList()">📋 Laporan SO Asset (<span id="approvalOpnameReportCount">0</span>)</button>
             </div>
 
             <div class="kar-tabs mb-3">
@@ -1764,6 +1769,67 @@
             </div>
           </div>
 
+          <div class="page" id="page-kpiKaryawan" style="display:none;">
+            <div class="card">
+              <div class="card-header">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <h4 style="margin:0;">📋 KPI Karyawan</h4>
+                  <button class="btn btn-primary" onclick="submitKpiForm()">💾 Simpan KPI</button>
+                </div>
+                <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                  <input type="file" id="fileImportKpiQuestions" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImportKpiQuestions(this)">
+                  <button class="btn btn-ghost btn-sm" onclick="downloadKpiQuestionsTemplate()">📄 Template KPI</button>
+                  <button class="btn btn-teal btn-sm" onclick="document.getElementById('fileImportKpiQuestions').click()">⚡ Impor KPI</button>
+                </div>
+              </div>
+              <div class="row gx-3 gy-3">
+                <div class="col-md-4">
+                  <label class="form-label">Nama Karyawan</label>
+                  <input type="text" class="form-control" id="kpiUserName" readonly>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Divisi</label>
+                  <select id="kpiDivisi" class="form-select" onchange="renderKpiQuestions()"></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Tanggal Penilaian</label>
+                  <input type="date" id="kpiTanggal" class="form-control">
+                </div>
+              </div>
+              <div id="kpiQuestionsContainer" style="margin-top:18px;"></div>
+              <div class="row gx-3 gy-3" style="margin-top:12px;">
+                <div class="col-md-4">
+                  <label class="form-label">Total Point</label>
+                  <input type="text" class="form-control" id="kpiTotalPoint" readonly value="0">
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">Nilai</label>
+                  <div id="kpiGrade" class="form-control" style="min-height:46px; display:flex; align-items:center;">Belum Dinilai</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:20px;">
+              <div class="card-header">
+                <h4>📜 Riwayat KPI Saya</h4>
+              </div>
+              <div class="table-wrap">
+                <table class="table table-hover table-striped align-middle mt-2">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>Divisi</th>
+                      <th>Total Point</th>
+                      <th>Nilai</th>
+                      <th>Disimpan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="kpiHistoryBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <div class="page" id="page-ijin">
             <div class="card">
               <div class="card-header">
@@ -2326,6 +2392,8 @@
                   onchange="handleImportOrder(this)">
                 <input type="text" class="search-input" id="searchOrder" placeholder="Cari No. Order / Pelanggan..."
                   onkeyup="loadOrder()" style="width:250px;">
+                <input type="text" class="search-input" id="searchOrderSKU" placeholder="Cari SKU dalam pesanan..."
+                  onkeyup="loadOrder()" style="width:220px; margin-left:6px;">
                 <button class="btn btn-ghost" onclick="downloadOrderXlsxTemplate()">🗂️ Template</button>
                 <button class="btn btn-ghost" onclick="document.getElementById('fileImportOrder').click()">📥 Impor
                   Excel</button>
@@ -4473,55 +4541,58 @@
           </div>
 
           <div class="modal-overlay" id="modalTB">
-            <div class="row mb-3">
-              <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control"
-                  id="tbTanggal"></div>
-              <div class="col-md mb-2"><label class="form-label">Tipe Transaksi</label><select class="form-select"
-                  id="tbTipe">
-                  <option value="Pengeluaran">📉 Pengeluaran</option>
-                  <option value="Pemasukan">📈 Pemasukan</option>
-                </select></div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md mb-2"><label class="form-label">Keterangan Kegiatan</label><input type="text"
-                  class="form-control" id="tbKeterangan" placeholder="Nama / deskripsi kegiatan"></div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md mb-2"><label class="form-label">Nominal</label>
-                <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control"
-                    id="tbNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
+            <div class="custom-modal">
+              <button class="modal-close" onclick="closeModal('modalTB')">✕</button>
+              <div class="row mb-3">
+                <div class="col-md mb-2"><label class="form-label">Tanggal</label><input type="date" class="form-control"
+                    id="tbTanggal"></div>
+                <div class="col-md mb-2"><label class="form-label">Tipe Transaksi</label><select class="form-select"
+                    id="tbTipe">
+                    <option value="Pengeluaran">📉 Pengeluaran</option>
+                    <option value="Pemasukan">📈 Pemasukan</option>
+                  </select></div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-md mb-2"><label class="form-label">Bukti Invoice</label>
-                <div class="file-upload-wrap">
-                  <div class="file-upload-tabs"><button class="file-tab active"
-                      onclick="switchTab('tb','upload',this)">📁
-                      Upload File</button><button class="file-tab" onclick="switchTab('tb','url',this)">🔗 URL
-                      Link</button>
-                  </div>
-                  <div class="file-tab-panel active" id="tb-panel-upload">
-                    <div class="file-drop-zone" id="tb-dropzone"><input type="file" id="tbFile" accept="image/*,.pdf"
-                        onchange="handleFileSelect('tb',this)">
-                      <div class="file-drop-icon">📎</div>
-                      <div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span
-                          style="font-size:11px">JPG, PNG, PDF (maks. 20MB)</span></div>
-                    </div>
-                    <div class="file-preview" id="tb-preview"><span>📄</span><span class="file-preview-name"
-                        id="tb-fname">-</span><span class="file-preview-size" id="tb-fsize"></span><button
-                        class="file-remove" onclick="removeFile('tb')">✕</button></div>
-                    <div class="upload-progress" id="tb-progress">
-                      <div class="upload-progress-bar" id="tb-pbar"></div>
-                    </div>
-                  </div>
-                  <div class="file-tab-panel" id="tb-panel-url"><input type="url" id="tbBukti"
-                      placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div>
+              <div class="row mb-3">
+                <div class="col-md mb-2"><label class="form-label">Keterangan Kegiatan</label><input type="text"
+                    class="form-control" id="tbKeterangan" placeholder="Nama / deskripsi kegiatan"></div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-md mb-2"><label class="form-label">Nominal</label>
+                  <div class="rp-input-wrap"><span class="rp-prefix">Rp</span><input type="text" class="form-control"
+                      id="tbNominal" placeholder="0" oninput="formatRpInput(this)" inputmode="numeric"></div>
                 </div>
               </div>
+              <div class="row mb-3">
+                <div class="col-md mb-2"><label class="form-label">Bukti Invoice</label>
+                  <div class="file-upload-wrap">
+                    <div class="file-upload-tabs"><button class="file-tab active"
+                        onclick="switchTab('tb','upload',this)">📁
+                        Upload File</button><button class="file-tab" onclick="switchTab('tb','url',this)">🔗 URL
+                        Link</button>
+                    </div>
+                    <div class="file-tab-panel active" id="tb-panel-upload">
+                      <div class="file-drop-zone" id="tb-dropzone"><input type="file" id="tbFile" accept="image/*,.pdf"
+                          onchange="handleFileSelect('tb',this)">
+                        <div class="file-drop-icon">📎</div>
+                        <div class="file-drop-text">Klik atau <strong>drag & drop</strong> file di sini<br><span
+                            style="font-size:11px">JPG, PNG, PDF (maks. 20MB)</span></div>
+                      </div>
+                      <div class="file-preview" id="tb-preview"><span>📄</span><span class="file-preview-name"
+                          id="tb-fname">-</span><span class="file-preview-size" id="tb-fsize"></span><button
+                          class="file-remove" onclick="removeFile('tb')">✕</button></div>
+                      <div class="upload-progress" id="tb-progress">
+                        <div class="upload-progress-bar" id="tb-pbar"></div>
+                      </div>
+                    </div>
+                    <div class="file-tab-panel" id="tb-panel-url"><input type="url" id="tbBukti"
+                        placeholder="https://drive.google.com/..." style="width:100%;margin-top:4px"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer"><button class="btn btn-ghost"
+                  onclick="closeModal('modalTB')">Batal</button><button class="btn btn-primary" id="btnSaveTb"
+                  onclick="submitTB()">💾 Simpan</button></div>
             </div>
-            <div class="modal-footer"><button class="btn btn-ghost"
-                onclick="closeModal('modalTB')">Batal</button><button class="btn btn-primary" id="btnSaveTb"
-                onclick="submitTB()">💾 Simpan</button></div>
           </div>
         </div>
 
@@ -6006,6 +6077,8 @@
                 Pengajuan Ijin</label>
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="lembur">
                 Pengajuan Lembur</label>
+              <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="kpiKaryawan">
+                KPI Karyawan</label>
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox"
                   value="absensiKaryawan"> 🖐️ Absensi Karyawan</label>
               <label class="form-label" style="margin: 0; font-size: 12px;"><input type="checkbox" value="jadwalShift">

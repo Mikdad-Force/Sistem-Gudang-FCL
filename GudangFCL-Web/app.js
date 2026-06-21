@@ -588,6 +588,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         hakAksesMenu: "Hak Akses Menu",
         lemburTanpaLaporan: "Lembur Tanpa Laporan",
         assetWarehouse: "Asset Warehouse",
+        kpiKaryawan: "KPI Karyawan",
         tambahAsset: "+ Tambah Asset",
         pilihDivisi: "Pilih Divisi",
         moveAsset: "Move Asset",
@@ -1015,6 +1016,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         hakAksesMenu: "Menu Access Permissions",
         lemburTanpaLaporan: "Overtime Without Report",
         assetWarehouse: "Asset Warehouse",
+        kpiKaryawan: "Employee KPI",
         tambahAsset: "+ Add Asset",
         pilihDivisi: "Select Division",
         moveAsset: "Move Asset",
@@ -1439,6 +1441,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         isiKontenSOP: "SOP 内容",
         hakAksesMenu: "菜单访问权限",
         assetWarehouse: "资产仓库",
+        kpiKaryawan: "员工 KPI",
         tambahAsset: "+ 添加资产",
         pilihDivisi: "选择部门",
         moveAsset: "移动资产",
@@ -2039,7 +2042,14 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       }, 6000);
 
       try {
-        const saved = sessionStorage.getItem('fcl_user');
+        let saved = sessionStorage.getItem('fcl_user');
+        if (!saved) {
+          saved = localStorage.getItem('fcl_user');
+          if (saved) {
+            sessionStorage.setItem('fcl_user', saved);
+          }
+        }
+
         if (saved) {
           currentUser = JSON.parse(saved);
           clearTimeout(failsafe1);
@@ -2103,6 +2113,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
             if (pName === 'users' && canManageUsers) isVisible = true;
             if (pName === 'returnDistributor' && (role === 'admin' || allowedMenus.includes('returnDistributor'))) isVisible = true;
             if (pName === 'approval') isVisible = isPimpinan; // Strictly role-based
+            if (pName === 'approvalDashboard') isVisible = role === 'admin' || isPimpinan || allowedMenus.includes('approvalDashboard');
 
             if (isVisible) {
               el.style.display = 'flex';
@@ -2131,7 +2142,14 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         if (isPimpinan) {
           document.getElementById('navCentralApproval').style.display = 'flex';
         }
-        if (firstAllowedPage) showPage(firstAllowedPage); else document.querySelector('.content').innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><div style="font-size:40px; margin-bottom:10px;">⛔</div>Anda belum memiliki akses menu.<br>Silakan hubungi Administrator.</div>';
+        const dashboardNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick')?.includes("showPage('dashboard')") && el.style.display !== 'none');
+        if (dashboardNav) {
+          showPage('dashboard');
+        } else if (firstAllowedPage) {
+          showPage(firstAllowedPage);
+        } else {
+          document.querySelector('.content').innerHTML = '<div style="text-align:center;padding:50px;color:var(--gray)"><div style="font-size:40px; margin-bottom:10px;">⛔</div>Anda belum memiliki akses menu.<br>Silakan hubungi Administrator.</div>';
+        }
       } else {
         document.getElementById('navAdmin').style.display = 'block';
         document.getElementById('navUsers').style.display = 'flex';
@@ -2171,15 +2189,15 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         try { loadUsersDropdown(); } catch (e) { console.warn('loadUsersDropdown error:', e); }
       }
 
+      // Auto-load attendance widget on login (dashboard load happens via showPage)
+      setTimeout(() => {
+        try { loadMyAttendanceSummary(); } catch (e) { console.warn('Attendance load error:', e); }
+      }, 500);
+
       // Forced Password Change Check
       if (currentUser.isDefaultPassword) {
         forceChangePassword();
       }
-
-      // Load attendance summary AFTER the app is displayed
-      setTimeout(() => {
-        try { loadMyAttendanceSummary(); } catch (e) { console.warn('Attendance load error:', e); }
-      }, 500);
     }
     // checkPendingApprovals original implementation is below
 
@@ -2209,6 +2227,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         if (res.success) {
           currentUser = res.user;
           sessionStorage.setItem('fcl_user', JSON.stringify(currentUser));
+          localStorage.setItem('fcl_user', JSON.stringify(currentUser));
           ensureDistributorQueueSheet(true);
           initApp();
         }
@@ -2252,12 +2271,13 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
 
     function doLogout() {
       sessionStorage.clear();
+      localStorage.removeItem('fcl_user');
       currentUser = null;
       document.getElementById('app').style.display = 'none';
       document.getElementById('loginPage').style.display = 'flex';
       document.getElementById('loginPage').style.opacity = '1';
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPass').value = '';
     }
 
     const pageTitles = {
@@ -2280,11 +2300,418 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       karyawan: loadKaryawan, laporanKerja: loadLaporanKerja, grafikLaporan: loadGrafikLaporan,
       handover: loadStockControl, klaim: loadKlaim, tugasProject: loadTugasProject, ijin: loadIjin, lembur: loadLembur,
       pengajuanAsset: loadAsset,
-      organisasi: loadOrg, sop: loadSOP, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, antrianDistributor: loadDistributorQueue, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
+      organisasi: loadOrg, sop: loadSOP, kpiKaryawan: loadKpiKaryawan, users: loadUsers, stock: loadStock, stockOpname: loadStockOpname, packingList: loadPackingList, inbound: loadInbound, outbound: loadOutbound, retur: loadRetur, order: loadOrder, antrianDistributor: loadDistributorQueue, analisis: loadAnalisis, assetWarehouse: loadAssetWarehouse, bookingMobil: loadBookingMobil,
       returnDistributor: loadReturnDistributor,
       approvalDashboard: loadApprovalDashboard,
       approval: loadCentralizedApprovalsOptimized, approvalCenter: renderApprovalCenter
     };
+
+    function getKpiStorageKey() {
+      return currentUser && currentUser.username ? `kpi_karyawan_${currentUser.username}` : 'kpi_karyawan_guest';
+    }
+
+    let kpiQuestionBanks = {
+      Warehouse: [
+        { question: 'Langkah pertama yang benar saat menerima barang masuk?', options: [
+            { label: 'Periksa dokumen, jumlah, dan kondisi barang', point: 25 },
+            { label: 'Langsung simpan barang tanpa pemeriksaan', point: 0 },
+            { label: 'Tunggu supervisor memeriksa terlebih dahulu', point: 10 },
+            { label: 'Tarik pallet tanpa membuka segel', point: 5 }
+          ] },
+        { question: 'Bagaimana cara menjaga akurasi stok gudang?', options: [
+            { label: 'Melakukan pengecekan berkala dan pencatatan rapi', point: 25 },
+            { label: 'Hanya mengandalkan ingatan saja', point: 0 },
+            { label: 'Memindahkan barang tanpa update sistem', point: 5 },
+            { label: 'Menunggu audit tahunan', point: 10 }
+          ] },
+        { question: 'Apa yang harus dilakukan saat menemukan kerusakan barang?', options: [
+            { label: 'Catat segera dan laporkan ke supervisor', point: 25 },
+            { label: 'Biarkan saja dan lanjutkan pekerjaan', point: 0 },
+            { label: 'Rubutkan ke rekan kerja tanpa dokumentasi', point: 5 },
+            { label: 'Buang barang tanpa izin', point: 0 }
+          ] },
+        { question: 'Sikap terbaik saat melayani tim operasional lain?', options: [
+            { label: 'Responsif, sopan, dan bantu selesaikan masalah', point: 25 },
+            { label: 'Mengabaikan jika bukan tugas saya', point: 0 },
+            { label: 'Memberi jawaban samar-samar', point: 10 },
+            { label: 'Menunggu perintah atasan baru bertindak', point: 5 }
+          ] }
+      ],
+      Inbound: [
+        { question: 'Dokumen apa yang wajib diverifikasi sebelum menerima inbound?', options: [
+            { label: 'Surat jalan, invoice, dan daftar muatan', point: 25 },
+            { label: 'Hanya melihat paket secara kasat mata', point: 0 },
+            { label: 'Cek jumlah di akhir shift', point: 5 },
+            { label: 'Tunggu petugas lain yang memeriksa', point: 10 }
+          ] },
+        { question: 'Bagaimana menangani barang inbound yang tidak sesuai?', options: [
+            { label: 'Lapor dan pisahkan untuk tindak lanjut', point: 25 },
+            { label: 'Simpan seperti biasa', point: 0 },
+            { label: 'Buang agar tidak merepotkan', point: 0 },
+            { label: 'Ubah label agar cocok', point: 0 }
+          ] },
+        { question: 'Sikap terbaik saat melakukan pengecekan kualitas?', options: [
+            { label: 'Teliti dan terus jaga konsistensi', point: 25 },
+            { label: 'Cukup lihat sepintas', point: 0 },
+            { label: 'Tunda sampai ada waktu longgar', point: 10 },
+            { label: 'Abaikan barang kecil yang rusak', point: 5 }
+          ] },
+        { question: 'Kapan Anda harus melakukan input data inbound ke sistem?', options: [
+            { label: 'Segera setelah barang diterima dan dicek', point: 25 },
+            { label: 'Besok pagi saja', point: 0 },
+            { label: 'Setelah semua barang selesai diurut', point: 10 },
+            { label: 'Hanya saat diminta supervisor', point: 5 }
+          ] }
+      ],
+      Distributor: [
+        { question: 'Apa prioritas utama saat menyiapkan order distributor?', options: [
+            { label: 'Kecepatan, akurasi, dan kondisi barang baik', point: 25 },
+            { label: 'Hanya cepat tanpa cek ulang', point: 0 },
+            { label: 'Pilih barang secara acak', point: 0 },
+            { label: 'Tunda hingga semua pesanan selesai', point: 10 }
+          ] },
+        { question: 'Bagaimana cara memastikan qty order benar?', options: [
+            { label: 'Hitung ulang sebelum packing', point: 25 },
+            { label: 'Percaya tanpa menghitung', point: 0 },
+            { label: 'Tanya rekan kerja saja', point: 10 },
+            { label: 'Hanya hitung sebagian', point: 5 }
+          ] },
+        { question: 'Apa yang harus dilakukan jika ada item yang rusak?', options: [
+            { label: 'Pisahkan, laporkan, dan ajukan retur', point: 25 },
+            { label: 'Tetap kirim agar tidak telat', point: 0 },
+            { label: 'Tukar dengan item lain tanpa catatan', point: 0 },
+            { label: 'Biarkan di gudang', point: 5 }
+          ] },
+        { question: 'Sikap terbaik saat bekerja dalam tim distributor?', options: [
+            { label: 'Komunikasi jelas dan bantu rekan', point: 25 },
+            { label: 'Kerja sendiri saja', point: 0 },
+            { label: 'Menunggu instruksi terus', point: 10 },
+            { label: 'Menyalahkan orang lain jika salah', point: 0 }
+          ] }
+      ],
+      HR: [
+        { question: 'Apa tujuan utama evaluasi karyawan rutin?', options: [
+            { label: 'Meningkatkan kinerja dan kepuasan kerja', point: 25 },
+            { label: 'Hanya mengikuti prosedur', point: 0 },
+            { label: 'Untuk memberi nilai saja', point: 5 },
+            { label: 'Agar terlihat sibuk', point: 0 }
+          ] },
+        { question: 'Bagaimana memastikan data karyawan tersimpan rapi?', options: [
+            { label: 'Update sistem dan arsip secara konsisten', point: 25 },
+            { label: 'Simpan hanya di catatan pribadi', point: 0 },
+            { label: 'Tunggu audit tahunan', point: 10 },
+            { label: 'Simpan di tempat acak', point: 0 }
+          ] },
+        { question: 'Sikap terbaik saat menerima keluhan staf?', options: [
+            { label: 'Mendengarkan dengan empati dan memberi tindak lanjut', point: 25 },
+            { label: 'Mendiscount dan tidak menindaklanjuti', point: 0 },
+            { label: 'Menyarankan untuk lapor sendiri saja', point: 5 },
+            { label: 'Menyalahkan staf atas masalahnya', point: 0 }
+          ] },
+        { question: 'Kapan Anda harus menindaklanjuti permintaan cuti?', options: [
+            { label: 'Segera setelah menerima pengajuan lengkap', point: 25 },
+            { label: 'Tunda hingga deadline', point: 0 },
+            { label: 'Hanya setelah diingatkan', point: 5 },
+            { label: 'Jangan menindaklanjuti sama sekali', point: 0 }
+          ] }
+      ],
+      Operasional: [
+        { question: 'Bagaimana mendeteksi risiko keselamatan di area kerja?', options: [
+            { label: 'Patroli rutin dan laporkan setiap bahaya', point: 25 },
+            { label: 'Hanya menunggu kecelakaan terjadi', point: 0 },
+            { label: 'Tanyakan supervisor jika sempat', point: 10 },
+            { label: 'Abaikan jika kecil', point: 0 }
+          ] },
+        { question: 'Apa yang harus dilakukan ketika tugas mendesak muncul?', options: [
+            { label: 'Atur prioritas dan komunikasikan tim', point: 25 },
+            { label: 'Kerjakan tanpa koordinasi', point: 0 },
+            { label: 'Biarkan tim lain yang menangani', point: 5 },
+            { label: 'Tunda sampai akhir shift', point: 0 }
+          ] },
+        { question: 'Bagaimana menjaga mutu output operasional?', options: [
+            { label: 'Ikuti standar kerja dan lakukan pemeriksaan', point: 25 },
+            { label: 'Selesaikan cepat tanpa cek ulang', point: 0 },
+            { label: 'Serahkan ke tim lain', point: 10 },
+            { label: 'Hanya lakukan saat diminta', point: 5 }
+          ] },
+        { question: 'Apa yang penting saat berkomunikasi dengan lini lain?', options: [
+            { label: 'Jelas, sopan, dan tepat waktu', point: 25 },
+            { label: 'Singkat tanpa detail', point: 0 },
+            { label: 'Tunda sampai ada waktu', point: 10 },
+            { label: 'Beri jawaban ambigu', point: 0 }
+          ] }
+      ],
+      Admin: [
+        { question: 'Bagaimana cara menjaga dokumen administrasi teratur?', options: [
+            { label: 'Klasifikasi jelas dan arsip rutin', point: 25 },
+            { label: 'Tumpuk di satu folder saja', point: 0 },
+            { label: 'Simpan di komputer tanpa backup', point: 10 },
+            { label: 'Biarkan rekan yang mengurusnya', point: 0 }
+          ] },
+        { question: 'Kapan sebaiknya memperbarui catatan biaya?', options: [
+            { label: 'Segera setelah transaksi terjadi', point: 25 },
+            { label: 'Akhir bulan saja', point: 5 },
+            { label: 'Saat diminta audit', point: 0 },
+            { label: 'Tidak perlu diperbarui', point: 0 }
+          ] },
+        { question: 'Apa fungsi utama data arsip?', options: [
+            { label: 'Sebagai bukti dan referensi operasional', point: 25 },
+            { label: 'Hanya untuk formalitas', point: 0 },
+            { label: 'Untuk disimpan saja', point: 5 },
+            { label: 'Tidak perlu diperhatikan', point: 0 }
+          ] },
+        { question: 'Bagaimana memastikan informasi tersampaikan dengan baik?', options: [
+            { label: 'Gunakan bahasa jelas dan lengkap', point: 25 },
+            { label: 'Kirim tanpa detail penting', point: 0 },
+            { label: 'Sampaikan hanya sebagian', point: 10 },
+            { label: 'Biarkan penerima menebak', point: 0 }
+          ] }
+      ]
+    };
+
+    function loadKpiQuestions(callback) {
+      if (!isGoogleScriptAvailable()) {
+        if (callback) callback();
+        return;
+      }
+      const divisi = document.getElementById('kpiDivisi')?.value || '';
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success && Array.isArray(res.data)) {
+          const bank = {};
+          res.data.forEach(item => {
+            const division = String(item.divisi || 'General').trim() || 'General';
+            if (!bank[division]) bank[division] = [];
+            bank[division].push({
+              question: item.question,
+              options: Array.isArray(item.options) ? item.options : []
+            });
+          });
+          kpiQuestionBanks = Object.assign({}, kpiQuestionBanks, bank);
+        }
+        if (callback) callback();
+      }).withFailureHandler(err => {
+        console.error('Failed to load KPI questions:', err);
+        if (callback) callback();
+      }).getKpiQuestions(divisi);
+    }
+
+    function downloadKpiQuestionsTemplate() {
+      const data = [
+        ['ID (Kosongkan jika baru)', 'Divisi', 'Pertanyaan', 'Pilihan 1 Label', 'Pilihan 1 Poin', 'Pilihan 2 Label', 'Pilihan 2 Poin', 'Pilihan 3 Label', 'Pilihan 3 Poin', 'Pilihan 4 Label', 'Pilihan 4 Poin'],
+        ['', 'Warehouse', 'Apa langkah pertama saat menerima barang masuk?', 'Periksa dokumen dan kondisi barang', 25, 'Langsung simpan tanpa cek', 0, 'Tunggu supervisor memeriksa', 10, 'Tarik pallet tanpa membuka segel', 5],
+        ['', 'HR', 'Bagaimana cara menjaga kedisiplinan tim?', 'Reminder kehadiran dan monitoring', 25, 'Biarkan setiap orang mengatur sendiri', 0, 'Hanya catat masalah bila terjadi', 10, 'Serahkan sepenuhnya pada presensi', 5]
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Template KPI Questions');
+      XLSX.writeFile(wb, 'Template_KPI_Questions.xlsx');
+    }
+
+    function handleImportKpiQuestions(input) {
+      if (!input.files.length) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!rows.length) return toast('File kosong', 'error');
+
+        const items = rows.map(r => ({
+          id: String(r['ID (Kosongkan jika baru)'] || '').trim(),
+          divisi: String(r['Divisi'] || 'General').trim() || 'General',
+          question: String(r['Pertanyaan'] || '').trim(),
+          opt1Label: String(r['Pilihan 1 Label'] || '').trim(),
+          opt1Point: parseInt(r['Pilihan 1 Poin'] || 0, 10) || 0,
+          opt2Label: String(r['Pilihan 2 Label'] || '').trim(),
+          opt2Point: parseInt(r['Pilihan 2 Poin'] || 0, 10) || 0,
+          opt3Label: String(r['Pilihan 3 Label'] || '').trim(),
+          opt3Point: parseInt(r['Pilihan 3 Poin'] || 0, 10) || 0,
+          opt4Label: String(r['Pilihan 4 Label'] || '').trim(),
+          opt4Point: parseInt(r['Pilihan 4 Poin'] || 0, 10) || 0
+        })).filter(x => x.question);
+
+        if (!items.length) return toast('Tidak ada pertanyaan KPI valid', 'error');
+
+        google.script.run.withSuccessHandler(res => {
+          input.value = '';
+          if (res && res.success) {
+            toast('Import KPI Questions berhasil');
+            loadKpiQuestions(() => renderKpiQuestions());
+          } else {
+            toast(res?.message ? 'Gagal impor: ' + res.message : 'Gagal impor KPI Questions.', 'error');
+          }
+        }).withFailureHandler(err => {
+          console.error('Import KPI Questions error:', err);
+          toast('Gagal mengimpor KPI Questions.', 'error');
+          input.value = '';
+        }).addBulkKpiQuestions(items);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderKpiQuestions() {
+      const division = document.getElementById('kpiDivisi')?.value || 'General';
+      const questions = kpiQuestionBanks[division] || kpiQuestionBanks.General || [];
+      const container = document.getElementById('kpiQuestionsContainer');
+      if (!container) return;
+      if (!questions.length) {
+        container.innerHTML = '<div class="card"><div class="card-body">Tidak ada pertanyaan untuk divisi ini.</div></div>';
+        return;
+      }
+      container.innerHTML = questions.map((q, idx) => `
+        <div class="kpi-question-card">
+          <div class="kpi-question-title"><strong>Soal ${idx + 1}.</strong> ${q.question}</div>
+          ${q.options.map(opt => `
+            <div class="form-check">
+              <input class="form-check-input" type="radio" id="kpiQ${idx}-${opt.point}" name="kpiQ${idx}" value="${opt.point}" data-answer="${opt.label}" onchange="calcKpiScore()">
+              <label class="form-check-label" for="kpiQ${idx}-${opt.point}">
+                ${opt.label} <span style="color:var(--gray);">(${opt.point} poin)</span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+      calcKpiScore();
+    }
+
+    function calcKpiScore() {
+      const container = document.getElementById('kpiQuestionsContainer');
+      if (!container) return;
+      let total = 0;
+      const cards = container.querySelectorAll('.kpi-question-card');
+      cards.forEach((card, idx) => {
+        const checked = card.querySelector(`input[name="kpiQ${idx}"]:checked`);
+        if (checked) total += parseInt(checked.value, 10) || 0;
+      });
+      const totalField = document.getElementById('kpiTotalPoint');
+      const gradeField = document.getElementById('kpiGrade');
+      if (totalField) totalField.value = total;
+      if (gradeField) gradeField.textContent = getKpiGrade(total);
+    }
+
+    function getKpiGrade(total) {
+      if (total >= 90) return 'A - Sangat Baik';
+      if (total >= 75) return 'B - Baik';
+      if (total >= 60) return 'C - Cukup';
+      if (total > 0) return 'D - Perlu Peningkatan';
+      return 'Belum Dinilai';
+    }
+
+    function isGoogleScriptAvailable() {
+      return typeof google !== 'undefined' && google.script && typeof google.script.run !== 'undefined';
+    }
+
+    function renderKpiHistory(records) {
+      const tbody = document.getElementById('kpiHistoryBody');
+      if (!tbody) return;
+      if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Belum ada catatan KPI.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = records.slice().reverse().map(record => `
+        <tr>
+          <td>${record.tanggal || '-'}</td>
+          <td>${record.divisi || '-'}</td>
+          <td>${record.totalPoints}</td>
+          <td>${record.grade}</td>
+          <td>${record.submittedAt || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function loadKpiHistory() {
+      const localHistory = JSON.parse(localStorage.getItem(getKpiStorageKey()) || '[]');
+      if (!isGoogleScriptAvailable() || !currentUser || !currentUser.username) {
+        return renderKpiHistory(localHistory);
+      }
+
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success && Array.isArray(res.data)) {
+          localStorage.setItem(getKpiStorageKey(), JSON.stringify(res.data));
+          renderKpiHistory(res.data);
+        } else {
+          renderKpiHistory(localHistory);
+        }
+      }).withFailureHandler(err => {
+        console.error('KPI load error:', err);
+        renderKpiHistory(localHistory);
+      }).getKpiKaryawan(currentUser.username);
+    }
+
+    function submitKpiForm() {
+      const division = document.getElementById('kpiDivisi')?.value || '';
+      const tanggal = document.getElementById('kpiTanggal')?.value || new Date().toISOString().slice(0, 10);
+      const container = document.getElementById('kpiQuestionsContainer');
+      if (!container) return toast('Form KPI tidak ditemukan.', 'error');
+      const cards = container.querySelectorAll('.kpi-question-card');
+      const answers = [];
+      let valid = true;
+      cards.forEach((card, idx) => {
+        const checked = card.querySelector(`input[name="kpiQ${idx}"]:checked`);
+        answers.push({
+          question: card.querySelector('.kpi-question-title')?.textContent || '',
+          answer: checked?.dataset.answer || '',
+          point: checked ? parseInt(checked.value, 10) || 0 : 0
+        });
+        if (!checked) valid = false;
+      });
+      if (!valid) return toast('Jawab semua pertanyaan sebelum menyimpan.', 'error');
+      const total = parseInt(document.getElementById('kpiTotalPoint')?.value, 10) || 0;
+      const record = {
+        tanggal,
+        divisi: division,
+        totalPoints: total,
+        grade: getKpiGrade(total),
+        submittedAt: new Date().toLocaleString(),
+        answers
+      };
+
+      const saveLocally = () => {
+        const history = JSON.parse(localStorage.getItem(getKpiStorageKey()) || '[]');
+        history.push(record);
+        localStorage.setItem(getKpiStorageKey(), JSON.stringify(history));
+        loadKpiHistory();
+        toast('KPI Karyawan berhasil disimpan.');
+      };
+
+      if (!isGoogleScriptAvailable() || !currentUser || !currentUser.username) {
+        return saveLocally();
+      }
+
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          saveLocally();
+        } else {
+          toast(res?.message ? 'Gagal menyimpan KPI: ' + res.message : 'Gagal menyimpan KPI.', 'error');
+        }
+      }).withFailureHandler(err => {
+        console.error('KPI submit error:', err);
+        saveLocally();
+        toast('Koneksi backend gagal. KPI disimpan secara lokal.', 'warning');
+      }).addKpiKaryawan(currentUser.username, currentUser.nama || currentUser.username, division, tanggal, total, getKpiGrade(total), answers);
+    }
+
+    function loadKpiKaryawan() {
+      const nameEl = document.getElementById('kpiUserName');
+      const divisiEl = document.getElementById('kpiDivisi');
+      const tanggalEl = document.getElementById('kpiTanggal');
+      if (nameEl) nameEl.value = currentUser?.nama || currentUser?.username || '';
+      const defaultDivisi = (currentUser?.divisi || currentUser?.role || 'Warehouse').trim();
+      const divisions = ['Warehouse', 'Inbound', 'Distributor', 'HR', 'Operasional', 'Admin'];
+      const finalDivisions = [...new Set([defaultDivisi, ...divisions].filter(Boolean))];
+      if (divisiEl) {
+        divisiEl.innerHTML = finalDivisions.map(d => `<option value="${d}">${d}</option>`).join('');
+        if (defaultDivisi) divisiEl.value = finalDivisions.includes(defaultDivisi) ? defaultDivisi : finalDivisions[0];
+      }
+      if (tanggalEl) tanggalEl.value = new Date().toISOString().slice(0, 10);
+      loadKpiQuestions(() => {
+        renderKpiQuestions();
+        loadKpiHistory();
+      });
+    }
 
     // Track last page to prevent redundant loads
     let _lastLoadedPage = null;
@@ -2306,6 +2733,9 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         const isViceSPV = (role === 'Vice SPV' || role === 'Vice Supervisor');
         let allowedMenus = []; if (currentUser.permissions) { try { allowedMenus = JSON.parse(currentUser.permissions); } catch (e) { } }
         if (role !== 'admin' && !isHR && !isViceSPV && !allowedMenus.includes('kelolaUser')) return toast('Akses dilarang', 'error');
+      }
+      if (name === 'kpiKaryawan' && !hasPermission('kpiKaryawan')) {
+        return toast('Akses KPI Karyawan dilarang', 'error');
       }
       if (name === 'paymentGudang' && !hasPermission('paymentGudang')) {
         return toast('Akses MISTINE dilarang', 'error');
@@ -2332,7 +2762,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         // Page icon mapping
         const pageIcons = {
           dashboard: '📊', kasGudang: '💰', teamBuilding: '🤝', expense: '💸', pettyCash: '🪙', paymentGudang: '💄', rekapOngkirMistine: '💰', karyawan: '👥',
-          laporanKerja: '📝', grafikLaporan: '📈', handover: '📦', klaim: '⚠️', tugasProject: '📋',
+          laporanKerja: '📝', grafikLaporan: '📈', handover: '📦', klaim: '⚠️', tugasProject: '📋', kpiKaryawan: '📝',
           ijin: '✉️', lembur: '⏱️', pengajuanAsset: '📦', organisasi: '🏗️', sop: '📋',
           users: '⚙️', stock: '📦', stockOpname: '⚖️', packingList: '📋', inbound: '📥',
           outbound: '✂️', retur: '↩️', order: '🛒', antrianDistributor: '🚚', analisis: '📈', bookingMobil: '🚗'
@@ -9120,13 +9550,13 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       // checks.forEach(c => c.checked = false); // Opsional: Hapus komentar jika ingin reset total tiap ganti role
 
       if (r === 'HR') {
-        ['karyawan', 'ijin', 'lembur', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
+        ['karyawan', 'ijin', 'lembur', 'kpiKaryawan', 'pengajuanAsset', 'organisasi', 'editKaryawan', 'aksesHr', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'antrianDistributor', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
       } else if (r === 'Supervisor') {
-        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
+        ['dashboard', 'kasGudang', 'teamBuilding', 'expense', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengaturanTglMerah', 'dashboardValidasiLembur', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard', 'kpiKaryawan'].forEach(set);
       } else if (r === 'Vice Supervisor') {
-        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
+        ['dashboard', 'kasGudang', 'pettyCash', 'paymentGudang', 'laporanKerja', 'grafikLaporan', 'stock', 'inbound', 'outbound', 'retur', 'order', 'antrianDistributor', 'bookingMobil', 'updateStatusBookingMobil', 'aksesViceSpv', 'kelolaUser', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'absensiKaryawan', 'jadwalShift', 'aksesRepairAbsensi', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard', 'kpiKaryawan'].forEach(set);
       } else if (r === 'Team Leader' || r.includes('Team Leader') || r === 'TL') {
-        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard'].forEach(set);
+        ['dashboard', 'laporanKerja', 'stock', 'inbound', 'outbound', 'antrianDistributor', 'aksesApproval', 'aksesLemburLangsung', 'lemburTanpaLaporan', 'pengajuanAsset', 'aksesApprovalAsset', 'approvalDashboard', 'kpiKaryawan'].forEach(set);
       }
     }
     function toggleCustomRole() { const s = v('uRole'); document.getElementById('uRoleCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
@@ -11252,6 +11682,8 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
 
     // ORDER
     function loadOrder() {
+      const skuQuery = (v('searchOrderSKU') || '').toLowerCase().trim();
+      const callGet = skuQuery ? 'getOrdersBySku' : 'getOrders';
       google.script.run.withSuccessHandler(res => {
         if (!res || !res.success) {
           toast(res ? res.message : 'Gagal memuat data order', 'error');
@@ -11355,7 +11787,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       }).withFailureHandler(err => {
         toast('Gagal memuat Order: ' + err, 'error');
         console.error('Order Load Error:', err);
-      }).getOrders();
+      })[callGet](skuQuery || undefined);
     }
 
     // ============================================================
@@ -13521,6 +13953,7 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
           _approvalData = res.data;
           updateApprovalStats();
           renderApprovalDashboardData();
+          loadOpnameReportMeta();
         } else {
           toast('Gagal memuat data approval: ' + (res?.message || 'Unknown error'), 'error');
         }
@@ -16115,9 +16548,25 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
           }
           renderAssetWarehouseTable();
           awRenderMap();
+          loadOpnameReportMeta();
         }).getWarehouseMapData();
 
       }).getAssetWarehouseData();
+    }
+
+    function loadOpnameReportMeta() {
+      const btn = document.getElementById('btnOpnameReports');
+      const approvalCount = document.getElementById('approvalOpnameReportCount');
+      const awCount = document.getElementById('awOpnameReportCount');
+      if (!btn && !approvalCount && !awCount) return;
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res || !res.success) return;
+        const count = Array.isArray(res.data) ? res.data.length : 0;
+        if (btn) btn.style.display = 'inline-flex';
+        if (approvalCount) approvalCount.textContent = count;
+        if (awCount) awCount.textContent = count;
+      }).getAuditReports();
     }
 
     function renderAssetWarehouseTable() {
