@@ -12,6 +12,8 @@ const CONFIG = {
     TEAM_BUILDING: 'TeamBuilding',
     EXPENSE: 'Expense',
     KARYAWAN: 'Karyawan',
+    KPI_KARYAWAN: 'KPI Karyawan',
+    KPI_QUESTIONS: 'KPI Questions',
     IJIN: 'Ijin',
     LEMBUR: 'Lembur',
     LAPORAN_KERJA: 'LaporanKerja',
@@ -66,6 +68,433 @@ const CONFIG = {
   PETTY_CASH_FOLDER_ID: '1d1jqWSHxHQkEXu2bmhFDTTHuA36afRPd'          // Folder utama Petty Cash Drive
 };
 
+const SHEET_HEADERS = {
+  [CONFIG.SHEETS.USERS]: ['id', 'username', 'password', 'nama', 'role', 'createdAt', 'permissions', 'divisi'],
+  [CONFIG.SHEETS.KAS_GUDANG]: ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.TEAM_BUILDING]: ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe'],
+  [CONFIG.SHEETS.EXPENSE]: ['id', 'tanggal', 'perusahaan', 'kategori', 'keterangan', 'nominal', 'bank', 'rekening', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.KARYAWAN]: ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti', 'fingerprintId'],
+  [CONFIG.SHEETS.KPI_KARYAWAN]: ['id', 'username', 'nama', 'divisi', 'tanggal', 'totalPoints', 'grade', 'answersJson', 'submittedAt', 'createdAt'],
+  [CONFIG.SHEETS.KPI_QUESTIONS]: ['id', 'divisi', 'question', 'opt1Label', 'opt1Point', 'opt2Label', 'opt2Point', 'opt3Label', 'opt3Point', 'opt4Label', 'opt4Point'],
+  [CONFIG.SHEETS.IJIN]: ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history'],
+  [CONFIG.SHEETS.LEMBUR]: ['id', 'tanggal', 'nama', 'divisi', 'jumlahJam', 'keterangan', 'status', 'createdBy', 'createdAt', 'history'],
+  [CONFIG.SHEETS.LAPORAN_KERJA]: ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames', 'shift', 'totalPHL', 'jamKerjaPHL', 'totalPO', 'totalQty', 'totalInbound', 'pendapatanPotongBubble', 'pendapatanBuatBubble', 'alasanPengurangan'],
+  [CONFIG.SHEETS.SOP]: ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt'],
+  [CONFIG.SHEETS.ORGANISASI]: ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan'],
+  [CONFIG.SHEETS.STOCK]: ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt'],
+  [CONFIG.SHEETS.SURAT_JALAN_MASUK]: ['id','noSJ','tanggal','supplier','keterangan','createdBy','createdAt'],
+  [CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL]: ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate'],
+  [CONFIG.SHEETS.SURAT_JALAN_KELUAR]: ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt'],
+  [CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL]: ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate'],
+  [CONFIG.SHEETS.ORDER]: ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking','kategori','noResi'],
+  [CONFIG.SHEETS.ORDER_DETAIL]: ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty','lokasi'],
+  [CONFIG.SHEETS.LATE_SHIPMENT]: ['id','poNumber','sourceSheet','rowNumber','keterangan','status','createdBy','createdAt','history'],
+  [CONFIG.SHEETS.RETUR]: ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt'],
+  [CONFIG.SHEETS.RETUR_DETAIL]: ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate'],
+  [CONFIG.SHEETS.STOCK_CONTROL]: ['id', 'tanggal', 'pic', 'area', 'kategori', 'alasan', 'karyawan', 'status', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.STOCK_CONTROL_DETAIL]: ['id', 'stockControlId', 'lokasi', 'sku', 'batch', 'exp', 'stockMabang', 'stockTtx', 'stockFisik', 'selisihMabang', 'selisihTtx', 'aksi', 'alasan'],
+  [CONFIG.SHEETS.KLAIM]: ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.KLAIM_DETAIL]: ['id', 'klaimId', 'sku', 'harga'],
+  [CONFIG.SHEETS.TUGAS_PROJECT]: ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log'],
+  [CONFIG.SHEETS.ASSET]: ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history'],
+  [CONFIG.SHEETS.STOCK_OPNAME]: ['id','tanggal','stockId','sku','nama','lokasi','batch','expDate','stokSistem','stokFisik','selisih','status','catatan','createdBy','createdAt','approvedBy','approvedAt'],
+  [CONFIG.SHEETS.PACKING_LIST]: ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt'],
+  [CONFIG.SHEETS.RIWAYAT_KARYAWAN]: ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt'],
+  [CONFIG.SHEETS.SURAT_PERINGATAN]: ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt'],
+  [CONFIG.SHEETS.TGL_MERAH]: ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.ASSET_WAREHOUSE]: ['id', 'kategori', 'code', 'nama', 'divisi', 'tanggalMasuk', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId'],
+  [CONFIG.SHEETS.WAREHOUSE_MAP]: ['id', 'configJson', 'updatedAt'],
+  [CONFIG.SHEETS.BOOKING_MOBIL]: ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes', 'jamMulaiPerjalanan', 'jamTibaTujuan', 'jamKembaliWarehouse', 'jamSampaiWarehouse'],
+  [CONFIG.SHEETS.BOOKING_MOBIL_DETAIL]: ['id', 'bookingId', 'tanggal', 'namaCustomer', 'noPo', 'totalCartoon', 'parkir', 'tol', 'pkbm', 'lainLain', 'keterangan', 'buktiUrls'],
+  [CONFIG.SHEETS.PETTY_CASH_PERIOD]: ['id', 'nama', 'tanggalMulai', 'tanggalSelesai', 'saldoAwal', 'keterangan', 'status', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.PETTY_CASH]: ['id', 'periodId', 'tanggal', 'kategori', 'keterangan', 'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.PAYMENT_GUDANG]: ['id', 'nama', 'deskripsi', 'hargaPerOrang', 'deadline', 'status', 'createdBy', 'createdAt', 'midtransOrderId', 'midtransStatus', 'tipe'],
+  [CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS]: ['id', 'paymentId', 'karyawanId', 'namaKaryawan', 'statusBayar', 'tanggalBayar', 'metodeBayar', 'buktiUrl', 'midtransTransactionId'],
+  [CONFIG.SHEETS.MIDTRANS_CONFIG]: ['id', 'serverKey', 'clientKey', 'isProduction', 'updatedBy', 'updatedAt'],
+  [CONFIG.SHEETS.PAYMENT_KOL_INSTANT]: ['id', 'tanggal', 'noOrder', 'noResi', 'harga', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.ABSENSI_KARYAWAN]: ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt'],
+  [CONFIG.SHEETS.JADWAL_SHIFT]: ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt'],
+  [CONFIG.SHEETS.ASSET_AUDIT_LOG]: ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt'],
+  [CONFIG.SHEETS.AUDIT_REPORTS]: ['id','tanggal','auditor','totalAsset','terscan','minus','status','createdBy','createdAt','history'],
+  [CONFIG.SHEETS.INVENTORY_CONTROL]: ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt'],
+  [CONFIG.SHEETS.INVENTORY_MONITORING]: ['id', 'areaPosisi', 'keterangan', 'updatedAt'],
+  [CONFIG.SHEETS.SETTINGS]: ['key', 'value', 'updatedAt'],
+  [CONFIG.SHEETS.JADWAL_ROSTER]: ['Bulan', 'Nama', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31']
+};
+
+const SUPABASE_URL = 'https://hnofmrmwkropijhpexpx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nu_0fpE0B_dnH3Z6d6dkIA_rWE9xGV8';
+const SUPABASE_SYNC_SHEETS = Object.keys(SHEET_HEADERS);
+
+function formatSupabaseValue(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  if (value === undefined) return null;
+  if (value === null) return null;
+  return value;
+}
+
+function buildSupabaseRowObject(sheetName, rowValues) {
+  const headers = SHEET_HEADERS[sheetName];
+  if (!headers) return null;
+  const row = {};
+  headers.forEach(function (key, index) {
+    row[key] = formatSupabaseValue(rowValues[index]);
+  });
+  return row;
+}
+
+function supabaseUpsertRow(sheetName, rowValues) {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      Logger.log('❌ Supabase config belum diatur. Pastikan SUPABASE_URL dan SUPABASE_KEY sudah benar.');
+      return { success: false, message: 'Supabase config belum diatur.' };
+    }
+
+    const rowObject = buildSupabaseRowObject(sheetName, rowValues);
+    if (!rowObject) {
+      Logger.log('❌ Tidak dapat membuat object row untuk sheet: ' + sheetName);
+      return { success: false, message: 'Sheet tidak dikenali: ' + sheetName };
+    }
+
+    const conflictKey = getSupabaseConflictKey(sheetName);
+    const tableName = getSupabaseTableName(sheetName);
+    const apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) + '?on_conflict=' + encodeURIComponent(conflictKey);
+    
+    Logger.log('🔄 Syncing to Supabase: ' + tableName + ' (from sheet: ' + sheetName + ')');
+    
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Accept': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      payload: JSON.stringify(rowObject),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const status = response.getResponseCode();
+    if (status >= 200 && status < 300) {
+      Logger.log('✅ Sync berhasil untuk: ' + tableName);
+      return { success: true };
+    }
+
+    const body = response.getContentText();
+    Logger.log('❌ Supabase sync failed for ' + tableName + ': HTTP ' + status + ' - ' + body);
+    
+    // Parse error message dari Supabase
+    try {
+      const errorJson = JSON.parse(body);
+      if (errorJson.message) {
+        return { success: false, message: 'Sync failed: ' + errorJson.message };
+      }
+    } catch (e) {}
+    
+    return { success: false, message: 'Sync failed (' + status + ')' };
+  } catch (e) {
+    Logger.log('❌ Supabase sync error for ' + sheetName + ': ' + e.message);
+    return { success: false, message: e.message };
+  }
+}
+
+function getSupabaseConflictKey(sheetName) {
+  const headers = SHEET_HEADERS[sheetName];
+  if (!headers || headers.length === 0) return 'id';
+  return headers[0];
+}
+
+// Kirim banyak baris sekaligus dalam 1 request, jauh lebih cepat daripada 1 request per baris.
+// Dipakai oleh syncSheetRangeToSupabase untuk migrasi/sync massal (setupDatabase, syncAllSheetsToSupabase).
+function supabaseUpsertBatch(sheetName, rowObjects) {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      Logger.log('❌ Supabase config belum diatur.');
+      return { success: false, message: 'Supabase config belum diatur.', synced: 0 };
+    }
+    if (!rowObjects || rowObjects.length === 0) return { success: true, synced: 0 };
+
+    const conflictKey = getSupabaseConflictKey(sheetName);
+    const tableName = getSupabaseTableName(sheetName);
+    const apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) + '?on_conflict=' + encodeURIComponent(conflictKey);
+
+    Logger.log('🔄 Syncing batch to Supabase: ' + tableName + ' (' + rowObjects.length + ' rows)');
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Accept': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      payload: JSON.stringify(rowObjects),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const status = response.getResponseCode();
+    if (status >= 200 && status < 300) {
+      Logger.log('✅ Batch sync berhasil untuk: ' + tableName + ' (' + rowObjects.length + ' rows)');
+      return { success: true, synced: rowObjects.length };
+    }
+
+    const body = response.getContentText();
+    Logger.log('❌ Supabase batch sync failed for ' + tableName + ': HTTP ' + status + ' - ' + body);
+    return { success: false, message: 'Batch sync failed (' + status + ')', synced: 0 };
+  } catch (e) {
+    Logger.log('❌ Supabase batch sync error for ' + sheetName + ': ' + e.message);
+    return { success: false, message: e.message, synced: 0 };
+  }
+}
+
+function getSupabaseTableName(sheetName) {
+  if (!sheetName) return '';
+  return String(sheetName)
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '')
+    .toLowerCase();
+}
+
+function isSupabaseHeaderRow(sheetName, rowValues) {
+  const headers = SHEET_HEADERS[sheetName];
+  if (!headers || !Array.isArray(rowValues)) return false;
+  return headers.every(function (header, index) {
+    return String(rowValues[index] || '').trim() === String(header || '').trim();
+  });
+}
+
+// ============================================================
+// syncRowUpdate — dipanggil setelah update sel tertentu di Sheet
+// (setValues, setValue untuk update status, approval, dll)
+// Mengambil ulang seluruh baris dari Sheet lalu upsert ke Supabase.
+// ============================================================
+function syncRowUpdate(sheetName, rowIndex) {
+  try {
+    if (!sheetName || !rowIndex || rowIndex <= 1) return;
+    if (SUPABASE_SYNC_SHEETS.indexOf(sheetName) === -1) return;
+    const sheet = getSheet(sheetName);
+    if (!sheet) return;
+    const headers = SHEET_HEADERS[sheetName];
+    const headerCount = headers ? headers.length : sheet.getLastColumn();
+    const rowValues = sheet.getRange(rowIndex, 1, 1, headerCount).getValues()[0];
+    if (!rowValues || rowValues.every(v => v === '' || v === null || v === undefined)) return;
+    const res = supabaseUpsertRow(sheetName, rowValues);
+    if (!res.success) {
+      Logger.log('⚠️ syncRowUpdate gagal ' + sheetName + ' baris ' + rowIndex + ': ' + (res.message || ''));
+    }
+  } catch (e) {
+    Logger.log('❌ syncRowUpdate error ' + sheetName + ': ' + e.message);
+  }
+}
+
+// ============================================================
+// syncCellUpdate — dipanggil setelah update 1 kolom di baris tertentu
+// Ambil seluruh baris terbaru lalu upsert ke Supabase.
+// Lebih ringan dari syncRowUpdate karena tidak perlu tahu semua header.
+// ============================================================
+function syncCellUpdate(sheetName, id, updatedFields) {
+  try {
+    if (!sheetName || !id || !SUPABASE_URL || !SUPABASE_KEY) return;
+    const tableName = getSupabaseTableName(sheetName);
+    const conflictKey = getSupabaseConflictKey(sheetName);
+    const apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) +
+      '?' + encodeURIComponent(conflictKey) + '=eq.' + encodeURIComponent(id);
+    UrlFetchApp.fetch(apiUrl, {
+      method: 'patch',
+      contentType: 'application/json',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      payload: JSON.stringify(updatedFields),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    Logger.log('❌ syncCellUpdate error ' + sheetName + ': ' + e.message);
+  }
+}
+
+function syncSheetRowToSupabase(sheetName, rowValues, sheet, row) {
+  if (SUPABASE_SYNC_SHEETS.indexOf(sheetName) === -1) return { success: false, message: 'Sheet tidak di-sync ke Supabase.' };
+  if (!rowValues || !Array.isArray(rowValues) || rowValues.every(function (value) { return value === '' || value === null || value === undefined; })) {
+    return { success: false, message: 'Row kosong atau tidak valid.' };
+  }
+  if (isSupabaseHeaderRow(sheetName, rowValues)) {
+    return { success: false, message: 'Header row tidak disinkronkan.' };
+  }
+
+  const headers = SHEET_HEADERS[sheetName] || [];
+  if (headers.length > 0 && headers[0] === 'id' && !rowValues[0]) {
+    rowValues[0] = generateId();
+    if (sheet && row && sheet.getRange) {
+      try {
+        sheet.getRange(row, 1).setValue(rowValues[0]);
+      } catch (e) {
+        Logger.log('Gagal menulis id otomatis ke sheet: ' + e.message);
+      }
+    }
+  }
+
+  return supabaseUpsertRow(sheetName, rowValues);
+}
+
+function syncSheetRangeToSupabase(sheetName, rows, sheet) {
+  if (!Array.isArray(rows) || rows.length === 0) return { success: true, synced: 0 };
+
+  const BATCH_SIZE = 500; // jumlah baris per request - aman untuk ukuran payload & jauh lebih cepat
+  const headers = SHEET_HEADERS[sheetName] || [];
+  let synced = 0;
+  let batch = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const rowValues = rows[i];
+    const rowNumber = i + 2; // baris aktual di sheet (1-indexed + header)
+
+    if (!rowValues || !Array.isArray(rowValues) || rowValues.every(function (value) { return value === '' || value === null || value === undefined; })) {
+      continue; // skip baris kosong
+    }
+    if (isSupabaseHeaderRow(sheetName, rowValues)) continue;
+
+    // Auto-generate id kalau kolom id kosong (sama seperti logic syncSheetRowToSupabase)
+    if (headers.length > 0 && headers[0] === 'id' && !rowValues[0]) {
+      rowValues[0] = generateId();
+      if (sheet && sheet.getRange) {
+        try { sheet.getRange(rowNumber, 1).setValue(rowValues[0]); } catch (e) {
+          Logger.log('Gagal menulis id otomatis ke sheet: ' + e.message);
+        }
+      }
+    }
+
+    const rowObject = buildSupabaseRowObject(sheetName, rowValues);
+    if (rowObject) batch.push(rowObject);
+
+    if (batch.length >= BATCH_SIZE) {
+      const result = supabaseUpsertBatch(sheetName, batch);
+      if (result.success) synced += result.synced;
+      batch = [];
+    }
+  }
+
+  if (batch.length > 0) {
+    const result = supabaseUpsertBatch(sheetName, batch);
+    if (result.success) synced += result.synced;
+  }
+
+  return { success: true, synced: synced };
+}
+
+function syncAllSheetsToSupabase() {
+  const props = PropertiesService.getScriptProperties();
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 5 * 60 * 1000; // berhenti sebelum limit 6 menit Apps Script, lalu lanjut otomatis
+
+  Logger.log('🔄 Memulai sinkronisasi semua sheet ke Supabase...');
+  const ss = getSpreadsheet();
+
+  // Kalau ada progress tersisa dari eksekusi sebelumnya yang terhenti karena timeout, lanjutkan dari situ
+  let report;
+  let sheetsToProcess;
+  const savedReport = props.getProperty('SYNC_REPORT');
+  if (savedReport) {
+    report = JSON.parse(savedReport);
+    sheetsToProcess = JSON.parse(props.getProperty('SYNC_REMAINING_SHEETS') || '[]');
+    Logger.log('▶️  Melanjutkan sync sebelumnya, sisa ' + sheetsToProcess.length + ' sheet.');
+  } else {
+    report = { total: SUPABASE_SYNC_SHEETS.length, synced: 0, failed: 0, empty: 0, details: {} };
+    sheetsToProcess = SUPABASE_SYNC_SHEETS.slice();
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    Logger.log('❌ ERROR: Supabase URL atau API Key belum dikonfigurasi!');
+    Logger.log('   Update SUPABASE_URL dan SUPABASE_KEY di bagian atas Kode.gs');
+    report.error = 'Supabase config tidak lengkap';
+    props.deleteProperty('SYNC_REPORT');
+    props.deleteProperty('SYNC_REMAINING_SHEETS');
+    return report;
+  }
+
+  while (sheetsToProcess.length > 0) {
+    if (Date.now() - startTime > MAX_RUNTIME_MS) {
+      Logger.log('⏰ Mendekati limit waktu eksekusi, menjadwalkan lanjutan otomatis dalam 10 detik...');
+      props.setProperty('SYNC_REPORT', JSON.stringify(report));
+      props.setProperty('SYNC_REMAINING_SHEETS', JSON.stringify(sheetsToProcess));
+      scheduleSyncContinuation();
+      report.continuing = true;
+      return report;
+    }
+
+    const sheetName = sheetsToProcess.shift();
+    const sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      Logger.log('⚠️  Sheet tidak ditemukan: ' + sheetName);
+      report.details[sheetName] = { status: 'sheet_not_found' };
+      report.failed++;
+      continue;
+    }
+
+    const values = sheet.getDataRange().getValues();
+    if (!values || values.length <= 1) {
+      Logger.log('⏭️  Sheet kosong (hanya header atau tidak ada data): ' + sheetName);
+      report.details[sheetName] = { status: 'empty', rows: 0 };
+      report.empty++;
+      continue;
+    }
+
+    const rows = values.slice(1);
+    const result = syncSheetRangeToSupabase(sheetName, rows, sheet);
+
+    if (result.success) {
+      Logger.log('✅ Berhasil sync: ' + sheetName + ' (' + result.synced + ' baris)');
+      report.details[sheetName] = { status: 'success', synced: result.synced };
+      report.synced++;
+    } else {
+      Logger.log('❌ Gagal sync: ' + sheetName + ' - ' + (result.error || 'Unknown error'));
+      report.details[sheetName] = { status: 'failed', error: result.error };
+      report.failed++;
+    }
+  }
+
+  // Semua sheet sudah diproses - bersihkan progress tersimpan & trigger lanjutan kalau ada
+  props.deleteProperty('SYNC_REPORT');
+  props.deleteProperty('SYNC_REMAINING_SHEETS');
+  removeSyncContinuationTriggers();
+
+  Logger.log('📊 Sinkronisasi selesai: ' + report.synced + '/' + report.total + ' sheet berhasil');
+  Logger.log('   - Synced: ' + report.synced);
+  Logger.log('   - Failed: ' + report.failed);
+  Logger.log('   - Empty: ' + report.empty);
+
+  return report;
+}
+
+// Menjadwalkan pemanggilan ulang syncAllSheetsToSupabase beberapa detik kemudian,
+// supaya proses sync bisa lanjut otomatis tanpa kena limit 6 menit per eksekusi.
+function scheduleSyncContinuation() {
+  removeSyncContinuationTriggers(); // hindari trigger dobel
+  ScriptApp.newTrigger('syncAllSheetsToSupabase')
+    .timeBased()
+    .after(10 * 1000)
+    .create();
+}
+
+function removeSyncContinuationTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'syncAllSheetsToSupabase') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+}
+
 const DISTRIBUTOR_QUEUE_HEADERS = [
   'No',
   'Order queue time',
@@ -104,6 +533,8 @@ function doGet(e) {
   try { setupDistributorQueueDatabase(); } catch (err) { console.error('Error setupDistributorQueueDatabase:', err); }
   try { setupReturnDistributorSheet(); } catch (err) { console.error('Error setupReturnDistributorSheet:', err); }
   try { setupPettyCashSheets(); } catch (err) { console.error('Error setupPettyCashSheets:', err); }
+  try { ensureKpiKaryawanSheet(); } catch (err) { console.error('Error ensureKpiKaryawanSheet:', err); }
+  try { ensureKpiQuestionsSheet(); } catch (err) { console.error('Error ensureKpiQuestionsSheet:', err); }
 
   // Menggunakan 'Index' dengan I besar menyesuaikan default Google Apps Script
   var html = HtmlService.createHtmlOutputFromFile('Index'); 
@@ -118,6 +549,8 @@ function doGet(e) {
 // SETUP DATABASE
 // ============================================================
 function setupDatabase() {
+  Logger.log('🚀 Memulai setup database...');
+  
   let ss;
   const props = PropertiesService.getScriptProperties();
   
@@ -125,6 +558,7 @@ function setupDatabase() {
   let ssId = CONFIG.SPREADSHEET_ID || props.getProperty('SPREADSHEET_ID');
   
   if (!ssId) {
+    Logger.log('📝 Membuat spreadsheet baru...');
     ss = SpreadsheetApp.create('Gudang FCL - Database');
     ssId = ss.getId();
     props.setProperty('SPREADSHEET_ID', ssId);
@@ -132,74 +566,305 @@ function setupDatabase() {
     ss = SpreadsheetApp.openById(ssId);
   }
 
-  setupSheet(ss, CONFIG.SHEETS.USERS, ['id', 'username', 'password', 'nama', 'role', 'createdAt', 'permissions', 'divisi']);
-  setupSheet(ss, CONFIG.SHEETS.KAS_GUDANG, ['id', 'tanggal', 'tipe', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TEAM_BUILDING, ['id', 'tanggal', 'keterangan', 'nominal', 'buktiUrl', 'createdBy', 'createdAt', 'tipe']);
-  setupSheet(ss, CONFIG.SHEETS.EXPENSE, ['id', 'tanggal', 'perusahaan', 'kategori', 'keterangan', 'nominal', 'bank', 'rekening', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.KARYAWAN, ['id', 'nama', 'jabatan', 'cabang', 'telepon', 'email', 'tanggalMasuk', 'status', 'createdAt', 'tanggalSelesai', 'sisaCuti', 'fingerprintId']);
-  setupSheet(ss, CONFIG.SHEETS.IJIN, ['id', 'tanggal', 'nama', 'jenis', 'keterangan', 'bukti', 'status', 'createdBy', 'createdAt', 'history']);
-  setupSheet(ss, CONFIG.SHEETS.LEMBUR, ['id', 'tanggal', 'nama', 'divisi', 'jumlahJam', 'keterangan', 'status', 'createdBy', 'createdAt', 'history']);
-  setupSheet(ss, CONFIG.SHEETS.LAPORAN_KERJA, ['id', 'tanggal', 'divisi', 'pic', 'totalOrang', 'perbantuan', 'pengurangan', 'jamLembur', 'totalJamKerja', 'kendala', 'totalStaff', 'totalAdmin', 'totalOrder', 'createdBy', 'createdAt', 'sisaOrder', 'staffLemburNames', 'shift', 'totalPHL', 'jamKerjaPHL', 'totalPO', 'totalQty', 'totalInbound', 'pendapatanPotongBubble', 'pendapatanBuatBubble', 'alasanPengurangan']);
-  setupSheet(ss, CONFIG.SHEETS.SOP, ['id', 'judul', 'konten', 'kategori', 'createdBy', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.ORGANISASI, ['id', 'nama', 'jabatan', 'atasan', 'departemen', 'foto', 'urutan']);
-  setupSheet(ss, CONFIG.SHEETS.STOCK, ['id','sku','nama','barcode','batch','expDate','satuan','stok','stokMin','kategori','lokasi','createdAt','updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK, ['id','noSJ','tanggal','supplier','keterangan','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR, ['id','noSJ','tanggal','tujuan','keterangan','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, ['id','sjId','noSJ','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER, ['id','noOrder','tanggal','pelanggan','alamat','status','totalItem','keterangan','createdBy','createdAt','sentAt','buktiPacking','kategori','noResi']);
-  setupSheet(ss, CONFIG.SHEETS.ORDER_DETAIL, ['id','orderId','noOrder','stockId','sku','nama','qty','satuan','batch','expDate','packedQty','lokasi']);
-  setupSheet(ss, CONFIG.SHEETS.LATE_SHIPMENT, ['id','poNumber','sourceSheet','rowNumber','keterangan','status','createdBy','createdAt','history']);
-  setupSheet(ss, CONFIG.SHEETS.RETUR, ['id','noRetur','tanggal','sumber','alasan','keterangan','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.RETUR_DETAIL, ['id','returId','noRetur','stockId','sku','nama','qty','satuan','batch','expDate']);
-  setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL, ['id', 'tanggal', 'pic', 'area', 'kategori', 'alasan', 'karyawan', 'status', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.STOCK_CONTROL_DETAIL, ['id', 'stockControlId', 'lokasi', 'sku', 'batch', 'exp', 'stockMabang', 'stockTtx', 'stockFisik', 'selisihMabang', 'selisihTtx', 'aksi', 'alasan']);
-  setupSheet(ss, CONFIG.SHEETS.KLAIM, ['id', 'tanggal', 'pic', 'resi', 'harga', 'keterangan', 'status', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.KLAIM_DETAIL, ['id', 'klaimId', 'sku', 'harga']);
-  setupSheet(ss, CONFIG.SHEETS.TUGAS_PROJECT, ['id','judul','assignee','assigneeName','prioritas','tanggalMulai','deadline','targetHari','status','kategori','deskripsi','createdBy','createdAt','updatedAt','log']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET, ['id','tanggal','nama','jenisAsset','deskripsi','estimasiHarga','prioritas','bukti','status','createdBy','createdAt','history']);
-  setupSheet(ss, CONFIG.SHEETS.STOCK_OPNAME, ['id','tanggal','stockId','sku','nama','lokasi','batch','expDate','stokSistem','stokFisik','selisih','status','catatan','createdBy','createdAt','approvedBy','approvedAt']);
-  setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','keterangan','fileUrl','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.RIWAYAT_KARYAWAN, ['id','nama','jabatan','cabang','telepon','tanggalMasuk','tanggalResign','alasanResign','keterangan','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.SURAT_PERINGATAN, ['id','karyawanNama','karyawanId','jenisSP','alasan','tanggalSP','masaBerlaku','tanggalKadaluarsa','status','createdBy','createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.TGL_MERAH, ['id', 'tanggal', 'nama', 'divisi', 'jamEstimasi', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_WAREHOUSE, ['id', 'kategori', 'code', 'nama', 'divisi', 'tanggalMasuk', 'status', 'createdBy', 'createdAt', 'history', 'qty', 'zoneId']);
-  setupSheet(ss, CONFIG.SHEETS.WAREHOUSE_MAP, ['id', 'configJson', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL, ['id', 'tanggal', 'pic', 'jamBerangkat', 'tujuan', 'keterangan', 'rute', 'status', 'createdBy', 'createdAt', 'parkir', 'tol', 'bensin', 'pkbm', 'lainLain', 'totalBiaya', 'buktiPembayaranUrl', 'driverNotes', 'jamMulaiPerjalanan', 'jamTibaTujuan', 'jamKembaliWarehouse', 'jamSampaiWarehouse']);
-  setupSheet(ss, CONFIG.SHEETS.BOOKING_MOBIL_DETAIL, ['id', 'bookingId', 'tanggal', 'namaCustomer', 'noPo', 'totalCartoon', 'parkir', 'tol', 'pkbm', 'lainLain', 'keterangan', 'buktiUrls']);
-  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH_PERIOD, ['id', 'nama', 'tanggalMulai', 'tanggalSelesai', 'saldoAwal', 'keterangan', 'status', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.PETTY_CASH, ['id', 'periodId', 'tanggal', 'kategori', 'keterangan', 'nominal', 'tipe', 'buktiUrl', 'createdBy', 'createdAt']);
-  
-  // Payment Gudang Sheets
-  setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG, ['id', 'nama', 'deskripsi', 'hargaPerOrang', 'deadline', 'status', 'createdBy', 'createdAt', 'midtransOrderId', 'midtransStatus', 'tipe']);
-  setupSheet(ss, CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, ['id', 'paymentId', 'karyawanId', 'namaKaryawan', 'statusBayar', 'tanggalBayar', 'metodeBayar', 'buktiUrl', 'midtransTransactionId']);
-  setupSheet(ss, CONFIG.SHEETS.MIDTRANS_CONFIG, ['id', 'serverKey', 'clientKey', 'isProduction', 'updatedBy', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.PAYMENT_KOL_INSTANT, ['id', 'tanggal', 'noOrder', 'noResi', 'harga', 'createdBy', 'createdAt']);
-
-  setupSheet(ss, CONFIG.SHEETS.ABSENSI_KARYAWAN, ['id', 'tanggal', 'jam', 'karyawanId', 'nama', 'divisi', 'jabatan', 'tipe', 'sumber', 'fingerprintId', 'status', 'keterangan', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.JADWAL_SHIFT, ['id', 'namaJadwal', 'divisi', 'shiftType', 'jamMasuk', 'jamPulang', 'toleransiMenit', 'aktif', 'createdAt', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.ASSET_AUDIT_LOG, ['id','assetId','tanggal','kondisi','catatan','petugas','createdAt','statusApproval','approvedBy','approvedAt']);
-  setupSheet(ss, CONFIG.SHEETS.AUDIT_REPORTS, ['id','tanggal','auditor','totalAsset','terscan','minus','status','createdBy','createdAt','history']);
-  setupSheet(ss, CONFIG.SHEETS.INVENTORY_CONTROL, ['id', 'tanggalPengerjaan', 'cycleCount', 'lokasi', 'sku', 'batch', 'exp', 'stockTTX', 'stockMabang', 'stockFisik', 'selisihMabang', 'selisihTTX', 'action', 'keterangan', 'createdBy', 'createdAt']);
-  setupSheet(ss, CONFIG.SHEETS.INVENTORY_MONITORING, ['id', 'areaPosisi', 'keterangan', 'updatedAt']);
-  setupSheet(ss, CONFIG.SHEETS.SETTINGS, ['key', 'value', 'updatedAt']);
-  // ReturnDistributor sheet ada di spreadsheet distributor, bukan di sini
-  // setupReturnDistributorSheet() dipanggil otomatis saat pertama kali diakses
+  Logger.log('📋 Setup sheet struktur...');
+  Object.entries(SHEET_HEADERS).forEach(([sheetName, headers]) => {
+    setupSheet(ss, sheetName, headers);
+  });
 
   // Ensure installable triggers exist for onEdit syncing
+  Logger.log('⚙️  Setup trigger otomatis...');
   ensureTriggers();
-
-  // Khusus Roster karena headers dinamis 1-31
-  const rosterHeaders = ["Bulan", "Nama"];
-  for (let i = 1; i <= 31; i++) rosterHeaders.push(i.toString());
-  setupSheet(ss, CONFIG.SHEETS.JADWAL_ROSTER, rosterHeaders);
 
   const usersSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
   if (usersSheet.getLastRow() <= 1) {
+    Logger.log('👤 Membuat user admin default...');
     usersSheet.appendRow([generateId(), 'admin', hashPassword('admin123'), 'Administrator', 'admin', new Date().toISOString(), '[]']);
   }
+
+  let supabaseSyncReport = null;
+  try {
+    Logger.log('☁️  Mulai sinkronisasi ke Supabase...');
+    supabaseSyncReport = syncAllSheetsToSupabase();
+    Logger.log('✅ Setup database selesai dengan sinkronisasi!');
+  } catch (err) {
+    Logger.log('❌ ERROR saat Supabase sync: ' + err.message);
+    supabaseSyncReport = { error: err.message, success: false };
+  }
   
-  return { success: true, spreadsheetId: ssId, url: ss.getUrl() };
+  return { 
+    success: true, 
+    spreadsheetId: ssId, 
+    url: ss.getUrl(), 
+    supabaseSync: supabaseSyncReport,
+    message: 'Database setup selesai. Periksa Execution log untuk detail sinkronisasi.'
+  };
+}
+
+// ============================================================
+// TEST SUPABASE CONNECTIVITY & TABLE EXISTENCE
+// ============================================================
+function testSupabaseConnection() {
+  Logger.log('🧪 Testing Supabase connection...\n');
+  
+  const report = {
+    timestamp: new Date().toISOString(),
+    config: {
+      url_configured: !!SUPABASE_URL,
+      key_configured: !!SUPABASE_KEY,
+      url: SUPABASE_URL ? SUPABASE_URL.substring(0, 50) + '...' : 'NOT SET',
+      key: SUPABASE_KEY ? SUPABASE_KEY.substring(0, 20) + '...' : 'NOT SET'
+    },
+    tables: {}
+  };
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    Logger.log('❌ FAIL: Supabase URL atau API Key belum dikonfigurasi!');
+    Logger.log('   Update di bagian atas Kode.gs:');
+    Logger.log('   const SUPABASE_URL = \'...\';');
+    Logger.log('   const SUPABASE_KEY = \'...\';\n');
+    return report;
+  }
+
+  Logger.log('✅ Config OK\n');
+
+  // Test setiap tabel untuk melihat apakah ada di Supabase
+  Logger.log('🔍 Checking tables...\n');
+  
+  Object.keys(SHEET_HEADERS).forEach(function(sheetName) {
+    const tableName = getSupabaseTableName(sheetName);
+    const testUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) + '?limit=1';
+    
+    try {
+      const options = {
+        method: 'get',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Accept': 'application/json'
+        },
+        muteHttpExceptions: true,
+        timeout: 10
+      };
+
+      const response = UrlFetchApp.fetch(testUrl, options);
+      const status = response.getResponseCode();
+
+      if (status === 200) {
+        Logger.log('✅ ' + sheetName + ' → ' + tableName + ' (TABLE FOUND)');
+        report.tables[sheetName] = { status: 'OK', tableName: tableName, code: status };
+      } else if (status === 404) {
+        Logger.log('❌ ' + sheetName + ' → ' + tableName + ' (TABLE NOT FOUND)');
+        report.tables[sheetName] = { status: 'NOT_FOUND', tableName: tableName, code: status, 
+          message: 'Buat tabel ini di Supabase SQL Editor dengan nama: ' + tableName };
+      } else {
+        Logger.log('⚠️  ' + sheetName + ' → ' + tableName + ' (HTTP ' + status + ')');
+        report.tables[sheetName] = { status: 'ERROR', tableName: tableName, code: status };
+      }
+    } catch (e) {
+      Logger.log('❌ ' + sheetName + ' → ' + tableName + ' (ERROR: ' + e.message + ')');
+      report.tables[sheetName] = { status: 'ERROR', tableName: tableName, error: e.message };
+    }
+  });
+
+  Logger.log('\n📊 Summary:');
+  let found = 0, notFound = 0, error = 0;
+  Object.values(report.tables).forEach(function(t) {
+    if (t.status === 'OK') found++;
+    else if (t.status === 'NOT_FOUND') notFound++;
+    else error++;
+  });
+  
+  Logger.log('   ✅ Found: ' + found);
+  Logger.log('   ❌ Not Found: ' + notFound);
+  Logger.log('   ⚠️  Errors: ' + error);
+  
+  if (notFound > 0) {
+    Logger.log('\n💡 ACTION: Run SQL script di Supabase SQL Editor:');
+    Logger.log('   1. Buka: https://app.supabase.com/project/_/sql');
+    Logger.log('   2. Paste file: SUPABASE_CREATE_TABLES.sql');
+    Logger.log('   3. Run');
+    Logger.log('   4. Jalankan testSupabaseConnection() lagi\n');
+  }
+
+  return report;
+}
+
+function ensureKpiKaryawanSheet() {
+  const ss = getSpreadsheet();
+  return setupSheet(ss, CONFIG.SHEETS.KPI_KARYAWAN, ['id', 'username', 'nama', 'divisi', 'tanggal', 'totalPoints', 'grade', 'answersJson', 'submittedAt', 'createdAt']);
+}
+
+function ensureKpiQuestionsSheet() {
+  const ss = getSpreadsheet();
+  const sheet = setupSheet(ss, CONFIG.SHEETS.KPI_QUESTIONS, ['id', 'divisi', 'question', 'opt1Label', 'opt1Point', 'opt2Label', 'opt2Point', 'opt3Label', 'opt3Point', 'opt4Label', 'opt4Point']);
+  if (sheet && sheet.getLastRow() <= 1) {
+    const sample = [
+      ['WQ1', 'Warehouse', 'Langkah pertama yang benar saat menerima barang masuk?', 'Periksa dokumen, jumlah, dan kondisi barang', 25, 'Langsung simpan barang tanpa pemeriksaan', 0, 'Tunggu supervisor memeriksa terlebih dahulu', 10, 'Tarik pallet tanpa membuka segel', 5],
+      ['WQ2', 'Warehouse', 'Bagaimana cara menjaga akurasi stok gudang?', 'Melakukan pengecekan berkala dan pencatatan rapi', 25, 'Hanya mengandalkan ingatan saja', 0, 'Memindahkan barang tanpa update sistem', 5, 'Menunggu audit tahunan', 10],
+      ['IQ1', 'Inbound', 'Apa prioritas utama operasional inbound?', 'Segera input barang ke sistem setelah pemeriksaan', 25, 'Biarkan menumpuk sebelum diproses', 0, 'Tunggu supervisor memberi instruksi', 10, 'Simpan dulu lalu input data besok', 5],
+      ['DQ1', 'Distributor', 'Saat menyiapkan paket distributor, apa yang harus diperiksa?', 'Kondisi barang, alamat, dan kode resi', 25, 'Hanya memastikan barang ada', 0, 'Cukup kirim tanpa cek ulang', 5, 'Tanyakan ke kolega nanti', 10],
+      ['HRQ1', 'HR', 'Bagaimana Anda membantu menjaga kedisiplinan tim?', 'Memberikan reminder dan monitoring kehadiran', 25, 'Biarkan setiap orang mengatur sendiri', 0, 'Hanya catat masalah bila terjadi', 10, 'Serahkan sepenuhnya pada mesin presensi', 5],
+      ['OQ1', 'Operasional', 'Apa yang dilakukan saat ada selisih Stock Opname?', 'Lakukan pengecekan ulang dan laporkan ke supervisor', 25, 'Abaikan selisih jika kecil', 0, 'Ubah data tanpa konfirmasi', 5, 'Tunggu audit berikutnya', 10]
+    ];
+    sample.forEach(row => sheet.appendRow(row));
+  }
+  return sheet;
+}
+
+function getKpiQuestions(divisi) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KPI_QUESTIONS);
+    if (!sheet) return { success: true, data: [] };
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length <= 1) return { success: true, data: [] };
+    const target = String(divisi || '').trim().toLowerCase();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.join('').trim() === '') continue;
+      const rowDivision = String(row[1] || '').trim() || 'General';
+      const rowDivisionLower = rowDivision.toLowerCase();
+      if (target && rowDivisionLower !== target && rowDivisionLower !== 'general') continue;
+      const options = [];
+      for (let j = 3; j <= 9; j += 2) {
+        const label = String(row[j] || '').trim();
+        const point = parseInt(row[j + 1], 10) || 0;
+        if (label) options.push({ label, point });
+      }
+      result.push({
+        id: row[0],
+        divisi: rowDivision,
+        question: String(row[2] || '').trim(),
+        options: options
+      });
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function addBulkKpiQuestions(items) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KPI_QUESTIONS) || ensureKpiQuestionsSheet();
+    const data = sheet.getDataRange().getValues();
+    let updated = 0, added = 0;
+
+    items.forEach(item => {
+      if (!item.question) return;
+      const rowData = [
+        item.id || generateId(),
+        item.divisi || 'General',
+        item.question,
+        item.opt1Label || '',
+        item.opt1Point || 0,
+        item.opt2Label || '',
+        item.opt2Point || 0,
+        item.opt3Label || '',
+        item.opt3Point || 0,
+        item.opt4Label || '',
+        item.opt4Point || 0
+      ];
+
+      let foundIndex = -1;
+      for (let i = 1; i < data.length; i++) {
+        if (!data[i] || data[i].join('').trim() === '') continue;
+        const existingId = String(data[i][0] || '').trim();
+        const existingQuestion = String(data[i][2] || '').trim().toLowerCase();
+        if ((item.id && existingId && String(existingId) === String(item.id)) ||
+            (!item.id && existingQuestion === String(item.question || '').trim().toLowerCase())) {
+          foundIndex = i;
+          break;
+        }
+      }
+
+      if (foundIndex > -1) {
+        sheet.getRange(foundIndex + 1, 1, 1, rowData.length).setValues([rowData]);
+        updated++;
+      } else {
+        sheet.appendRow(rowData);
+        syncSheetRowToSupabase(CONFIG.SHEETS.KPI_QUESTIONS, rowData);
+        added++;
+      }
+    });
+
+    return { success: true, updated: updated, added: added };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function addKpiKaryawan(username, nama, divisi, tanggal, totalPoints, grade, answers) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KPI_KARYAWAN) || ensureKpiKaryawanSheet();
+    if (!sheet) return { success: false, message: 'Sheet KPI Karyawan tidak tersedia' };
+    const id = generateId();
+    const answersJson = typeof answers === 'string' ? answers : JSON.stringify(answers || []);
+    const row = [id, username || '', nama || '', divisi || '', tanggal || '', totalPoints || 0, grade || '', answersJson, new Date().toLocaleString(), new Date().toISOString()];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.KPI_KARYAWAN, row);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getKpiKaryawan(username) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KPI_KARYAWAN);
+    if (!sheet) return { success: true, data: [] };
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length <= 1) return { success: true, data: [] };
+    const lowerUsername = String(username || '').toLowerCase();
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row) continue;
+      const rowUsername = String(row[1] || '').toLowerCase();
+      if (!lowerUsername || rowUsername === lowerUsername) {
+        let answers = [];
+        try { answers = typeof row[7] === 'string' ? JSON.parse(row[7]) : row[7] || []; } catch (err) { answers = []; }
+        result.push({
+          id: row[0],
+          username: row[1],
+          nama: row[2],
+          divisi: row[3],
+          tanggal: row[4],
+          totalPoints: row[5],
+          grade: row[6],
+          answers: answers,
+          submittedAt: row[8],
+          createdAt: row[9]
+        });
+      }
+    }
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function updateKpiKaryawan(id, nama, divisi, tanggal, totalPoints, grade, answers) {
+  try {
+    const sheet = getSheet(CONFIG.SHEETS.KPI_KARYAWAN);
+    if (!sheet) return { success: false, message: 'Sheet KPI Karyawan tidak tersedia' };
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(id)) {
+        const answersJson = typeof answers === 'string' ? answers : JSON.stringify(answers || []);
+        sheet.getRange(i + 1, 3).setValue(nama || data[i][2] || '');
+        sheet.getRange(i + 1, 4).setValue(divisi || data[i][3] || '');
+        sheet.getRange(i + 1, 5).setValue(tanggal || data[i][4] || '');
+        sheet.getRange(i + 1, 6).setValue(totalPoints != null ? totalPoints : data[i][5]);
+        sheet.getRange(i + 1, 7).setValue(grade || data[i][6] || '');
+        sheet.getRange(i + 1, 8).setValue(answersJson);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Data KPI tidak ditemukan' };
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
 }
 
 function setupSheet(ss, sheetName, headers) {
@@ -307,10 +972,19 @@ function getSpreadsheet() {
   return SpreadsheetApp.openById(ssId);
 }
 
+function getSheetHeaders(sheetName) {
+  return SHEET_HEADERS[sheetName] || null;
+}
+
 function getSheet(sheetName) {
   const ss = getSpreadsheet();
   let sheet = ss.getSheetByName(sheetName);
-  if (!sheet) { setupDatabase(); sheet = ss.getSheetByName(sheetName); }
+  if (!sheet) {
+    const headers = getSheetHeaders(sheetName);
+    if (headers) {
+      sheet = setupSheet(ss, sheetName, headers);
+    }
+  }
   return sheet;
 }
 
@@ -349,17 +1023,43 @@ function getDistributorQueueSheet() {
 
 function deleteRow(sheetName, id, secondaryId, secondaryCol) {
   try {
-    const sheet = getSheet(sheetName); 
+    const sheet = getSheet(sheetName);
     const data = sheet.getDataRange().getValues();
+    let deletedId = null;
     for (let i = 1; i < data.length; i++) {
       const matchPrimary = id && String(data[i][0]) === String(id);
       const matchSecondary = secondaryId && secondaryCol !== undefined && String(data[i][secondaryCol]) === String(secondaryId);
-      if (matchPrimary || matchSecondary) { 
-        sheet.deleteRow(i + 1); 
-        return { success: true }; 
+      if (matchPrimary || matchSecondary) {
+        deletedId = String(data[i][0] || id || '');
+        sheet.deleteRow(i + 1);
+        break;
       }
     }
-    return { success: false, message: 'Data tidak ditemukan' };
+    if (deletedId === null) return { success: false, message: 'Data tidak ditemukan' };
+
+    // Langsung hapus dari Supabase agar Web App tidak perlu menunggu onChange trigger
+    if (deletedId && SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        const tableName = getSupabaseTableName(sheetName);
+        const conflictKey = getSupabaseConflictKey(sheetName);
+        const apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) +
+          '?' + encodeURIComponent(conflictKey) + '=eq.' + encodeURIComponent(deletedId);
+        UrlFetchApp.fetch(apiUrl, {
+          method: 'delete',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=minimal'
+          },
+          muteHttpExceptions: true
+        });
+      } catch (syncErr) {
+        Logger.log('⚠️  deleteRow Supabase sync error for ' + sheetName + ': ' + syncErr.message);
+        // Tidak gagalkan operasi utama jika Supabase sync error
+      }
+    }
+
+    return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
 
@@ -474,7 +1174,9 @@ function importUsersBulk(userList) {
       
       if (username && password && !existingUsernames.has(username.toLowerCase())) {
         const id = generateId();
-        sheet.appendRow([id, username, hashPassword(password), nama, role, new Date().toISOString(), permissions]);
+        const bulkUserRow = [id, username, hashPassword(password), nama, role, new Date().toISOString(), permissions];
+        sheet.appendRow(bulkUserRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.USERS, bulkUserRow);
         existingUsernames.add(username.toLowerCase());
         addedCount++;
       }
@@ -494,7 +1196,9 @@ function addUser(username, password, nama, role, permissions, divisi) {
       if (data[i][1] === username) return { success: false, message: 'Username sudah ada' };
     }
     const id = generateId();
-    sheet.appendRow([id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]', divisi || '']);
+    const row = [id, username, hashPassword(password), nama, role || 'user', new Date().toISOString(), permissions || '[]', divisi || ''];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.USERS, row);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -707,6 +1411,9 @@ function processApprovalStatus(tipe, id, action, userNama, userRole, reason, pem
 
         if (tipe === 'lembur') formatSheetLembur();
         
+        // ── Sync baris yang diupdate ke Supabase ──
+        syncRowUpdate(sheetName, i + 1);
+        
         return { success: true, newStatus: newStatus };
       }
     }
@@ -880,7 +1587,9 @@ function addKaryawan(nama, jabatan, cabang, telepon, email, tanggalMasuk, status
   try {
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const id = generateId();
-    sheet.appendRow([id, nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '', sisaCuti || 12, normalizeFingerprintId(fingerprintId) || '']);
+    const row = [id, nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status || 'Tetap', new Date().toISOString(), tanggalSelesai || '', sisaCuti || 12, normalizeFingerprintId(fingerprintId) || ''];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.KARYAWAN, row);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -890,12 +1599,12 @@ function updateKaryawan(id, nama, jabatan, cabang, telepon, email, tanggalMasuk,
     const sheet = getSheet(CONFIG.SHEETS.KARYAWAN);
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
-      // Find by ID or Name fallback
       if ((id && String(data[i][0]) === String(id)) || (!id && String(data[i][1]) === String(nama))) {
         sheet.getRange(i + 1, 2, 1, 7).setValues([[nama, jabatan, cabang || '', telepon, email, tanggalMasuk, status]]);
         sheet.getRange(i + 1, 10).setValue(tanggalSelesai || '');
         sheet.getRange(i + 1, 11).setValue(sisaCuti || 0);
         sheet.getRange(i + 1, 12).setValue(normalizeFingerprintId(fingerprintId) || '');
+        syncRowUpdate(CONFIG.SHEETS.KARYAWAN, i + 1);
         return { success: true };
       }
     }
@@ -945,6 +1654,7 @@ function addBulkKaryawan(items) {
         updated++;
       } else {
         sheet.appendRow(rowData);
+        syncSheetRowToSupabase(CONFIG.SHEETS.KARYAWAN, rowData);
         added++;
       }
     });
@@ -984,7 +1694,9 @@ function addIjin(tanggal, nama, jenis, keterangan, bukti, createdBy) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.IJIN);
     const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, jenis, keterangan, bukti, 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const row = [generateId(), tanggal, nama, jenis, keterangan, bukti, 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.IJIN, row);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -1333,7 +2045,9 @@ function addLembur(tanggal, nama, divisi, jumlahJam, keterangan, createdBy) {
     } else {
       // Tambah baris baru jika belum ada
       const historyArr = [{ date: now, action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
-      sheet.appendRow([generateId(), tanggal, nama, realDivisi, jumlahJam, keterangan, 'Pending Team Leader', createdBy, now, JSON.stringify(historyArr)]);
+      const row = [generateId(), tanggal, nama, realDivisi, jumlahJam, keterangan, 'Pending Team Leader', createdBy, now, JSON.stringify(historyArr)];
+      sheet.appendRow(row);
+      syncSheetRowToSupabase(CONFIG.SHEETS.LEMBUR, row);
     }
     formatSheetLembur(); // Rapihkan setelah tambah
     return { success: true };
@@ -1393,8 +2107,13 @@ function addTglMerahPersonel(tanggal, dataArray, createdBy) {
         sheet.getRange(existingRow, 5).setValue(d.jamEstimasi);
         sheet.getRange(existingRow, 6).setValue(createdBy);
         sheet.getRange(existingRow, 7).setValue(now);
+        // Sync update row ke Supabase
+        const updatedRow = sheet.getRange(existingRow, 1, 1, 7).getValues()[0];
+        syncSheetRowToSupabase(CONFIG.SHEETS.TGL_MERAH, updatedRow);
       } else {
-        sheet.appendRow([generateId(), tanggal, d.nama, d.divisi, d.jamEstimasi, createdBy, now]);
+        const newRow = [generateId(), tanggal, d.nama, d.divisi, d.jamEstimasi, createdBy, now];
+        sheet.appendRow(newRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.TGL_MERAH, newRow);
       }
     });
     return { success: true };
@@ -1567,7 +2286,12 @@ function getKasGudang() {
 
 function addKasGudang(tanggal, tipe, keterangan, nominal, buktiUrl, createdBy) {
   try {
-    getSheet(CONFIG.SHEETS.KAS_GUDANG).appendRow([generateId(), tanggal, tipe, keterangan, parseFloat(nominal), buktiUrl, createdBy, new Date().toISOString()]);
+    const row = [generateId(), tanggal, tipe, keterangan, parseFloat(nominal), buktiUrl, createdBy, new Date().toISOString()];
+    getSheet(CONFIG.SHEETS.KAS_GUDANG).appendRow(row);
+    const syncRes = syncSheetRowToSupabase(CONFIG.SHEETS.KAS_GUDANG, row);
+    if (!syncRes.success) {
+      Logger.log('Supabase sync failed for addKasGudang: ' + syncRes.message);
+    }
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -1607,7 +2331,12 @@ function getTeamBuilding() {
 
 function addTeamBuilding(tanggal, keterangan, nominal, buktiUrl, createdBy, tipe) {
   try {
-    getSheet(CONFIG.SHEETS.TEAM_BUILDING).appendRow([generateId(), tanggal, keterangan, parseFloat(nominal), buktiUrl, createdBy, new Date().toISOString(), tipe || 'Pengeluaran']);
+    const row = [generateId(), tanggal, keterangan, parseFloat(nominal), buktiUrl, createdBy, new Date().toISOString(), tipe || 'Pengeluaran'];
+    getSheet(CONFIG.SHEETS.TEAM_BUILDING).appendRow(row);
+    const syncRes = syncSheetRowToSupabase(CONFIG.SHEETS.TEAM_BUILDING, row);
+    if (!syncRes.success) {
+      Logger.log('Supabase sync failed for addTeamBuilding: ' + syncRes.message);
+    }
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -1640,7 +2369,15 @@ function getExpense() {
 }
 
 function addExpense(tanggal, perusahaan, kategori, keterangan, nominal, bank, rekening, createdBy) {
-  try { getSheet(CONFIG.SHEETS.EXPENSE).appendRow([generateId(), tanggal, perusahaan, kategori, keterangan, parseFloat(nominal)||0, bank, rekening, createdBy, new Date().toISOString()]); return { success: true }; } catch(e) { return { success: false, message: e.message }; }
+  try {
+    const row = [generateId(), tanggal, perusahaan, kategori, keterangan, parseFloat(nominal) || 0, bank, rekening, createdBy, new Date().toISOString()];
+    getSheet(CONFIG.SHEETS.EXPENSE).appendRow(row);
+    const syncRes = syncSheetRowToSupabase(CONFIG.SHEETS.EXPENSE, row);
+    if (!syncRes.success) {
+      Logger.log('Supabase sync failed for addExpense: ' + syncRes.message);
+    }
+    return { success: true };
+  } catch(e) { return { success: false, message: e.message }; }
 }
 
 function deleteExpense(id) { return deleteRow(CONFIG.SHEETS.EXPENSE, id); }
@@ -1851,9 +2588,11 @@ function addLaporanKerja(tanggal, divisi, pic, totalOrang, perbantuan, pengurang
       }
     }
 
-    sheet.appendRow([
+    const row = [
       generateId(), tanggal, divisi, pic, parseInt(totalOrang)||0, parseFloat(perbantuan)||0, parseFloat(pengurangan)||0, parseFloat(jamLembur)||0, parseFloat(totalJamKerja)||0, kendala, parseInt(totalStaff)||0, parseInt(totalAdmin)||0, parseInt(totalOrder)||0, createdBy, new Date().toISOString(), parseInt(sisaOrder)||0, staffLemburNames || '', targetShift, parseInt(totalPHL)||0, parseFloat(jamKerjaPHL)||0, parseInt(totalPO)||0, parseInt(totalQty)||0, parseInt(totalInbound)||0, parseFloat(pendapatanPotongBubble)||0, parseFloat(pendapatanBuatBubble)||0, alasanPengurangan || '', alasanLembur || ''
-    ]);
+    ];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.LAPORAN_KERJA, row);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -1879,23 +2618,25 @@ function importLaporanBulk(dataArr, username) {
       const key = `${targetDateStr}_${d.divisi}_${d.shift || 'Pagi'}`;
       
       if (!existingKeys.has(key)) {
-        sheet.appendRow([
-          generateId(), d.tanggal, d.divisi, d.pic, 
-          parseInt(d.totalOrang) || 0, 
-          parseFloat(d.perbantuan) || 0, 
-          parseFloat(d.pengurangan) || 0, 
-          parseFloat(d.jamLembur) || 0, 
-          parseFloat(d.totalJamKerja) || 0, 
-          d.kendala || '-', 
-          parseInt(d.totalStaff) || 0, 
-          parseInt(d.totalAdmin) || 0, 
-          parseInt(d.totalOrder) || 0, 
-          username, now, 0, '', d.shift || 'Pagi', 
-          parseInt(d.totalPHL) || 0, 
-          parseFloat(d.jamKerjaPHL) || 0, 
-          0, parseInt(d.totalQty) || 0, 0, 0, 0, 
+        const bulkRow = [
+          generateId(), d.tanggal, d.divisi, d.pic,
+          parseInt(d.totalOrang) || 0,
+          parseFloat(d.perbantuan) || 0,
+          parseFloat(d.pengurangan) || 0,
+          parseFloat(d.jamLembur) || 0,
+          parseFloat(d.totalJamKerja) || 0,
+          d.kendala || '-',
+          parseInt(d.totalStaff) || 0,
+          parseInt(d.totalAdmin) || 0,
+          parseInt(d.totalOrder) || 0,
+          username, now, 0, '', d.shift || 'Pagi',
+          parseInt(d.totalPHL) || 0,
+          parseFloat(d.jamKerjaPHL) || 0,
+          0, parseInt(d.totalQty) || 0, 0, 0, 0,
           d.alasanPengurangan || '', d.alasanLembur || ''
-        ]);
+        ];
+        sheet.appendRow(bulkRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.LAPORAN_KERJA, bulkRow);
         existingKeys.add(key);
         count++;
       }
@@ -2091,7 +2832,9 @@ function saveStockControl(id, tanggal, pic, area, kategori, alasan, karyawan, it
         }
       }
     } else {
-      masterSheet.appendRow([masterId, tanggal, pic, area, kategori, alasan, karyawan, status, createdBy, now, '']);
+      const masterRow = [masterId, tanggal, pic, area, kategori, alasan, karyawan, status, createdBy, now, ''];
+      masterSheet.appendRow(masterRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.STOCK_CONTROL, masterRow);
       masterRowIndex = masterSheet.getLastRow();
     }
 
@@ -2110,10 +2853,12 @@ function saveStockControl(id, tanggal, pic, area, kategori, alasan, karyawan, it
         
         if (sm !== 0 || st !== 0 || sms !== 0 || sts !== 0) hasVariance = true;
         
-        detailSheet.appendRow([
+        const detRow = [
           generateId(), masterId, it.lokasi, it.sku, it.batch, it.exp, m, ttx, f, sm, st, it.aksi, it.alasan,
           fs, sms, sts
-        ]);
+        ];
+        detailSheet.appendRow(detRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.STOCK_CONTROL_DETAIL, detRow);
       });
     }
 
@@ -2445,13 +3190,17 @@ function addKlaim(tanggal, pic, resi, harga, keterangan, items, createdBy) {
   try {
     const klaimId = generateId();
     const sheetKlaim = getSheet(CONFIG.SHEETS.KLAIM);
-    sheetKlaim.appendRow([klaimId, tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()]);
+    const klaimRow = [klaimId, tanggal, pic, resi, parseFloat(harga) || 0, keterangan, 'Pending', createdBy, new Date().toISOString()];
+    sheetKlaim.appendRow(klaimRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.KLAIM, klaimRow);
     
     // Simpan rincian SKU jika ada
     if (items && Array.isArray(items) && items.length > 0) {
       const sheetDetail = getSheet(CONFIG.SHEETS.KLAIM_DETAIL);
       items.forEach(item => {
-        sheetDetail.appendRow([generateId(), klaimId, item.sku, parseFloat(item.harga) || 0]);
+        const detailRow = [generateId(), klaimId, item.sku, parseFloat(item.harga) || 0];
+        sheetDetail.appendRow(detailRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.KLAIM_DETAIL, detailRow);
       });
     }
     
@@ -2500,7 +3249,9 @@ function updateKlaim(id, tanggal, pic, resi, harga, keterangan, items, updatedBy
 
     if (items && Array.isArray(items) && items.length > 0) {
       items.forEach(item => {
-        sheetDetail.appendRow([generateId(), id, item.sku, parseFloat(item.harga) || 0]);
+        const detRow = [generateId(), id, item.sku, parseFloat(item.harga) || 0];
+        sheetDetail.appendRow(detRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.KLAIM_DETAIL, detRow);
       });
     }
 
@@ -2510,10 +3261,12 @@ function updateKlaim(id, tanggal, pic, resi, harga, keterangan, items, updatedBy
 function updateKlaimStatus(id, status, resiFallback) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.KLAIM); const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) { 
-      if ((id && String(data[i][0]) === String(id)) || (!id && resiFallback && String(data[i][3]) === String(resiFallback))) { 
-        sheet.getRange(i + 1, 7).setValue(status); return { success: true }; 
-      } 
+    for (let i = 1; i < data.length; i++) {
+      if ((id && String(data[i][0]) === String(id)) || (!id && resiFallback && String(data[i][3]) === String(resiFallback))) {
+        sheet.getRange(i + 1, 7).setValue(status);
+        syncRowUpdate(CONFIG.SHEETS.KLAIM, i + 1);
+        return { success: true };
+      }
     }
     return { success: false, message: 'Data tidak ditemukan' };
   } catch (e) { return { success: false, message: e.message }; }
@@ -2550,11 +3303,13 @@ function getSOP() {
 }
 
 function addSOP(judul, konten, kategori, createdBy) {
-  try { 
-    getSheet(CONFIG.SHEETS.SOP).appendRow([generateId(), judul, konten, kategori, createdBy, new Date().toISOString()]); 
-    return { success: true }; 
-  } catch (e) { 
-    return { success: false, message: e.message }; 
+  try {
+    const row = [generateId(), judul, konten, kategori, createdBy, new Date().toISOString()];
+    getSheet(CONFIG.SHEETS.SOP).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.SOP, row);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.message };
   }
 }
 function updateSOP(id, judul, konten, kategori) {
@@ -2616,7 +3371,12 @@ function getOrganisasi() {
   } catch (e) { return { success: false, message: e.message }; }
 }
 function addOrganisasi(nama, jabatan, atasan, departemen, foto, urutan) {
-  try { getSheet(CONFIG.SHEETS.ORGANISASI).appendRow([generateId(), nama, jabatan, atasan, departemen, foto, urutan || 0]); return { success: true }; } catch (e) { return { success: false, message: e.message }; }
+  try {
+    const row = [generateId(), nama, jabatan, atasan, departemen, foto, urutan || 0];
+    getSheet(CONFIG.SHEETS.ORGANISASI).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.ORGANISASI, row);
+    return { success: true };
+  } catch (e) { return { success: false, message: e.message }; }
 }
 function updateOrganisasi(id, nama, jabatan, atasan, departemen, foto, urutan) {
   try {
@@ -2658,7 +3418,9 @@ function addStock(skuInput, nama, barcode, batch, expDate, satuan, stok, stokMin
   try {
     const sku = (skuInput && skuInput.trim() !== '') ? skuInput.trim() : generateSKU(nama);
     const now = new Date().toISOString();
-    getSheet(CONFIG.SHEETS.STOCK).appendRow([generateId(), sku, nama, barcode, batch, expDate, satuan, parseFloat(stok)||0, parseFloat(stokMin)||0, kategori, lokasi, now, now]);
+    const row = [generateId(), sku, nama, barcode, batch, expDate, satuan, parseFloat(stok)||0, parseFloat(stokMin)||0, kategori, lokasi, now, now];
+    getSheet(CONFIG.SHEETS.STOCK).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.STOCK, row);
     return { success: true, sku };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -2774,6 +3536,7 @@ function moveStock(stockId, jumlah, lokasiTujuan, keterangan, createdBy) {
           now                       // Updated At
         ];
         sheet.appendRow(newRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.STOCK, newRow);
       }
     }
 
@@ -2839,11 +3602,15 @@ function getSJMasukWithDetails() {
 function addSuratJalanMasuk(tanggal, supplier, keterangan, items, createdBy) {
   try {
     const noSJ = generateNoSJ('SJM'); const id = generateId(); const now = new Date().toISOString();
-    getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK).appendRow([id, noSJ, tanggal, supplier, keterangan, createdBy, now]);
+    const masterRow = [id, noSJ, tanggal, supplier, keterangan, createdBy, now];
+    getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK).appendRow(masterRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.SURAT_JALAN_MASUK, masterRow);
     const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||'']);
+      const detRow = [generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||''];
+      detSheet.appendRow(detRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.SURAT_JALAN_MASUK_DETAIL, detRow);
       updateStokQty(item.stockId, parseFloat(item.qty)||0, item.sku);
     });
     return { success: true };
@@ -2921,13 +3688,17 @@ function getSJKeluarWithDetails() {
 function addSuratJalanKeluar(tanggal, tujuan, keterangan, items, createdBy) {
   try {
     const noSJ = generateNoSJ('SJK'); const id = generateId();
-    getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR).appendRow([id, noSJ, tanggal, tujuan, keterangan, createdBy, new Date().toISOString()]);
+    const masterRow = [id, noSJ, tanggal, tujuan, keterangan, createdBy, new Date().toISOString()];
+    getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR).appendRow(masterRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.SURAT_JALAN_KELUAR, masterRow);
     const detSheet = getSheet(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     for (const item of parsedItems) {
       const res = updateStokQty(item.stockId, -(parseFloat(item.qty)||0), item.sku);
       if (!res.success) return { success: false, message: res.message };
-      detSheet.appendRow([generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||'']);
+      const detRow = [generateId(), id, noSJ, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', item.lokasi||''];
+      detSheet.appendRow(detRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.SURAT_JALAN_KELUAR_DETAIL, detRow);
     }
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
@@ -3178,18 +3949,13 @@ function saveDistributorQueueLateNote(poNumber, rowNumber, note, sourceSheet, cr
         by: createdBy,
         keterangan: note
       }];
-      
-      sheet.appendRow([
-        id,
-        poNumber,
-        sourceSheet,
-        rowNumber,
-        note || '',
-        'Pending Team Leader',
-        createdBy,
-        now,
-        JSON.stringify(history)
-      ]);
+      const lateRow = [
+        id, poNumber, sourceSheet, rowNumber,
+        note || '', 'Pending Team Leader', createdBy,
+        now, JSON.stringify(history)
+      ];
+      sheet.appendRow(lateRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.LATE_SHIPMENT, lateRow);
     }
     
     return { success: true, message: 'Keterangan late shipment berhasil disimpan.' };
@@ -3803,6 +4569,39 @@ function getOrdersWithDetails() {
   } catch(e) { return { success: false, message: "Err Order Detail Test: " + e.message }; }
 }
 
+function getOrdersBySku(sku) {
+  try {
+    sku = String(sku || '').toLowerCase().trim();
+    if (!sku) return { success: true, data: [] };
+
+    const ordRes = getOrders();
+    if (!ordRes.success) return ordRes;
+
+    const ordMap = {};
+    ordRes.data.forEach(o => { ordMap[String(o.id)] = o; });
+
+    const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
+    if (!detSheet) return { success: true, data: [] };
+    const data = detSheet.getDataRange().getValues();
+    const matched = {};
+
+    for (let i = 1; i < data.length; i++) {
+      if (!data[i] || data[i].join('').trim() === '') continue;
+      const orderId = String(data[i][1] || '');
+      const skuCell = String(data[i][4] || '').toLowerCase();
+      const nameCell = String(data[i][5] || '').toLowerCase();
+      if ((skuCell && skuCell.indexOf(sku) !== -1) || (nameCell && nameCell.indexOf(sku) !== -1)) {
+        matched[orderId] = true;
+      }
+    }
+
+    const result = [];
+    Object.keys(matched).forEach(id => { if (ordMap[id]) result.push(ordMap[id]); });
+    // Return newest first
+    return { success: true, data: result.reverse() };
+  } catch (e) { return { success: false, message: e.message }; }
+}
+
 function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy, kategori, noResi) {
   try {
     let noOrder = (kategori === 'Marketplace' && pelanggan) ? pelanggan : generateNoSJ('ORD'); // Jika MP, pelanggan mungkin berisi No Order Custom
@@ -3837,15 +4636,18 @@ function addOrder(tanggal, pelanggan, alamat, keterangan, items, createdBy, kate
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     const totalItem = parsedItems.reduce((s,x) => s + (parseFloat(x.qty)||0), 0);
     
-    getSheet(CONFIG.SHEETS.ORDER).appendRow([
+    const orderRow = [
       id, finalNoOrder, tanggal, pelanggan, alamat, 'Pending', totalItem, keterangan, createdBy, 
       new Date().toISOString(), '', '', kategori || 'Distributor', finalNoResi || ''
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.ORDER).appendRow(orderRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.ORDER, orderRow);
 
-    
     const detSheet = getSheet(CONFIG.SHEETS.ORDER_DETAIL);
     parsedItems.forEach(item => {
-      detSheet.appendRow([generateId(), id, finalNoOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', 0, item.lokasi || '']);
+      const detRow = [generateId(), id, finalNoOrder, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'', 0, item.lokasi || ''];
+      detSheet.appendRow(detRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.ORDER_DETAIL, detRow);
     });
     return { success: true, noOrder: finalNoOrder };
   } catch(e) { return { success: false, message: e.message }; }
@@ -4108,13 +4910,17 @@ function getReturWithDetails() {
 function addRetur(tanggal, sumber, alasan, keterangan, items, createdBy) {
   try {
     const noRetur = generateNoSJ('RTR'); const id = generateId();
-    getSheet(CONFIG.SHEETS.RETUR).appendRow([id, noRetur, tanggal, sumber, alasan, keterangan, createdBy, new Date().toISOString()]);
+    const masterRow = [id, noRetur, tanggal, sumber, alasan, keterangan, createdBy, new Date().toISOString()];
+    getSheet(CONFIG.SHEETS.RETUR).appendRow(masterRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.RETUR, masterRow);
     const detSheet = getSheet(CONFIG.SHEETS.RETUR_DETAIL);
     const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
     for (const item of parsedItems) {
       const res = updateStokQty(item.stockId, parseFloat(item.qty)||0, item.sku);
       if (!res.success) return { success: false, message: res.message };
-      detSheet.appendRow([generateId(), id, noRetur, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||'']);
+      const detRow = [generateId(), id, noRetur, item.stockId, item.sku, item.nama, parseFloat(item.qty)||0, item.satuan, item.batch||'', item.expDate||''];
+      detSheet.appendRow(detRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.RETUR_DETAIL, detRow);
     }
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
@@ -4334,7 +5140,7 @@ function addTugasProject(jsonString) {
       by: p.createdBy || '-'
     }]);
 
-    getSheet(CONFIG.SHEETS.TUGAS_PROJECT).appendRow([
+    const row = [
       id,
       p.judul,
       p.assignee,
@@ -4350,7 +5156,9 @@ function addTugasProject(jsonString) {
       now,
       now,
       logEntry
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.TUGAS_PROJECT).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.TUGAS_PROJECT, row);
     return { success: true, id: id };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -4452,7 +5260,9 @@ function addAsset(tanggal, nama, jenisAsset, deskripsi, estimasiHarga, prioritas
   try {
     const sheet = getSheet(CONFIG.SHEETS.ASSET);
     const historyArr = [{ date: new Date().toISOString(), action: 'Diajukan', status: 'Pending Team Leader', by: createdBy, role: 'Pemohon', reason: '' }];
-    sheet.appendRow([generateId(), tanggal, nama, jenisAsset, deskripsi, parseFloat(estimasiHarga)||0, prioritas, bukti || '', 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)]);
+    const row = [generateId(), tanggal, nama, jenisAsset, deskripsi, parseFloat(estimasiHarga)||0, prioritas, bukti || '', 'Pending Team Leader', createdBy, new Date().toISOString(), JSON.stringify(historyArr)];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.ASSET, row);
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -4563,7 +5373,9 @@ function submitStockOpname(tanggal, stockId, sku, nama, lokasi, batch, expDate, 
   try {
     const sheet = getSheet(CONFIG.SHEETS.STOCK_OPNAME);
     const selisih = parseFloat(fisik) - parseFloat(sistem);
-    sheet.appendRow([generateId(), tanggal, stockId, sku, nama, lokasi||'-', batch||'-', expDate||'-', sistem, fisik, selisih, 'Pending', catatan||'', createdBy, new Date().toISOString(), '', '']);
+    const row = [generateId(), tanggal, stockId, sku, nama, lokasi||'-', batch||'-', expDate||'-', sistem, fisik, selisih, 'Pending', catatan||'', createdBy, new Date().toISOString(), '', ''];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.STOCK_OPNAME, row);
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -4629,7 +5441,9 @@ function addPackingList(tanggal, noPL, noOrder, supplier, keterangan, fileUrl, c
       setupSheet(ss, CONFIG.SHEETS.PACKING_LIST, ['id','tanggal','noPL','noOrder','supplier','keterangan','fileUrl','createdBy','createdAt']);
     }
     const finalSheet = getSheet(CONFIG.SHEETS.PACKING_LIST);
-    finalSheet.appendRow([generateId(), tanggal, noPL, noOrder || '-', supplier || '-', keterangan, fileUrl, createdBy || 'User', new Date().toISOString()]);
+    const row = [generateId(), tanggal, noPL, noOrder || '-', supplier || '-', keterangan, fileUrl, createdBy || 'User', new Date().toISOString()];
+    finalSheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PACKING_LIST, row);
     SpreadsheetApp.flush();
     return { success: true };
   } catch(e) { return { success: false, message: 'Gagal Simpan ke Tabel: ' + e.message }; }
@@ -4666,11 +5480,13 @@ function addRiwayatKaryawan(karyawanId, nama, jabatan, cabang, telepon, tanggalM
   try {
     // 1. Simpan ke sheet RiwayatKaryawan
     const id = generateId();
-    getSheet(CONFIG.SHEETS.RIWAYAT_KARYAWAN).appendRow([
+    const row = [
       id, nama, jabatan, cabang || '', telepon || '',
       tanggalMasuk, tanggalResign, alasanResign, keterangan || '',
       createdBy, new Date().toISOString()
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.RIWAYAT_KARYAWAN).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.RIWAYAT_KARYAWAN, row);
     
     // 2. Hapus dari sheet Karyawan (Pindah resmi)
     deleteRow(CONFIG.SHEETS.KARYAWAN, karyawanId);
@@ -4722,11 +5538,13 @@ function addSuratPeringatan(karyawanNama, karyawanId, jenisSP, alasan, tanggalSP
     const tglKadaluarsa = new Date(tglSP);
     tglKadaluarsa.setDate(tglKadaluarsa.getDate() + parseInt(masaBerlaku));
     const tglKadStr = Utilities.formatDate(tglKadaluarsa, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    getSheet(CONFIG.SHEETS.SURAT_PERINGATAN).appendRow([
+    const row = [
       id, karyawanNama, karyawanId || '', jenisSP, alasan,
       tanggalSP, parseInt(masaBerlaku), tglKadStr,
       'Aktif', createdBy, new Date().toISOString()
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.SURAT_PERINGATAN).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.SURAT_PERINGATAN, row);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -4834,9 +5652,9 @@ function addAssetWarehouse(codePrefix, nama, tanggalMasuk, divisi, status, creat
         const currentNum = maxNum + i + 1;
         const code = `${basePrefix}-${currentNum}`;
         const history = `🛒 Dibuat oleh ${createdBy} pada ${createdAt} (Tgl Masuk: ${tanggalMasuk})`;
-        
-        // New column order: id, kategori, code, nama, divisi, tanggalMasuk, status, createdBy, createdAt, history, qty, zoneId
-        sheet.appendRow([id, kategori || '', code, nama, divisi, tanggalMasuk, status || 'Aktif', createdBy, createdAt, history, 1, zoneId || '']);
+        const row = [id, kategori || '', code, nama, divisi, tanggalMasuk, status || 'Aktif', createdBy, createdAt, history, 1, zoneId || ''];
+        sheet.appendRow(row);
+        syncSheetRowToSupabase(CONFIG.SHEETS.ASSET_WAREHOUSE, row);
     }
     
     return { success: true, message: `${count} unit asset ${nama} berhasil ditambahkan.` };
@@ -4883,6 +5701,7 @@ function addAssetAudit(assetId, kondisi, catatan, petugas) {
     
     // Status Approval default: Pending
     finalSheet.appendRow([id, assetId, tanggal, kondisi, catatan || '', petugas, now, 'Pending', '', '']);
+    syncSheetRowToSupabase(CONFIG.SHEETS.ASSET_AUDIT_LOG, [id, assetId, tanggal, kondisi, catatan || '', petugas, now, 'Pending', '', '']);
     
     // Status di master asset HANYA berubah jika disetujui, jadi jangan update di sini.
     return { success: true };
@@ -5091,6 +5910,7 @@ function generateAuditReport(auditorName) {
     }]);
     
     reportSheet.appendRow([id, tanggal, auditorName, totalAsset, terscan, minus, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList)]);
+    syncSheetRowToSupabase(CONFIG.SHEETS.AUDIT_REPORTS, [id, tanggal, auditorName, totalAsset, terscan, minus, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList)]);
     
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
@@ -5187,8 +6007,10 @@ function generateOpnameReport(sessionId, auditorName) {
     const rowData = [id, tanggal, auditorName, totalAsset, terscan, minusCount, 'Pending', auditorName, nowStr, history, JSON.stringify(missingAssetsList), JSON.stringify(negativeList)];
     if (existingRowIndex > 0) {
       reportSheet.getRange(existingRowIndex, 1, 1, rowData.length).setValues([rowData]);
+      syncSheetRowToSupabase(CONFIG.SHEETS.AUDIT_REPORTS, rowData);
     } else {
       reportSheet.appendRow(rowData);
+      syncSheetRowToSupabase(CONFIG.SHEETS.AUDIT_REPORTS, rowData);
     }
 
     return { success: true, id: id, negative: negativeList, missing: missingAssetsList };
@@ -5429,45 +6251,26 @@ function addBookingMobil(tanggal, pic, jamBerangkat, tujuan, keterangan, rute, c
     const createdAt = new Date().toISOString();
     const totalBiaya = (Number(parkir) || 0) + (Number(tol) || 0) + (Number(bensin) || 0) + (Number(pkbm) || 0) + (Number(lainLain) || 0);
     
-    sheet.appendRow([
-      id, 
-      tanggal, 
-      pic, 
-      jamBerangkat, 
-      tujuan, 
-      keterangan, 
-      rute, 
-      'Belum Jalan', 
-      createdBy, 
-      createdAt,
-      Number(parkir) || 0,
-      Number(tol) || 0,
-      Number(bensin) || 0,
-      Number(pkbm) || 0,
-      Number(lainLain) || 0,
-      totalBiaya,
-      '', // buktiPembayaranUrl
-      ''  // driverNotes
-    ]);
+    const masterRow = [
+      id, tanggal, pic, jamBerangkat, tujuan, keterangan, rute, 'Belum Jalan', createdBy, createdAt,
+      Number(parkir) || 0, Number(tol) || 0, Number(bensin) || 0, Number(pkbm) || 0, Number(lainLain) || 0,
+      totalBiaya, '', ''
+    ];
+    sheet.appendRow(masterRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.BOOKING_MOBIL, masterRow);
 
     // Simpan Detail PO jika ada
     if (details && Array.isArray(details)) {
       const detailSheet = getSheet(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL);
       details.forEach(det => {
-        detailSheet.appendRow([
-          generateId(),
-          id,
-          det.tanggal || tanggal,
-          det.namaCustomer || '',
-          det.noPo || '',
-          Number(det.totalCartoon) || 0,
-          Number(det.parkir) || 0,
-          Number(det.tol) || 0,
-          Number(det.pkbm) || 0,
-          Number(det.lainLain) || 0,
-          det.keterangan || '',
-          '' // buktiUrls
-        ]);
+        const detRow = [
+          generateId(), id,
+          det.tanggal || tanggal, det.namaCustomer || '', det.noPo || '',
+          Number(det.totalCartoon) || 0, Number(det.parkir) || 0, Number(det.tol) || 0,
+          Number(det.pkbm) || 0, Number(det.lainLain) || 0, det.keterangan || '', ''
+        ];
+        detailSheet.appendRow(detRow);
+        syncSheetRowToSupabase(CONFIG.SHEETS.BOOKING_MOBIL_DETAIL, detRow);
       });
       SpreadsheetApp.flush();
     }
@@ -5632,16 +6435,143 @@ function updateBookingMobilDetailBiaya(detailId, parkir, tol, pkbm, lainLain) {
 }
 
 // Ensure installable triggers exist for automatic syncing via onEdit
+// ============================================================
+// REAL-TIME SYNC: GOOGLE SHEET → SUPABASE
+// Setiap perubahan di Sheet langsung di-push ke Supabase.
+// Trigger: onEdit (setiap cell berubah) + onChange (struktur berubah)
+// ============================================================
+
 function ensureTriggers() {
   try {
     const current = ScriptApp.getProjectTriggers();
-    const hasOnEdit = current.some(t => t.getHandlerFunction && t.getHandlerFunction() === 'onEdit');
+    const ss = getSpreadsheet();
+
+    const hasOnEdit   = current.some(t => t.getHandlerFunction() === 'onEdit');
+    const hasOnChange = current.some(t => t.getHandlerFunction() === 'onChange');
+
     if (!hasOnEdit) {
-      const ss = getSpreadsheet();
       ScriptApp.newTrigger('onEdit').forSpreadsheet(ss).onEdit().create();
+      Logger.log('✅ Trigger onEdit dibuat');
+    }
+    if (!hasOnChange) {
+      ScriptApp.newTrigger('onChange').forSpreadsheet(ss).onChange().create();
+      Logger.log('✅ Trigger onChange dibuat');
     }
   } catch (e) {
-    // If triggers cannot be created (permissions), ignore silently
+    Logger.log('⚠️ ensureTriggers error: ' + e.message);
+  }
+}
+
+// ============================================================
+// onEdit — dipanggil setiap kali user mengedit 1+ sel di Sheet
+// Sync baris yang diedit langsung ke Supabase (real-time, ~1-2 detik)
+// ============================================================
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+
+    const sheet     = e.range.getSheet();
+    if (!sheet) return;
+
+    const sheetName = sheet.getName();
+    const row       = e.range.getRow();
+    const col       = e.range.getColumn();
+    const numRows   = e.range.getNumRows();
+
+    // Skip baris header
+    if (row <= 1) return;
+
+    // ── BookingMobilDetail: sanitasi angka Parkir/Tol/PKBM/Lain-Lain ──
+    if (sheetName === CONFIG.SHEETS.BOOKING_MOBIL_DETAIL) {
+      if (col >= 7 && col <= 10) {
+        const rowValues = sheet.getRange(row, 1, 1, 12).getValues()[0];
+        const noPo = String(rowValues[4] || '').trim();
+        if (noPo) {
+          const san = (v) => {
+            if (typeof v === 'number') return Math.max(0, v);
+            const n = parseInt(String(v || '').replace(/[^0-9]/g, ''), 10);
+            return isNaN(n) ? 0 : Math.max(0, n);
+          };
+          const parkir   = san(rowValues[6]);
+          const tol      = san(rowValues[7]);
+          const pkbm     = san(rowValues[8]);
+          const lainLain = san(rowValues[9]);
+          if (parkir   !== rowValues[6]) sheet.getRange(row, 7).setValue(parkir);
+          if (tol      !== rowValues[7]) sheet.getRange(row, 8).setValue(tol);
+          if (pkbm     !== rowValues[8]) sheet.getRange(row, 9).setValue(pkbm);
+          if (lainLain !== rowValues[9]) sheet.getRange(row, 10).setValue(lainLain);
+          syncPOToBookingMobilDetail(noPo, parkir, tol, pkbm, lainLain);
+        }
+      }
+    }
+
+    // ── Sync setiap baris yang diedit ke Supabase ──
+    if (SUPABASE_SYNC_SHEETS.indexOf(sheetName) === -1) return;
+
+    const headers = SHEET_HEADERS[sheetName];
+    const headerCount = headers ? headers.length : sheet.getLastColumn();
+
+    // Support multi-baris diedit sekaligus (paste, fill-down, dll)
+    const endRow = Math.min(row + numRows - 1, sheet.getLastRow());
+
+    for (let r = row; r <= endRow; r++) {
+      if (r <= 1) continue; // skip header
+      const rowVals = sheet.getRange(r, 1, 1, headerCount).getValues()[0];
+
+      // Skip baris kosong
+      if (!rowVals || rowVals.every(v => v === '' || v === null || v === undefined)) continue;
+      // Skip kalau row adalah baris header
+      if (isSupabaseHeaderRow(sheetName, rowVals)) continue;
+
+      const res = syncSheetRowToSupabase(sheetName, rowVals, sheet, r);
+      if (!res.success) {
+        Logger.log('⚠️ onEdit sync gagal ' + sheetName + ' baris ' + r + ': ' + (res.message || ''));
+      } else {
+        Logger.log('✅ onEdit sync: ' + sheetName + ' baris ' + r);
+      }
+    }
+
+  } catch (err) {
+    try { Logger.log('❌ onEdit error: ' + err.message); } catch (_) {}
+  }
+}
+
+// ============================================================
+// onChange — dipanggil saat struktur sheet berubah
+// (tambah/hapus baris/kolom, paste banyak baris, dll)
+// Lebih berat dari onEdit — gunakan untuk perubahan massal
+// ============================================================
+function onChange(e) {
+  try {
+    if (!e || !e.changeType) return;
+
+    const changeType = e.changeType.toString().toUpperCase();
+    Logger.log('📋 onChange dipanggil, changeType: ' + changeType);
+
+    // EDIT sudah ditangani onEdit — skip agar tidak double-sync
+    if (changeType === 'EDIT') return;
+
+    if (changeType === 'REMOVE_ROW' || changeType === 'REMOVE_COLUMN') {
+      // Hapus baris di Supabase yang sudah tidak ada di Sheet
+      Logger.log('🗑️  onChange: mendeteksi penghapusan, mulai syncDeletedRowsToSupabase...');
+      syncDeletedRowsToSupabase();
+      return;
+    }
+
+    if (changeType === 'INSERT_ROW' || changeType === 'OTHER' || changeType === 'INSERT_GRID') {
+      // Sync ulang semua sheet untuk menangkap baris baru yang ditambahkan lewat bulk paste
+      Logger.log('📥 onChange INSERT/OTHER: mulai syncAllSheetsToSupabase...');
+      syncAllSheetsToSupabase();
+      return;
+    }
+
+    // Fallback: sync semua
+    Logger.log('🔄 onChange fallback sync...');
+    syncAllSheetsToSupabase();
+    syncDeletedRowsToSupabase();
+
+  } catch (err) {
+    try { Logger.log('❌ onChange error: ' + err.message); } catch (_) {}
   }
 }
 
@@ -5741,51 +6671,77 @@ function syncPOToBookingMobilDetail(noPo, parkir, tol, pkbm, lainLain) {
   }
 }
 
-// OnEdit trigger: auto-sync when Parkir/Tol/PKBM/Lain-Lain changes in BookingMobilDetail
-function onEdit(e) {
-  try {
-    if (!e || !e.range) return;
-    const sheet = e.range.getSheet();
+// ── Kode di bawah ini sudah dipindah ke blok ensureTriggers/onEdit/onChange di atas ──
+
+// Sheet yang TIDAK aman untuk delete-sync karena kolom pertamanya bukan id unik per baris
+// (JadwalRoster pakai 'Bulan' yang berulang untuk banyak baris/nama).
+const SUPABASE_SKIP_DELETE_SYNC = [CONFIG.SHEETS.JADWAL_ROSTER];
+
+// Mengecek setiap sheet: baris yang ada di Supabase tapi sudah tidak ada lagi di sheet akan dihapus.
+function syncDeletedRowsToSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  const ss = getSpreadsheet();
+
+  SUPABASE_SYNC_SHEETS.forEach(function (sheetName) {
+    if (SUPABASE_SKIP_DELETE_SYNC.indexOf(sheetName) !== -1) return;
+
+    const sheet = ss.getSheetByName(sheetName);
     if (!sheet) return;
-    const sheetName = sheet.getName();
-    // Only act on BookingMobilDetail sheet
-    if (sheetName !== CONFIG.SHEETS.BOOKING_MOBIL_DETAIL) return;
-    const editedCol = e.range.getColumn();
-    // We monitor Parkir(7), Tol(8), PKBM(9), Lain-Lain(10)
-    if (editedCol < 7 || editedCol > 10) return;
-    const row = e.range.getRow();
-    if (row <= 1) return; // skip header
 
-    const rowValues = sheet.getRange(row, 1, 1, 12).getValues()[0];
-    const noPo = String(rowValues[4] || '').trim();
-    if (!noPo) return;
+    const lastRow = sheet.getLastRow();
+    const conflictKey = getSupabaseConflictKey(sheetName); // biasanya 'id'
 
-    // Helper: Convert any value to safe numeric (remove letters, keep only digits)
-    const sanitizeNumber = (val) => {
-      if (typeof val === 'number') return Math.max(0, val);
-      const str = String(val || '').trim();
-      if (!str) return 0;
-      // Remove all non-digit characters, keep only numbers
-      const numStr = str.replace(/[^0-9]/g, '');
-      const num = parseInt(numStr, 10);
-      return isNaN(num) ? 0 : Math.max(0, num);
+    let currentIds = [];
+    if (lastRow > 1) {
+      currentIds = sheet.getRange(2, 1, lastRow - 1, 1).getValues()
+        .map(function (r) { return r[0]; })
+        .filter(function (v) { return v !== '' && v !== null && v !== undefined; })
+        .map(String);
+    }
+
+    const result = supabaseDeleteRowsNotIn(sheetName, conflictKey, currentIds);
+    if (!result.success) {
+      Logger.log('⚠️  Gagal cek/hapus baris usang untuk ' + sheetName + ': ' + result.message);
+    }
+  });
+}
+
+// Menghapus baris di tabel Supabase yang nilai conflictKey-nya TIDAK ADA di currentIds
+// (artinya baris itu sudah dihapus dari Google Sheet).
+function supabaseDeleteRowsNotIn(sheetName, conflictKey, currentIds) {
+  try {
+    const tableName = getSupabaseTableName(sheetName);
+    let apiUrl;
+
+    if (currentIds.length === 0) {
+      // Sheet sudah tidak ada data sama sekali -> kosongkan tabel ini juga
+      apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName);
+    } else {
+      const idList = currentIds.map(function (id) {
+        return String(id).replace(/[(),]/g, ''); // sanitasi ringan agar tidak merusak sintaks filter
+      }).join(',');
+      const filter = encodeURIComponent(conflictKey) + '=not.in.(' + idList + ')';
+      apiUrl = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(tableName) + '?' + filter;
+    }
+
+    const options = {
+      method: 'delete',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      muteHttpExceptions: true
     };
 
-    // Sanitize values & re-set if they contained non-numeric characters
-    let parkir = sanitizeNumber(rowValues[6]);
-    let tol = sanitizeNumber(rowValues[7]);
-    let pkbm = sanitizeNumber(rowValues[8]);
-    let lainLain = sanitizeNumber(rowValues[9]);
-
-    // Re-set the sanitized values back to sheet if they were modified
-    if (parkir !== rowValues[6]) sheet.getRange(row, 7).setValue(parkir);
-    if (tol !== rowValues[7]) sheet.getRange(row, 8).setValue(tol);
-    if (pkbm !== rowValues[8]) sheet.getRange(row, 9).setValue(pkbm);
-    if (lainLain !== rowValues[9]) sheet.getRange(row, 10).setValue(lainLain);
-
-    syncPOToBookingMobilDetail(noPo, parkir, tol, pkbm, lainLain);
-  } catch (err) {
-    try { Logger.log('onEdit sync error: ' + err.message); } catch (_) {}
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const status = response.getResponseCode();
+    if (status >= 200 && status < 300) {
+      return { success: true };
+    }
+    return { success: false, message: 'HTTP ' + status + ' - ' + response.getContentText() };
+  } catch (e) {
+    return { success: false, message: e.message };
   }
 }
 
@@ -6265,10 +7221,12 @@ function addAbsensiKaryawan(karyawanId, nama, divisi, jabatan, tipe, jam, tangga
     const jamStr = jam || Utilities.formatDate(now, tz, 'HH:mm:ss');
     const statusInfo = _hitungStatusAbsensi(divisi, tipe, jamStr, nama, tglStr);
     const id = generateId();
-    sheet.appendRow([
+    const row = [
       id, tglStr, jamStr, karyawanId, nama, divisi, jabatan || '',
       tipe, 'manual', '', statusInfo.status, keterangan || '', now.toISOString()
-    ]);
+    ];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.ABSENSI_KARYAWAN, row);
     return { success: true, id: id, status: statusInfo.status };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -6528,7 +7486,9 @@ function saveJadwalShift(id, namaJadwal, divisi, shiftType, jamMasuk, jamPulang,
       return { success: false, message: 'Jadwal tidak ditemukan.' };
     } else {
       const newId = generateId();
-      sheet.appendRow([newId, namaJadwal, divisi, shiftType, jamMasuk, jamPulang, toleransiMenit, aktif, now, now]);
+      const row = [newId, namaJadwal, divisi, shiftType, jamMasuk, jamPulang, toleransiMenit, aktif, now, now];
+      sheet.appendRow(row);
+      syncSheetRowToSupabase(CONFIG.SHEETS.JADWAL_SHIFT, row);
       return { success: true, id: newId };
     }
   } catch (e) { return { success: false, message: e.message }; }
@@ -7370,8 +8330,10 @@ function createAssetOpnameSession(tanggal, divisi, createdBy) {
     const id = 'SO-AST-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMddHHmmss');
     const now = new Date().toISOString();
     const historyInit = JSON.stringify([{ action: 'Sesi dibuat', by: createdBy, time: now }]);
-
-    sheet.appendRow([id, tanggal, divisi || 'Semua', 'Draft', totalAsset, 0, createdBy, now, '', '', historyInit]);
+    const sessionRow = [id, tanggal, divisi || 'Semua', 'Draft', totalAsset, 0, createdBy, now, '', '', historyInit];
+    sheet.appendRow(sessionRow);
+    // AssetOpnameSession is a dynamic sheet — sync to audit_reports as closest match
+    try { syncSheetRowToSupabase('AssetOpnameSession', sessionRow); } catch(_) {}
     return { success: true, id: id, totalAsset: totalAsset };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -7722,12 +8684,14 @@ function saveInventoryControl(data) {
       for (let i = 1; i < sheetData.length; i++) {
         if (String(sheetData[i][0]) === String(data.id)) {
           sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
+          syncSheetRowToSupabase(CONFIG.SHEETS.INVENTORY_CONTROL, rowData);
           return { success: true, id: data.id };
         }
       }
     }
     
     sheet.appendRow(rowData);
+    syncSheetRowToSupabase(CONFIG.SHEETS.INVENTORY_CONTROL, rowData);
     return { success: true, id: rowData[0] };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -7772,6 +8736,7 @@ function updateInventoryMonitoring(id, areaPosisi, keterangan) {
     }
     
     sheet.appendRow([generateId(), areaPosisi, keterangan, now]);
+    syncSheetRowToSupabase(CONFIG.SHEETS.INVENTORY_MONITORING, [generateId(), areaPosisi, keterangan, now]);
     return { success: true };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -8464,11 +9429,13 @@ function getPettyCashPeriods() {
 function addPettyCashPeriod(nama, tanggalMulai, tanggalSelesai, saldoAwal, keterangan, createdBy) {
   try {
     const id = generateId();
-    getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD).appendRow([
+    const row = [
       id, nama, tanggalMulai, tanggalSelesai,
       parseFloat(saldoAwal) || 0, keterangan || '', 'Aktif',
       createdBy, new Date().toISOString()
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.PETTY_CASH_PERIOD).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PETTY_CASH_PERIOD, row);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -8522,11 +9489,13 @@ function getPettyCash(periodId) {
 function addPettyCash(periodId, tanggal, kategori, keterangan, nominal, tipe, buktiUrl, createdBy) {
   try {
     const id = generateId();
-    getSheet(CONFIG.SHEETS.PETTY_CASH).appendRow([
+    const row = [
       id, periodId, tanggal, kategori, keterangan,
       parseFloat(nominal) || 0, tipe || 'OUT',
       buktiUrl || '', createdBy, new Date().toISOString(), 'Belum Bayar'
-    ]);
+    ];
+    getSheet(CONFIG.SHEETS.PETTY_CASH).appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PETTY_CASH, row);
     return { success: true, id: id };
   } catch (e) { return { success: false, message: e.message }; }
 }
@@ -8913,19 +9882,15 @@ function addPaymentGudang(nama, deskripsi, hargaPerOrang, deadline, createdBy, t
   try {
     const id = generateId();
     const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG);
-    sheet.appendRow([
-      id,
-      nama,
-      deskripsi,
+    const row = [
+      id, nama, deskripsi,
       Number(hargaPerOrang) || 0,
-      deadline,
-      'Aktif',
-      createdBy,
+      deadline, 'Aktif', createdBy,
       new Date().toISOString(),
-      '', // midtransOrderId
-      '', // midtransStatus
-      tipe || 'Reguler'
-    ]);
+      '', '', tipe || 'Reguler'
+    ];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PAYMENT_GUDANG, row);
     return { success: true, id: id };
   } catch (e) {
     return { success: false, message: e.message };
@@ -8964,17 +9929,9 @@ function getOrCreateParticipantForUser(paymentId, karyawanNama) {
 
     // 3. Create new participant
     const id = generateId();
-    sheetPart.appendRow([
-      id,
-      paymentId,
-      karyawanId,
-      karyawanNama,
-      'Belum Bayar',
-      '',
-      '',
-      '',
-      ''
-    ]);
+    const partRow = [id, paymentId, karyawanId, karyawanNama, 'Belum Bayar', '', '', '', ''];
+    sheetPart.appendRow(partRow);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, partRow);
 
     return {
       success: true,
@@ -9075,17 +10032,9 @@ function addPaymentParticipant(paymentId, karyawanId, namaKaryawan) {
   try {
     const sheet = getSheet(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS);
     const id = generateId();
-    sheet.appendRow([
-      id,
-      paymentId,
-      karyawanId,
-      namaKaryawan,
-      'Belum Bayar',
-      '',
-      '',
-      '',
-      ''
-    ]);
+    const row = [id, paymentId, karyawanId, namaKaryawan, 'Belum Bayar', '', '', '', ''];
+    sheet.appendRow(row);
+    syncSheetRowToSupabase(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, row);
     return { success: true, id: id };
   } catch (e) {
     return { success: false, message: e.message };
@@ -9102,17 +10051,9 @@ function addPaymentParticipantsBulk(paymentId, karyawanList) {
     
     karyawanList.forEach(k => {
       const id = generateId();
-      sheet.appendRow([
-        id,
-        paymentId,
-        k.id || '',
-        k.nama || '',
-        'Belum Bayar',
-        '',
-        '',
-        '',
-        ''
-      ]);
+      const row = [id, paymentId, k.id || '', k.nama || '', 'Belum Bayar', '', '', '', ''];
+      sheet.appendRow(row);
+      syncSheetRowToSupabase(CONFIG.SHEETS.PAYMENT_GUDANG_PARTICIPANTS, row);
       count++;
     });
     
@@ -9252,7 +10193,9 @@ function saveMidtransConfig(serverKey, clientKey, isProduction, updatedBy) {
     } else {
       // Create new
       const id = generateId();
-      sheet.appendRow([id, serverKey, clientKey, isProduction, updatedBy, now]);
+      const mcRow = [id, serverKey, clientKey, isProduction, updatedBy, now];
+      sheet.appendRow(mcRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.MIDTRANS_CONFIG, mcRow);
     }
     
     return { success: true };
@@ -10052,15 +10995,12 @@ function savePaymentKOLInstant(id, noOrder, noResi, harga, createdBy) {
       // Add
       const newId = generateId();
       const lastRow = sheet.getLastRow();
-      sheet.appendRow([
-        newId,
-        tgl,
-        noOrder || '',
-        noResi || '',
-        parseFloat(harga) || 0,
-        createdBy || '',
-        now.toISOString()
-      ]);
+      const newRow = [
+        newId, tgl, noOrder || '', noResi || '',
+        parseFloat(harga) || 0, createdBy || '', now.toISOString()
+      ];
+      sheet.appendRow(newRow);
+      syncSheetRowToSupabase(CONFIG.SHEETS.PAYMENT_KOL_INSTANT, newRow);
       sheet.getRange(lastRow + 1, 5).setNumberFormat('"Rp"#,##0');
       return { success: true, message: 'Data berhasil ditambahkan' };
     }
@@ -10072,4 +11012,3 @@ function savePaymentKOLInstant(id, noOrder, noResi, harga, createdBy) {
 function deletePaymentKOLInstant(id) {
   return deleteRow(CONFIG.SHEETS.PAYMENT_KOL_INSTANT, id);
 }
-
