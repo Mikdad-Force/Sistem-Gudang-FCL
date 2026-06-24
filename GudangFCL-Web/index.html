@@ -489,12 +489,25 @@
               <div class="card mb-3" style="padding:24px;">
                 <div
                   style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
-                  <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                     <div style="position:relative;">
                       <label class="form-label" style="font-size:11px; position:absolute; top:-18px; left:0;">Bulan &
                         Tahun</label>
                       <input type="month" id="rosterFilterMonth" class="form-control" style="width:200px;"
                         onchange="loadShiftRoster()">
+                    </div>
+                    <div style="position:relative;">
+                      <label class="form-label" style="font-size:11px; position:absolute; top:-18px; left:0;">Lokasi</label>
+                      <select id="rosterFilterLokasi" class="form-control" style="width:180px;" onchange="loadShiftRoster()">
+                        <option value="">Semua Lokasi</option>
+                      </select>
+                    </div>
+                    <div style="position:relative;">
+                      <label class="form-label" style="font-size:11px; position:absolute; top:-18px; left:0;">Cari Nama</label>
+                      <div style="position:relative;">
+                        <i class="bi bi-search" style="position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:12px; pointer-events:none;"></i>
+                        <input type="text" id="rosterSearchNama" class="form-control" style="width:180px; padding-left:28px;" placeholder="Nama karyawan..." oninput="filterRosterByName()">
+                      </div>
                     </div>
                     <button class="btn btn-ghost btn-sm" onclick="loadShiftRoster()"><i
                         class="bi bi-arrow-clockwise"></i> Refresh</button>
@@ -504,6 +517,8 @@
                   <div style="display:flex; gap:10px;">
                     <button class="btn btn-ghost btn-sm" onclick="downloadRosterTemplate()"><i
                         class="bi bi-download"></i> Template Excel</button>
+                    <button class="btn btn-teal btn-sm" onclick="exportRosterToExcel()"><i
+                        class="bi bi-file-earmark-arrow-down"></i> Ekspor Excel</button>
                     <label class="btn btn-primary btn-sm" style="margin-bottom:0; cursor:pointer;">
                       <i class="bi bi-file-earmark-excel"></i> Impor Excel
                       <input type="file" id="rosterImportInput" style="display:none;" accept=".xlsx, .xls, .csv"
@@ -512,53 +527,133 @@
                   </div>
                 </div>
 
+                <!-- Legend Warna Shift -->
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; font-size:11px;">
+                  <span style="background:rgba(16,185,129,0.15); color:var(--green); padding:3px 10px; border-radius:20px; font-weight:700;">☀️ PAGI</span>
+                  <span style="background:rgba(14,165,233,0.15); color:var(--teal); padding:3px 10px; border-radius:20px; font-weight:700;">🌙 MALAM</span>
+                  <span style="background:rgba(251,191,36,0.15); color:#d97706; padding:3px 10px; border-radius:20px; font-weight:700;">SD</span>
+                  <span style="background:rgba(139,92,246,0.15); color:#7c3aed; padding:3px 10px; border-radius:20px; font-weight:700;">STD</span>
+                  <span style="background:rgba(249,115,22,0.15); color:#ea580c; padding:3px 10px; border-radius:20px; font-weight:700;">🏖 IJIN</span>
+                  <span style="background:rgba(239,68,68,0.15); color:var(--red); padding:3px 10px; border-radius:20px; font-weight:700;">⚠️ ALFA</span>
+                  <span style="background:rgba(100,116,139,0.15); color:#64748b; padding:3px 10px; border-radius:20px; font-weight:700;">🚫 OFF</span>
+                  <span style="color:var(--text-muted); padding:3px 10px;">Klik sel untuk ganti shift</span>
+                </div>
+
                 <!-- Settings Roster (Global) -->
                 <div id="rosterSettingsPanel"
                   style="background:var(--input-bg); border-radius:12px; padding:15px; margin-bottom:20px; display:none; border:1px solid var(--border-color);">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <h6 style="margin:0; font-weight:800; color:var(--text-main);"><i class="bi bi-clock"></i>
-                      Pengaturan Jam Shift Roster</h6>
-                    <button class="btn btn-ghost btn-sm" onclick="toggleRosterSettings()"><i
-                        class="bi bi-x-lg"></i></button>
+                      Pengaturan Jam Shift</h6>
+                    <button class="btn btn-ghost btn-sm" onclick="toggleRosterSettings()"><i class="bi bi-x-lg"></i></button>
                   </div>
-                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                    <div class="row g-2">
-                      <div class="col-6">
-                        <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">PAGI
-                          MASUK</label>
-                        <input type="time" id="setRosterPagiIn" class="form-control form-control-sm">
+
+                  <!-- Tab Nav -->
+                  <div style="display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:8px;">
+                    <button id="tabRosterGlobal" class="btn btn-primary btn-sm" onclick="switchRosterSettingsTab('global')">🌐 Jam Global (PAGI/MALAM)</button>
+                    <button id="tabRosterJabatan" class="btn btn-ghost btn-sm" onclick="switchRosterSettingsTab('jabatan')">👔 Jam per Jabatan</button>
+                  </div>
+
+                  <!-- Tab: Global -->
+                  <div id="rosterTabGlobal">
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Jam default digunakan saat jabatan karyawan tidak memiliki pengaturan khusus.</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">PAGI MASUK</label>
+                          <input type="time" id="setRosterPagiIn" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">PAGI PULANG</label>
+                          <input type="time" id="setRosterPagiOut" class="form-control form-control-sm">
+                        </div>
                       </div>
-                      <div class="col-6">
-                        <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">PAGI
-                          PULANG</label>
-                        <input type="time" id="setRosterPagiOut" class="form-control form-control-sm">
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">MALAM MASUK</label>
+                          <input type="time" id="setRosterMalamIn" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">MALAM PULANG</label>
+                          <input type="time" id="setRosterMalamOut" class="form-control form-control-sm">
+                        </div>
+                      </div>
+                      <div class="row g-2">
+                        <div class="col-12">
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">TOLERANSI TERLAMBAT (MENIT)</label>
+                          <input type="number" id="setRosterToleransi" class="form-control form-control-sm" value="0" min="0">
+                        </div>
+                      </div>
+                      <div style="display:flex; gap:10px; align-items:flex-end;">
+                        <button class="btn btn-primary btn-sm" style="flex:2;" onclick="saveRosterSettings()">💾 Simpan Setelan</button>
+                        <button class="btn btn-teal btn-sm" style="flex:1;" onclick="openRosterSpecialDatesModal()"><i class="bi bi-calendar-event"></i> Jadwal Khusus</button>
                       </div>
                     </div>
-                    <div class="row g-2">
-                      <div class="col-6">
-                        <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">MALAM
-                          MASUK</label>
-                        <input type="time" id="setRosterMalamIn" class="form-control form-control-sm">
+                  </div>
+
+                  <!-- Tab: Jam per Jabatan -->
+                  <div id="rosterTabJabatan" style="display:none;">
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+                      ⚡ Pengaturan ini digunakan pertama untuk menentukan status <strong>Terlambat</strong> di Absensi Karyawan. Prioritas: <strong>Jabatan</strong> → Global.
+                    </div>
+
+                    <!-- Form tambah / edit -->
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:10px; padding:14px; margin-bottom:14px;">
+                      <input type="hidden" id="jabShiftId">
+                      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr 80px 80px; gap:8px; align-items:end; flex-wrap:wrap;">
+                        <div>
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:3px;">NAMA JADWAL</label>
+                          <input type="text" id="jabShiftNama" class="form-control form-control-sm" placeholder="Contoh: Admin Pagi">
+                        </div>
+                        <div>
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:3px;">JABATAN</label>
+                          <input type="text" id="jabShiftJabatan" class="form-control form-control-sm" list="jabatanDatalist" placeholder="Pilih / ketik jabatan">
+                          <datalist id="jabatanDatalist"></datalist>
+                        </div>
+                        <div>
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:3px;">JAM MASUK</label>
+                          <input type="time" id="jabShiftIn" class="form-control form-control-sm" value="08:00">
+                        </div>
+                        <div>
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:3px;">JAM PULANG</label>
+                          <input type="time" id="jabShiftOut" class="form-control form-control-sm" value="17:00">
+                        </div>
+                        <div>
+                          <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:3px;">TOLERANSI (mnt)</label>
+                          <input type="number" id="jabShiftTol" class="form-control form-control-sm" value="0" min="0">
+                        </div>
+                        <div>
+                          <button class="btn btn-primary btn-sm w-100" onclick="saveJabatanShift()">💾 Simpan</button>
+                        </div>
                       </div>
-                      <div class="col-6">
-                        <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">MALAM
-                          PULANG</label>
-                        <input type="time" id="setRosterMalamOut" class="form-control form-control-sm">
+                      <div style="margin-top:8px; display:flex; gap:6px; align-items:center;">
+                        <span style="font-size:10px; color:var(--gray);">Aktif:</span>
+                        <select id="jabShiftAktif" class="form-control form-control-sm" style="width:80px;">
+                          <option value="Ya">Ya</option>
+                          <option value="Tidak">Tidak</option>
+                        </select>
+                        <button class="btn btn-ghost btn-sm" onclick="resetJabatanShiftForm()">✕ Reset</button>
                       </div>
                     </div>
-                    <div class="row g-2">
-                      <div class="col-12">
-                        <label style="font-size:10px; color:var(--gray); display:block; margin-bottom:4px;">TOLERANSI
-                          TERLAMBAT (MENIT)</label>
-                        <input type="number" id="setRosterToleransi" class="form-control form-control-sm" value="0"
-                          min="0">
-                      </div>
-                    </div>
-                    <div style="display:flex; gap:10px; align-items:flex-end;">
-                      <button class="btn btn-primary btn-sm" style="flex:2;" onclick="saveRosterSettings()">Simpan
-                        Setelan</button>
-                      <button class="btn btn-teal btn-sm" style="flex:1;" onclick="openRosterSpecialDatesModal()"><i
-                          class="bi bi-calendar-event"></i> Jadwal Khusus</button>
+
+                    <!-- Tabel jadwal per jabatan -->
+                    <div style="overflow-x:auto;">
+                      <table class="table table-sm" style="font-size:12px;" id="jabatanShiftTable">
+                        <thead>
+                          <tr>
+                            <th>Nama Jadwal</th>
+                            <th>Jabatan</th>
+                            <th>Jam Masuk</th>
+                            <th>Jam Pulang</th>
+                            <th>Toleransi</th>
+                            <th>Aktif</th>
+                            <th>Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody id="jabatanShiftBody">
+                          <tr><td colspan="7" class="text-center text-muted py-3">Memuat...</td></tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
@@ -572,9 +667,8 @@
                 </div>
 
                 <div class="mt-3"
-                  style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:15px;">
-                  <span><i class="bi bi-info-circle"></i> Info: Gunakan nilai <strong>PAGI</strong>,
-                    <strong>MALAM</strong>, atau <strong>OFF</strong>.</span>
+                  style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+                  <span><i class="bi bi-info-circle"></i> Info: Nilai shift: <strong>PAGI</strong>, <strong>MALAM</strong>, <strong>SD</strong>, <strong>STD</strong>, <strong>IJIN</strong>, <strong>ALFA</strong>. Klik sel untuk siklus otomatis, atau pilih dari dropdown.</span>
                   <span class="ms-auto" id="rosterUpdateStatus"></span>
                 </div>
               </div>
@@ -8097,6 +8191,7 @@
   </div>
   <!-- ===== END MODALS RETURN DISTRIBUTOR ===== -->
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.35.0/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 

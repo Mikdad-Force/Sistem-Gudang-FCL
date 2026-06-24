@@ -107,6 +107,150 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
     }
     // ==========================================
 
+    const SUPABASE_URL = 'https://hnofmrmwkropijhpexpx.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_nu_0fpE0B_dnH3Z6d6dkIA_rWE9xGV8';
+    let supabaseClient = null;
+
+    function initSupabase() {
+      if (!supabaseClient && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (err) {
+          console.warn('Supabase init error:', err);
+        }
+      }
+    }
+    initSupabase();
+
+    function callGASPromise(funcName, ...args) {
+      return new Promise((resolve, reject) => {
+        if (!window.google || !window.google.script || !window.google.script.run) {
+          reject(new Error('Google Apps Script tidak tersedia.'));
+          return;
+        }
+        try {
+          window.google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(err => reject(err))[funcName](...args);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }
+
+    // ============================================================
+    // SUPABASE HELPER FUNCTIONS
+    // Nama tabel selalu di-lowercase sesuai getSupabaseTableName() di Kode.gs
+    // Contoh: 'KasGudang' → 'kasgudang', 'TeamBuilding' → 'teambuilding'
+    // ============================================================
+
+    function toSupabaseTableName(name) {
+      if (!name) return '';
+      return String(name).trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    }
+
+    async function supabaseSelect(table, columns = '*', filters = {}, order = null, limit = null) {
+      if (!supabaseClient) initSupabase();
+      if (!supabaseClient) return { success: false, message: 'Supabase client belum siap.' };
+      try {
+        const tbl = toSupabaseTableName(table);
+        let query = supabaseClient.from(tbl).select(columns);
+        Object.entries(filters || {}).forEach(([key, value]) => {
+          if (value === null || value === undefined) return;
+          query = query.eq(key, value);
+        });
+        if (order && order.column) {
+          query = query.order(order.column, { ascending: order.ascending !== false });
+        }
+        if (limit != null) {
+          query = query.limit(limit);
+        }
+        const { data, error } = await query;
+        if (error) return { success: false, message: error.message };
+        return { success: true, data };
+      } catch (err) {
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    // Upsert (insert or update) satu baris ke Supabase langsung dari Web App.
+    // Dipakai setelah GAS berhasil simpan agar Supabase langsung up-to-date tanpa menunggu onEdit trigger.
+    async function supabaseUpsert(table, rowObject) {
+      if (!supabaseClient) initSupabase();
+      if (!supabaseClient) return { success: false, message: 'Supabase client belum siap.' };
+      try {
+        const tbl = toSupabaseTableName(table);
+        const { error } = await supabaseClient.from(tbl).upsert(rowObject, { onConflict: 'id' });
+        if (error) return { success: false, message: error.message };
+        return { success: true };
+      } catch (err) {
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    // Hapus satu baris dari Supabase langsung dari Web App berdasarkan id.
+    async function supabaseDelete(table, id) {
+      if (!supabaseClient) initSupabase();
+      if (!supabaseClient) return { success: false, message: 'Supabase client belum siap.' };
+      try {
+        const tbl = toSupabaseTableName(table);
+        const { error } = await supabaseClient.from(tbl).delete().eq('id', id);
+        if (error) return { success: false, message: error.message };
+        return { success: true };
+      } catch (err) {
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    // Update kolom tertentu di Supabase berdasarkan filter key=value.
+    async function supabaseUpdate(table, id, updates) {
+      if (!supabaseClient) initSupabase();
+      if (!supabaseClient) return { success: false, message: 'Supabase client belum siap.' };
+      try {
+        const tbl = toSupabaseTableName(table);
+        const { error } = await supabaseClient.from(tbl).update(updates).eq('id', id);
+        if (error) return { success: false, message: error.message };
+        return { success: true };
+      } catch (err) {
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    // Ambil data dengan filter custom (range, ilike, dll).
+    async function supabaseQuery(table, builderFn) {
+      if (!supabaseClient) initSupabase();
+      if (!supabaseClient) return { success: false, message: 'Supabase client belum siap.' };
+      try {
+        const tbl = toSupabaseTableName(table);
+        let query = supabaseClient.from(tbl).select('*');
+        if (typeof builderFn === 'function') query = builderFn(query);
+        const { data, error } = await query;
+        if (error) return { success: false, message: error.message };
+        return { success: true, data };
+      } catch (err) {
+        return { success: false, message: err.message || String(err) };
+      }
+    }
+
+    async function fetchWithFallback(supabaseTask, gasFuncName, gasArgs = []) {
+      let supaResult = { success: false };
+      try {
+        supaResult = await supabaseTask();
+      } catch (err) {
+        supaResult = { success: false, message: err.message || String(err) };
+      }
+      if (supaResult && supaResult.success) {
+        return supaResult;
+      }
+      console.warn('Supabase fallback ke GAS:', supaResult.message || supaResult.error || 'Tidak ada respon Supabase.');
+      try {
+        const gasRes = await callGASPromise(gasFuncName, ...gasArgs);
+        return gasRes;
+      } catch (err) {
+        return { success: false, message: 'GAS fallback gagal: ' + (err.message || String(err)) };
+      }
+    }
+
     // Resilience: Global Error Logger
     window.onerror = function (msg, url, line, col, error) {
       console.error('GLOBAL_ERROR:', msg, 'at', line + ':' + col);
@@ -3838,7 +3982,23 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
     }
 
 
-    function loadKasGudang() { google.script.run.withSuccessHandler(res => { const tb = document.getElementById('tableKasGudang'); tb.innerHTML = ''; if (!res.data.length) { tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>'; return; } res.data.forEach(d => tb.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe === 'IN' ? 'badge-in' : 'badge-out'}">${d.tipe === 'IN' ? '📈 Masuk' : '📉 Keluar'}</span></td><td>${d.keterangan}</td><td class="${d.tipe === 'IN' ? 'positive' : 'negative'} rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl ? `<a href="${d.buktiUrl}" target="_blank">Lihat</a>` : '-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delKasGudang('${d.id}')">🗑️</button></td></tr>`); }).getKasGudang(); }
+    async function loadKasGudang() {
+      const tb = document.getElementById('tableKasGudang');
+      tb.innerHTML = '';
+      const res = await fetchWithFallback(
+        () => supabaseSelect('kasgudang', '*', {}, { column: 'createdAt', ascending: false }),
+        'getKasGudang'
+      );
+      if (!res || !res.success || !Array.isArray(res.data)) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>';
+        return;
+      }
+      if (!res.data.length) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>';
+        return;
+      }
+      res.data.forEach(d => tb.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe === 'IN' ? 'badge-in' : 'badge-out'}">${d.tipe === 'IN' ? '📈 Masuk' : '📉 Keluar'}</span></td><td>${d.keterangan}</td><td class="${d.tipe === 'IN' ? 'positive' : 'negative'} rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl ? `<a href="${d.buktiUrl}" target="_blank">Lihat</a>` : '-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delKasGudang('${d.id}')">🗑️</button></td></tr>`);
+    }
     function submitKasGudang() {
       const t = v('kgTanggal'), tp = v('kgTipe'), k = v('kgKeterangan'), n = getRpValue('kgNominal');
       if (!t || !k || n <= 0) return toast('Lengkapi form', 'error');
@@ -3849,7 +4009,23 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
     }
     function delKasGudang(id) { if (confirm('Hapus?')) google.script.run.withSuccessHandler(res => { if (res.success) { toast('Dihapus'); loadKasGudang(); loadDashboard(); } else toast(res.message, 'error'); }).deleteKasGudang(id); }
 
-    function loadTB() { google.script.run.withSuccessHandler(res => { const tb = document.getElementById('tableTB'); tb.innerHTML = ''; if (!res.data.length) { tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>'; return; } res.data.forEach(d => tb.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe === 'Pemasukan' ? 'badge-in' : 'badge-out'}">${d.tipe || 'Pengeluaran'}</span></td><td>${d.keterangan}</td><td class="rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl ? `<a href="${d.buktiUrl}" target="_blank">Lihat</a>` : '-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delTB('${d.id}')">🗑️</button></td></tr>`); }).getTeamBuilding(); }
+    async function loadTB() {
+      const tb = document.getElementById('tableTB');
+      tb.innerHTML = '';
+      const res = await fetchWithFallback(
+        () => supabaseSelect('teambuilding', '*', {}, { column: 'createdAt', ascending: false }),
+        'getTeamBuilding'
+      );
+      if (!res || !res.success || !Array.isArray(res.data)) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>';
+        return;
+      }
+      if (!res.data.length) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty-state">Kosong</td></tr>';
+        return;
+      }
+      res.data.forEach(d => tb.innerHTML += `<tr><td>${formatDate(d.tanggal)}</td><td><span class="${d.tipe === 'Pemasukan' ? 'badge-in' : 'badge-out'}">${d.tipe || 'Pengeluaran'}</span></td><td>${d.keterangan}</td><td class="rupiah">${formatRp(d.nominal)}</td><td>${d.buktiUrl ? `<a href="${d.buktiUrl}" target="_blank">Lihat</a>` : '-'}</td><td>${d.createdBy}</td><td><button class="btn btn-danger btn-sm" onclick="delTB('${d.id}')">🗑️</button></td></tr>`);
+    }
     function submitTB() {
       const t = v('tbTanggal'), tp = v('tbTipe'), k = v('tbKeterangan'), n = getRpValue('tbNominal');
       if (!t || !k || n <= 0) return toast('Lengkapi form', 'error');
@@ -3860,7 +4036,19 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
     }
     function delTB(id) { if (confirm('Hapus?')) google.script.run.withSuccessHandler(res => { if (res.success) { toast('Dihapus'); loadTB(); loadDashboard(); } else toast(res.message, 'error'); }).deleteTeamBuilding(id); }
 
-    function loadExpense() { google.script.run.withSuccessHandler(res => { if (res.success) { expenseData = res.data; populateExpenseYears(); filterExpense(); } }).getExpense(); }
+    async function loadExpense() {
+      const res = await fetchWithFallback(
+        () => supabaseSelect('expense', '*', {}, { column: 'createdAt', ascending: false }),
+        'getExpense'
+      );
+      if (res.success) {
+        expenseData = res.data;
+        populateExpenseYears();
+        filterExpense();
+      } else {
+        toast(res.message || 'Gagal memuat data expense.', 'error');
+      }
+    }
     function populateExpenseYears() { const sel = document.getElementById('filterTahunExpense'), ys = new Set(expenseData.map(d => new Date(d.tanggal).getFullYear()).filter(y => !isNaN(y))); ys.add(new Date().getFullYear()); sel.innerHTML = Array.from(ys).sort((a, b) => b - a).map(y => `<option value="${y}">${y}</option>`).join(''); if (!sel.value) sel.value = new Date().getFullYear(); }
     function toggleCustomPerusahaan() { const s = v('exPerusahaanSelect'); document.getElementById('exPerusahaanCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
     function toggleCustomKategori() { const s = v('exKategoriSelect'); document.getElementById('exKategoriCustom').style.display = s === 'Lainnya' ? 'block' : 'none'; }
@@ -17550,12 +17738,26 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       const days = (res.headers || []).filter(h => !isNaN(h)); // Get 1-31
 
       if (data.length === 0) {
-        document.getElementById('rosterTableContainer').innerHTML = '<div class="p-5 text-center text-muted"><i class="bi bi-info-circle"></i> Belum ada data roster untuk bulan ini. Silakan Impor Excel.</div>';
+        document.getElementById('rosterTableContainer').innerHTML = '<div class="p-5 text-center text-muted"><i class="bi bi-info-circle"></i> Belum ada data roster untuk bulan ini. Silakan Impor Excel atau tambah karyawan terlebih dahulu.</div>';
         return;
       }
 
+      // Helper: get shift style
+      function getShiftStyle(val) {
+        const v = (val || '').trim().toUpperCase();
+        if (v === 'PAGI')  return 'background:rgba(16,185,129,0.12); color:var(--green); font-weight:700;';
+        if (v === 'MALAM') return 'background:rgba(14,165,233,0.12); color:var(--teal); font-weight:700;';
+        if (v === 'SD')    return 'background:rgba(251,191,36,0.15); color:#d97706; font-weight:700;';
+        if (v === 'STD')   return 'background:rgba(139,92,246,0.15); color:#7c3aed; font-weight:700;';
+        if (v === 'IJIN')  return 'background:rgba(249,115,22,0.15); color:#ea580c; font-weight:700;';
+        if (v === 'ALFA')  return 'background:rgba(239,68,68,0.15); color:var(--red); font-weight:700;';
+        if (v === 'OFF')   return 'background:rgba(100,116,139,0.15); color:#64748b; font-weight:700;';
+        return '';
+      }
+
       let html = '<table class="roster-table"><thead><tr>';
-      html += '<th class="sticky-col">Nama Karyawan</th>';
+      html += '<th class="sticky-col" style="min-width:160px;">Nama Karyawan</th>';
+      html += '<th style="min-width:100px; text-align:center;">Lokasi</th>';
 
       const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
       const [year, month] = res.monthYear.split('-').map(Number);
@@ -17566,24 +17768,33 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         const isSunday = dateObj.getDay() === 0;
         const color = isSunday ? 'color:var(--red);' : '';
 
-        html += `<th style="${color} min-width:40px; text-align:center;">
+        html += `<th style="${color} min-width:52px; text-align:center;">
                   <div style="font-size:10px; opacity:0.7;">${dayName}</div>
                   <div>${d}</div>
                 </th>`;
       });
       html += '</tr></thead><tbody>';
 
+      // Build employee lookup from karyawanData (global)
+      const empLookup = {};
+      if (Array.isArray(karyawanData)) {
+        karyawanData.forEach(k => {
+          empLookup[k.nama ? k.nama.toLowerCase().trim() : ''] = k;
+        });
+      }
+
       data.forEach(row => {
+        const nameKey = (row.nama || '').toLowerCase().trim();
+        const empData = empLookup[nameKey];
+        const lokasi = row.lokasi || (empData ? (empData.cabang || '-') : '-');
+
         html += '<tr>';
-        html += `<td class="sticky-col">${row.nama || '-'}</td>`;
+        html += `<td class="sticky-col"><div style="font-weight:600;">${row.nama || '-'}</div></td>`;
+        html += `<td style="text-align:center; font-size:11px;"><span style="background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:12px; white-space:nowrap;">${lokasi}</span></td>`;
+
         days.forEach(d => {
           const val = row[d] || '';
-          let bg = '';
-          const upperVal = val.toUpperCase();
-          if (upperVal === 'OFF') bg = 'style="background:rgba(239, 68, 68, 0.1); color:var(--red); cursor:pointer;"';
-          else if (upperVal === 'PAGI' || upperVal.includes('PAGI')) bg = 'style="background:rgba(16, 185, 129, 0.1); color:var(--green); cursor:pointer;"';
-          else if (upperVal === 'MALAM' || upperVal.includes('MALAM')) bg = 'style="background:rgba(14, 165, 233, 0.1); color:var(--teal); cursor:pointer;"';
-          else bg = 'style="cursor:pointer;"';
+          const shiftStyle = getShiftStyle(val) + ' cursor:pointer;';
 
           // Indikator Kehadiran
           let attIcon = '';
@@ -17594,15 +17805,15 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
           if (attMap[empName] && attMap[empName][dayNum]) {
             const status = attMap[empName][dayNum];
             if (status === 'Terlambat') {
-              attIcon = ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Terlambat" style="font-size:10px;"></i>';
+              attIcon = ' <i class="bi bi-exclamation-triangle-fill text-warning" title="Terlambat" style="font-size:9px;"></i>';
             } else {
-              attIcon = ' <i class="bi bi-check-circle-fill text-success" title="Hadir" style="font-size:10px;"></i>';
+              attIcon = ' <i class="bi bi-check-circle-fill text-success" title="Hadir" style="font-size:9px;"></i>';
             }
           }
 
-          html += `<td ${bg} onclick="toggleRosterCell('${res.monthYear}', '${row.nama}', '${d}', this)">
-                    <div class="d-flex align-items-center justify-content-center">
-                      <span>${val}</span>${attIcon}
+          html += `<td style="${shiftStyle}" onclick="openShiftCellMenu('${res.monthYear}', '${row.nama.replace(/'/g,"\\'")}', '${d}', this)">
+                    <div class="d-flex align-items-center justify-content-center gap-1">
+                      <span style="font-size:11px;">${val}</span>${attIcon}
                     </div>
                   </td>`;
         });
@@ -17612,6 +17823,8 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       html += '</tbody></table>';
       document.getElementById('rosterTableContainer').innerHTML = html;
       document.getElementById('rosterUpdateStatus').textContent = 'Terakhir diperbarui: ' + new Date().toLocaleTimeString();
+      // Re-apply name search filter if active
+      if (typeof filterRosterByName === 'function') filterRosterByName();
     }
 
     function handleImportRoster(input) {
@@ -17737,8 +17950,8 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       // Data Template
       const data = [
         headers,
-        ['KARYAWAN A (CONT: PAGI/MALAM/OFF)', 'PAGI', 'PAGI', 'MALAM', 'OFF'],
-        ['KARYAWAN B', 'MALAM', 'MALAM', 'OFF', 'PAGI']
+        ['KARYAWAN A (Contoh: PAGI/MALAM/SD/STD/IJIN/ALFA)', 'PAGI', 'PAGI', 'MALAM', 'SD', 'STD', 'IJIN', 'ALFA'],
+        ['KARYAWAN B', 'MALAM', 'MALAM', 'PAGI', 'PAGI', 'IJIN']
       ];
 
       try {
@@ -17757,9 +17970,123 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       if (panel.style.display === 'none') {
         panel.style.display = 'block';
         loadRosterSettings();
+        switchRosterSettingsTab('global');
       } else {
         panel.style.display = 'none';
       }
+    }
+
+    function switchRosterSettingsTab(tab) {
+      document.getElementById('rosterTabGlobal').style.display   = tab === 'global'  ? 'block' : 'none';
+      document.getElementById('rosterTabJabatan').style.display  = tab === 'jabatan' ? 'block' : 'none';
+      document.getElementById('tabRosterGlobal').className  = 'btn btn-' + (tab === 'global'  ? 'primary' : 'ghost') + ' btn-sm';
+      document.getElementById('tabRosterJabatan').className = 'btn btn-' + (tab === 'jabatan' ? 'primary' : 'ghost') + ' btn-sm';
+      if (tab === 'jabatan') {
+        loadJabatanShiftList();
+        populateJabatanDatalist();
+      }
+    }
+
+    function populateJabatanDatalist() {
+      const dl = document.getElementById('jabatanDatalist');
+      if (!dl) return;
+      const jabs = new Set();
+      if (Array.isArray(karyawanData)) {
+        karyawanData.forEach(k => { if (k.jabatan) jabs.add(k.jabatan.trim()); });
+      }
+      dl.innerHTML = '';
+      Array.from(jabs).sort().forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = j;
+        dl.appendChild(opt);
+      });
+    }
+
+    function loadJabatanShiftList() {
+      const tb = document.getElementById('jabatanShiftBody');
+      tb.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-2"><span class="spinner-border spinner-border-sm"></span> Memuat...</td></tr>';
+      google.script.run.withSuccessHandler(function(res) {
+        if (!res.success) { tb.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal: ' + res.message + '</td></tr>'; return; }
+        const list = res.data || [];
+        if (!list.length) {
+          tb.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Belum ada pengaturan jam per jabatan. Tambahkan di atas.</td></tr>';
+          return;
+        }
+        tb.innerHTML = list.map(j => {
+          const aktifBadge = String(j.aktif).toLowerCase() === 'ya' || j.aktif === true
+            ? '<span style="color:var(--green);font-weight:700;">✔ Ya</span>'
+            : '<span style="color:var(--red);">✘ Tidak</span>';
+          const jamIn  = j.jamMasuk  instanceof Date ? j.jamMasuk.toTimeString().slice(0,5)  : String(j.jamMasuk  || '-');
+          const jamOut = j.jamPulang instanceof Date ? j.jamPulang.toTimeString().slice(0,5) : String(j.jamPulang || '-');
+          return `<tr>
+            <td><strong>${j.namaJadwal || '-'}</strong></td>
+            <td><span style="background:rgba(99,102,241,0.12); color:#6366f1; padding:2px 8px; border-radius:8px; font-size:11px;">${j.divisi || '-'}</span></td>
+            <td style="font-family:monospace; font-weight:700; color:var(--green);">${jamIn}</td>
+            <td style="font-family:monospace; font-weight:700; color:var(--accent);">${jamOut}</td>
+            <td>${j.toleransiMenit || 0} mnt</td>
+            <td>${aktifBadge}</td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-ghost btn-sm py-0" onclick="editJabatanShift('${j.id}','${(j.namaJadwal||'').replace(/'/g,"\\'")}','${(j.divisi||'').replace(/'/g,"\\'")}','${jamIn}','${jamOut}','${j.toleransiMenit||0}','${j.aktif||'Ya'}')">✏️</button>
+              <button class="btn btn-danger btn-sm py-0" onclick="delJabatanShift('${j.id}')">🗑</button>
+            </td>
+          </tr>`;
+        }).join('');
+      }).getJadwalShift('');
+    }
+
+    function saveJabatanShift() {
+      const id      = document.getElementById('jabShiftId').value.trim();
+      const nama    = document.getElementById('jabShiftNama').value.trim();
+      const jabatan = document.getElementById('jabShiftJabatan').value.trim();
+      const jamIn   = document.getElementById('jabShiftIn').value;
+      const jamOut  = document.getElementById('jabShiftOut').value;
+      const tol     = document.getElementById('jabShiftTol').value || '0';
+      const aktif   = document.getElementById('jabShiftAktif').value;
+
+      if (!nama || !jabatan || !jamIn || !jamOut) {
+        return showToast('Nama jadwal, jabatan, jam masuk & pulang wajib diisi.', 'warning');
+      }
+
+      showToast('⏳ Menyimpan...', 'info');
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          showToast('✅ Jadwal jabatan berhasil disimpan!', 'success');
+          resetJabatanShiftForm();
+          loadJabatanShiftList();
+        } else {
+          showToast('Gagal: ' + res.message, 'error');
+        }
+      // namaJadwal=nama, divisi=jabatan (kita simpan jabatan di kolom divisi untuk reuse fungsi yg sama)
+      }).saveJadwalShift(id || null, nama, jabatan, 'JABATAN', jamIn, jamOut, tol, aktif);
+    }
+
+    function editJabatanShift(id, nama, jabatan, jamIn, jamOut, tol, aktif) {
+      document.getElementById('jabShiftId').value      = id;
+      document.getElementById('jabShiftNama').value    = nama;
+      document.getElementById('jabShiftJabatan').value = jabatan;
+      document.getElementById('jabShiftIn').value      = jamIn;
+      document.getElementById('jabShiftOut').value     = jamOut;
+      document.getElementById('jabShiftTol').value     = tol;
+      document.getElementById('jabShiftAktif').value   = (String(aktif).toLowerCase() === 'ya' || aktif === true) ? 'Ya' : 'Tidak';
+      document.getElementById('jabShiftNama').focus();
+    }
+
+    function resetJabatanShiftForm() {
+      document.getElementById('jabShiftId').value      = '';
+      document.getElementById('jabShiftNama').value    = '';
+      document.getElementById('jabShiftJabatan').value = '';
+      document.getElementById('jabShiftIn').value      = '08:00';
+      document.getElementById('jabShiftOut').value     = '17:00';
+      document.getElementById('jabShiftTol').value     = '0';
+      document.getElementById('jabShiftAktif').value   = 'Ya';
+    }
+
+    function delJabatanShift(id) {
+      if (!confirm('Hapus pengaturan jadwal ini?')) return;
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) { showToast('Dihapus.', 'success'); loadJabatanShiftList(); }
+        else showToast('Gagal: ' + res.message, 'error');
+      }).deleteJadwalShift(id, currentUser.username);
     }
 
     function loadRosterSettings() {
@@ -17870,37 +18197,84 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
       }).saveRosterSpecialDates(jsonStr, currentUser.username);
     }
 
-    function toggleRosterCell(monthYear, name, day, cell) {
-      const currentVal = cell.textContent.trim().toUpperCase();
-      let nextVal = 'PAGI';
-      let nextBg = 'background:rgba(16, 185, 129, 0.1); color:var(--green);';
+    // Shift cycle order for click-cycling
+    const SHIFT_CYCLE = ['PAGI', 'MALAM', 'SD', 'STD', 'IJIN', 'ALFA', 'OFF', ''];
 
-      if (currentVal === 'PAGI') {
-        nextVal = 'MALAM';
-        nextBg = 'background:rgba(14, 165, 233, 0.1); color:var(--teal);';
-      } else if (currentVal === 'MALAM') {
-        nextVal = 'OFF';
-        nextBg = 'background:rgba(239, 68, 68, 0.1); color:var(--red);';
-      } else if (currentVal === 'OFF') {
-        nextVal = 'PAGI';
-        nextBg = 'background:rgba(16, 185, 129, 0.1); color:var(--green);';
-      } else {
-        nextVal = 'PAGI';
-        nextBg = 'background:rgba(16, 185, 129, 0.1); color:var(--green);';
-      }
+    function getShiftCellStyle(val) {
+      const v = (val || '').trim().toUpperCase();
+      if (v === 'PAGI')  return 'background:rgba(16,185,129,0.12); color:var(--green); font-weight:700; cursor:pointer;';
+      if (v === 'MALAM') return 'background:rgba(14,165,233,0.12); color:var(--teal); font-weight:700; cursor:pointer;';
+      if (v === 'SD')    return 'background:rgba(251,191,36,0.15); color:#d97706; font-weight:700; cursor:pointer;';
+      if (v === 'STD')   return 'background:rgba(139,92,246,0.15); color:#7c3aed; font-weight:700; cursor:pointer;';
+      if (v === 'IJIN')  return 'background:rgba(249,115,22,0.15); color:#ea580c; font-weight:700; cursor:pointer;';
+      if (v === 'ALFA')  return 'background:rgba(239,68,68,0.15); color:var(--red); font-weight:700; cursor:pointer;';
+      if (v === 'OFF')   return 'background:rgba(100,116,139,0.15); color:#64748b; font-weight:700; cursor:pointer;';
+      return 'cursor:pointer;';
+    }
 
-      const oldVal = cell.textContent;
+    function openShiftCellMenu(monthYear, name, day, cell) {
+      // Remove any existing menu
+      const existingMenu = document.getElementById('_shiftCellMenu');
+      if (existingMenu) existingMenu.remove();
+
+      const currentVal = (cell.querySelector('span') ? cell.querySelector('span').textContent : cell.textContent).trim().toUpperCase();
+
+      const menu = document.createElement('div');
+      menu.id = '_shiftCellMenu';
+      menu.style.cssText = 'position:fixed; z-index:9999; background:var(--card-bg,#1e1e2e); border:1px solid var(--border-color,#333); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.4); padding:6px; min-width:120px;';
+
+      SHIFT_CYCLE.forEach(shift => {
+        const opt = document.createElement('div');
+        const isActive = shift === currentVal || (shift === '' && currentVal === '');
+        opt.style.cssText = `padding:7px 14px; border-radius:7px; cursor:pointer; font-size:12px; font-weight:600; display:flex; align-items:center; gap:6px; ${isActive ? 'background:rgba(255,255,255,0.08);' : ''}`;
+        opt.innerHTML = `<span style="${getShiftCellStyle(shift).replace('cursor:pointer;','')} padding:2px 8px; border-radius:10px;">${shift || '(Kosong)'}</span>`;
+        opt.onmouseover = () => opt.style.background = 'rgba(255,255,255,0.06)';
+        opt.onmouseout  = () => opt.style.background = isActive ? 'rgba(255,255,255,0.08)' : '';
+        opt.onclick = (e) => {
+          e.stopPropagation();
+          menu.remove();
+          applyRosterCellValue(monthYear, name, day, shift, cell);
+        };
+        menu.appendChild(opt);
+      });
+
+      // Position near the cell
+      const rect = cell.getBoundingClientRect();
+      menu.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 260) + 'px';
+      menu.style.left = Math.min(rect.left, window.innerWidth - 150) + 'px';
+
+      document.body.appendChild(menu);
+
+      // Close on outside click
+      setTimeout(() => {
+        document.addEventListener('click', function closeMenu() {
+          menu.remove();
+          document.removeEventListener('click', closeMenu);
+        }, { once: true });
+      }, 50);
+    }
+
+    function applyRosterCellValue(monthYear, name, day, newVal, cell) {
       const oldStyle = cell.getAttribute('style');
-      cell.textContent = nextVal;
-      cell.setAttribute('style', nextBg + ' cursor:pointer; font-weight:700;');
+      const spanEl = cell.querySelector('span');
+      const oldText = spanEl ? spanEl.textContent : '';
+
+      // Optimistic UI update
+      if (spanEl) spanEl.textContent = newVal;
+      cell.setAttribute('style', getShiftCellStyle(newVal));
 
       google.script.run.withSuccessHandler(function (res) {
         if (!res.success) {
           showToast('Gagal update roster: ' + res.message, 'error');
-          cell.textContent = oldVal;
+          if (spanEl) spanEl.textContent = oldText;
           cell.setAttribute('style', oldStyle);
         }
-      }).updateRosterCell(monthYear, name, day, nextVal, currentUser.username);
+      }).updateRosterCell(monthYear, name, day, newVal, currentUser.username);
+    }
+
+    function toggleRosterCell(monthYear, name, day, cell) {
+      // Legacy – now delegates to openShiftCellMenu
+      openShiftCellMenu(monthYear, name, day, cell);
     }
 
 
@@ -17914,16 +18288,132 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
         return loadShiftRoster();
       }
 
+      // Apply lokasi filter client-side after loading
+      const lokasiFilter = (document.getElementById('rosterFilterLokasi') ? document.getElementById('rosterFilterLokasi').value : '').trim();
+
       const container = document.getElementById('rosterTableContainer');
       container.innerHTML = '<div class="p-5 text-center text-muted"><div class="spinner-border text-primary mb-3"></div><br>Memuat roster ' + monthYear + '...</div>';
 
       google.script.run.withSuccessHandler(function (res) {
         if (res.success) {
+          // Client-side filter by lokasi (cabang)
+          if (lokasiFilter && res.data && res.data.length) {
+            // Build employee lookup
+            const empLookup = {};
+            if (Array.isArray(karyawanData)) {
+              karyawanData.forEach(k => {
+                empLookup[(k.nama || '').toLowerCase().trim()] = k;
+              });
+            }
+            res.data = res.data.filter(row => {
+              const lok = row.lokasi || (empLookup[(row.nama||'').toLowerCase().trim()] ? (empLookup[(row.nama||'').toLowerCase().trim()].cabang || '') : '');
+              return (lok || '').toLowerCase() === lokasiFilter.toLowerCase();
+            });
+          }
           renderShiftRosterTable(res);
         } else {
           container.innerHTML = '<div class="p-5 text-center text-danger">Gagal memuat roster: ' + res.message + '</div>';
         }
       }).getShiftRoster(monthYear, currentUser.username);
+    }
+
+    function loadLokasiRosterFilter() {
+      const sel = document.getElementById('rosterFilterLokasi');
+      if (!sel) return;
+      // Collect unique locations from karyawanData
+      const locs = new Set();
+      if (Array.isArray(karyawanData)) {
+        karyawanData.forEach(k => {
+          if (k.cabang && k.cabang.trim()) locs.add(k.cabang.trim());
+        });
+      }
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">Semua Lokasi</option>';
+      Array.from(locs).sort().forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc; opt.textContent = loc;
+        if (loc === currentVal) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function filterRosterByName() {
+      const q = (document.getElementById('rosterSearchNama').value || '').toLowerCase().trim();
+      const tbody = document.querySelector('#rosterTableContainer table tbody');
+      if (!tbody) return;
+      Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const nameCell = tr.querySelector('td.sticky-col');
+        const name = nameCell ? nameCell.textContent.toLowerCase() : '';
+        tr.style.display = (!q || name.includes(q)) ? '' : 'none';
+      });
+    }
+
+    function exportRosterToExcel() {
+      if (typeof XLSX === 'undefined') {
+        showToast('Library Excel (SheetJS) tidak termuat. Refresh halaman lalu coba lagi.', 'error');
+        return;
+      }
+
+      const table = document.querySelector('#rosterTableContainer table');
+      if (!table) {
+        showToast('Tidak ada data roster untuk diekspor.', 'warning');
+        return;
+      }
+
+      const monthYear = document.getElementById('rosterFilterMonth').value || 'roster';
+      const lokasiFilter = (document.getElementById('rosterFilterLokasi').value || '').trim();
+      const namaFilter   = (document.getElementById('rosterSearchNama').value || '').trim();
+
+      // Build array-of-arrays from visible table rows
+      const aoa = [];
+
+      // Header row
+      const headerRow = [];
+      table.querySelectorAll('thead tr th').forEach(th => {
+        headerRow.push(th.textContent.trim().replace(/\s+/g,' '));
+      });
+      aoa.push(headerRow);
+
+      // Data rows (only visible ones — respects name & lokasi filter)
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        if (tr.style.display === 'none') return;
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+          // Get text only (strip attendance icons)
+          const span = td.querySelector('span:first-child');
+          row.push(span ? span.textContent.trim() : td.textContent.trim());
+        });
+        aoa.push(row);
+      });
+
+      if (aoa.length <= 1) {
+        showToast('Tidak ada baris data yang terlihat untuk diekspor.', 'warning');
+        return;
+      }
+
+      try {
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Auto column widths
+        const colWidths = headerRow.map((h, i) => {
+          const maxLen = aoa.reduce((m, r) => Math.max(m, String(r[i] || '').length), h.length);
+          return { wch: Math.min(maxLen + 2, 20) };
+        });
+        ws['!cols'] = colWidths;
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Roster ' + monthYear);
+
+        let fileName = `Roster_${monthYear}`;
+        if (lokasiFilter) fileName += `_${lokasiFilter}`;
+        if (namaFilter)   fileName += `_${namaFilter}`;
+        fileName += '.xlsx';
+
+        XLSX.writeFile(wb, fileName);
+        showToast('✅ Berhasil ekspor roster ke Excel!', 'success');
+      } catch (err) {
+        showToast('Gagal ekspor: ' + err.message, 'error');
+      }
     }
 
     function loadAbsenDivisiList() {
@@ -17959,7 +18449,19 @@ document.getElementById('ubkDropZone').addEventListener('click', () => document.
               const now = new Date();
               filter.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
             }
-            loadShiftRoster();
+            // Populate lokasi filter from karyawan data
+            if (!karyawanData || !karyawanData.length) {
+              google.script.run.withSuccessHandler(function(res) {
+                if (res && res.karyawan && res.karyawan.success) {
+                  karyawanData = res.karyawan.data;
+                }
+                loadLokasiRosterFilter();
+                loadShiftRoster();
+              }).getKaryawanFullData();
+            } else {
+              loadLokasiRosterFilter();
+              loadShiftRoster();
+            }
           }
           if (name === 'handover') {
             loadStockControl();
